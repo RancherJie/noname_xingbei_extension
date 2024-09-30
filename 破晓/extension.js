@@ -823,4 +823,4 @@ game.import("extension",function(lib,game,ui,get,ai,_status){return {name:"ç ´æ™
     diskURL:"",
     forumURL:"",
     version:"0.1",
-},files:{"character":["daDiWuShi.jpg","caiJueZheP.jpg","zhanXingJia.jpg","xinLinSuShi.jpg"],"card":[],"skill":[],"audio":[]}}})
+},files:["daDiWuShi.jpg","caiJueZheP.jpg","zhanXingJia.jpg","xinLinSuShi.jpg"]}})
