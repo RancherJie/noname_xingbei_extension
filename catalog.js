@@ -11,5 +11,5 @@ extension["破晓"] = {
     netdisk: "",
     forum: "",
     version:"0.1",
-    files:["xinLinSuShi.jpg", "daDiWuShi.jpg", "caiJueZheP.jpg", "zhanXingJia.jpg"],
+    files:["xinLinSuShi.jpg", "daDiWuShi.jpg", "caiJueZheP.jpg", "zhanXingJia.jpg","extension.js"],
 };
