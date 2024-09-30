@@ -3,3 +3,13 @@ if (!localStorage.getItem('old-extension-tip')) {
 		'，请谨慎下载');
 	localStorage.setItem('old-extension-tip', 'true');
 };
+extension["破晓"] = {
+    date: "2024/09/30",
+    author: "连桑",
+    intro: "复活了破晓中的几个好玩的角色，占星和大地武士缺少高清卡图，能提供的话感激不尽。",
+    size: "0.5MB",
+    netdisk: "",
+    forum: "",
+    version:"0.1",
+    files:{"character":["xinLinSuShi.jpg", "daDiWuShi.jpg", "caiJueZheP.jpg", "zhanXingJia.jpg"],"card":[],"skill":[],"audio":[]}
+};
