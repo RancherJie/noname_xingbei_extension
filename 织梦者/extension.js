@@ -1,6 +1,4 @@
-import { lib, game, ui, get, ai, _status } from "../../noname.js";
-export const type = "extension";
-export default function(){
+game.import("extension",function(lib,game,ui,get,ai,_status){
 	return {name:"织梦者",arenaReady:function(){
     
 },content:function(config,pack){
@@ -825,5 +823,4 @@ export default function(){
     diskURL: "",
     forumURL: "",
     version: "1.1",
-},files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:false} 
-};
+},files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:false}});
