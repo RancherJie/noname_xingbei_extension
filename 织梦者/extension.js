@@ -1,4 +1,4 @@
-import { lib, game, ui, get, ai, _status } from "../../../noname.js";
+import { lib, game, ui, get, ai, _status } from "../../noname.js";
 export const type = "extension";
 export default function(){
 	return {name:"织梦者",arenaReady:function(){
