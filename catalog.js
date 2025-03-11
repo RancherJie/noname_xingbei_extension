@@ -10,6 +10,6 @@ extension["织梦者"]={
 	netdisk:"",
 	forum:"",
 	version:"1.1",
-	files:["info.json","LICENSE","mengJingSuXing.jpg","README.md","zhiMengZhe.jpg"],
+	files:["info.json","README.md","zhiMengZhe.jpg","LICENSE","info.json","LICENSE","mengJingSuXing.jpg","package.js","README.md","zhiMengZhe.jpg"],
 	size:"1.8MB"
 };
