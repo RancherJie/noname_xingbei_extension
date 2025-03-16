@@ -15,6 +15,7 @@ extension["织梦者"]={
 };
 extension["噬神者"]={
 	intro:"噬神者，游戏本体版本最低1.0.8",
+	date:"2025/03/16",
 	author:"农杰",
 	netdisk:"",
 	forum:"",
