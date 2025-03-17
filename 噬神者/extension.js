@@ -102,13 +102,14 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                     'step 1'
                     var card;
                     if(result.links[0][2]=='moRenCard'){
-                        card=game.createCard2("moRenCard", "huo", 'xue');
+                        card=game.createCard("moRenCard", "huo", 'xue');
                         player.storage.moRen=true;
                     }else if(result.links[0][2]=='yiRenCard'){
-                        card=game.createCard2("yiRenCard", "lei", 'xue');
+                        card=game.createCard("yiRenCard", "lei", 'xue');
                         player.storage.yiRen=true;
                     }
                     if(card){
+                        card.renMaster=player;
                         game.log(player, "获得了1张【刃】")
                         player.gain(card,'draw');
                     }
@@ -125,12 +126,13 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                 content: function(){
                     var card;
                     if(trigger.card.name=='moRenCard'){
-                        card=game.createCard2("moRenCard", "huo", 'xue');
+                        card=game.createCard("moRenCard", "huo", 'xue');
                         player.storage.moRen=true;
                     }else if(trigger.card.name=='yiRenCard'){
-                        card=game.createCard2("yiRenCard", "lei", 'xue');
+                        card=game.createCard("yiRenCard", "lei", 'xue');
                         player.storage.yiRen=true;
                     }
+                    card.renMaster=player;
                     game.log(trigger.target,'获得了',card);
                     trigger.target.gain(card,'draw');
                 },
@@ -221,11 +223,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
             },
             ren: {
                 global: ["ren_zhuanHuan1","ren_zhuanHuan2","ren_daChuQiZhi","ren_gaiPai"],
-                init: function(player){
-                    for(var current of game.players){
-                        current.storage.renMaster=player;
-                    }
-                },
                 contentx: function(){
                     for(var card of event.cards){
                         if(get.name(card)=='moRenCard'){
@@ -298,6 +295,15 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                             player: ["daChuPai","discard"],
                         },
                         forced: true,
+                        getIndex(event, player) {
+							const cards = [];
+							for(let i = 0; i < event.cards.length; i++) {
+                                if(get.name(event.cards[i]) == 'moRenCard' || get.name(event.cards[i]) == 'yiRenCard') {
+                                    cards.push(event.cards[i]);
+                                }
+                            }
+							return cards;
+						},
                         filter: function(event,player){
                             var bool=false;
                             for(var card of event.cards){
@@ -310,18 +316,14 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                         },
                         content: function(){
                             'step 0'
-                            player.faShuDamage(event.num||3,player.storage.renMaster);
+                            player.faShuDamage(event.num||3,event.indexedData.renMaster);
                             'step 1'
-                            for(var card of trigger.cards){
-                                if(get.name(card)=='moRenCard'||get.name(card)=='yiRenCard'){
-                                    let name=get.name(card).slice(0,-4);
-                                    player.storage.renMaster.storage[name]=false;
-                                    card.fix();
-                                    card.remove();
-                                    card.destroyed = true;
-                                    game.log(card, "被移除了");
-                                }
-                            }
+                            let name=get.name(event.indexedData).slice(0,-4);
+                            event.indexedData.renMaster.storage[name]=false;
+                            event.indexedData.fix();
+                            event.indexedData.remove();
+                            event.indexedData.destroyed = true;
+                            game.log(event.indexedData, "被移除了");
                         },
                         sub: true,
                         sourceSkill: "ren",
@@ -331,7 +333,15 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                         trigger: {
                             player: "addToExpansionEnd",
                         },
-                        firstDo: true,
+                        getIndex(event, player) {
+							const cards = [];
+							for(let i = 0; i < event.cards.length; i++) {
+                                if(get.name(event.cards[i]) == 'moRenCard' || get.name(event.cards[i]) == 'yiRenCard') {
+                                    cards.push(event.cards[i]);
+                                }
+                            }
+							return cards;
+						},
                         forced: true,
                         filter: function(event,player){
                             var bool=false;
@@ -345,18 +355,14 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                         },
                         content: function(){
                             'step 0'
-                            player.faShuDamage(1,player.storage.renMaster);
+                            player.faShuDamage(1,event.indexedData.renMaster);
                             'step 1'
-                            for(var card of trigger.cards){
-                                if(get.name(card)=='moRenCard'||get.name(card)=='yiRenCard'){
-                                    let name=get.name(card).slice(0,-4);
-                                    player.storage.renMaster.storage[name]=false;
-                                    card.fix();
-                                    card.remove();
-                                    card.destroyed = true;
-                                    game.log(card, "被移除了");
-                                }
-                            }
+                            let name=get.name(event.indexedData).slice(0,-4);
+                            event.indexedData.renMaster.storage[name]=false;
+                            event.indexedData.fix();
+                            event.indexedData.remove();
+                            event.indexedData.destroyed = true;
+                            game.log(event.indexedData, "被移除了");
                         },
                         sub: true,
                         sourceSkill: "ren",
@@ -429,9 +435,12 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                         let card;
                         if(result.links[i][2]=='moRenCard'){
                             card=game.createCard('moRenCard','huo','xue');
+                            player.storage.moRen=true;
                         }else if(result.links[i][2]=='yiRenCard'){
                             card=game.createCard('yiRenCard','lei','xue');
+                            player.storage.yiRen=true;
                         }
+                        card.renMaster=player;
                         cards.push(card);
                     }
                     game.log(player,`获得了${cards.length}张【刃】`);
@@ -540,6 +549,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "1.0",
-},files:{"character":["shiShenZhe.jpg"],"card":["yiRenCard.jpg","moRenCard.jpg"],"skill":[],"audio":[]},connect:false} 
+    version: "1.1",
+},files:{"character":["shiShenZhe.jpg"],"card":["yiRenCard.jpg","moRenCard.jpg"],"skill":[],"audio":[]},connect:true} 
 });
