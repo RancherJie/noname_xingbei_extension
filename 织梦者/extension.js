@@ -583,7 +583,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 								player.node.identity.dataset.color=player.side+'zhu';
 							}
 						}
-						ui.arena.classList.add('choose-character');
 					}
 
 
@@ -596,7 +595,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 						lib.playerOL[i].update();
 					}
 					game.broadcast(function(){
-						for(var player of lib.playerOL){
+						for(var player of game.players){
 							if(!player.name1){
 								player.init('zhiMengZhe');
 								player.update();
