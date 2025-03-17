@@ -822,5 +822,5 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
     author: "农之",
     diskURL: "",
     forumURL: "",
-    version: "1.1",
+    version: "1.2",
 },files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:true}});
