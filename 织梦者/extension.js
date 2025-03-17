@@ -656,77 +656,32 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     return target!=player;
                 },
                 content: function (){
-                    'step 0'
-					var next=game.createEvent('chooseSkill');
-					next.setContent(lib.skill.mengJingQieQu.chooseSkill);
-					next.player=player;
-					next.target=target;
-					next.func=function(info,skill){return !player.hasSkill(skill)};
+					'step 0'
+					var skills=target.getSkills();
+					var list=[];
+					for(let skill of skills){
+						if(!player.hasSkill(skill)){
+							list.push(skill);
+						}
+					}
+					var listx=[];
+					for(let i=0;i<list.length;i++){
+						listx.push([list[i],get.translation(list[i])+'<br>'+get.translation(list[i]+'_info')]);
+					}
+					if(listx.length>0){
+						var next=player.chooseButton(['选择1个技能获得',[listx,'textbutton']]);
+						next.set('forced',true);
+						next.set('ai',function(){return Math.random();});
+					}else{
+						event.finish();
+					}
                     'step 1'
                     if (result.bool) {
-                        var skill = result.skill;
+                        var skill = result.links[0];
                         player.addAdditionalSkill("mengJing", skill,true);
                         game.log(player, "获得了技能", skill);
                     }
                 },
-                chooseSkill:function () {
-					"step 0";
-					var skills=event.target.getSkills(true, false);
-					var list = [];
-					for(var skill of skills){
-						let info = lib.skill[skill];
-						if(event.func(info, skill)){
-							list.push(skill);
-						}
-					}					
-					if (!list.length) {
-						event.result = { bool: false };
-						event.finish();
-						return;
-					}
-					event.skillai = function (list) {
-						return get.max(list, get.skillRank, "item");
-					};
-					if (event.isMine()) {
-						var dialog = ui.create.dialog("forcebutton");
-						dialog.add(event.prompt || "选择获得一项技能");
-						_status.event.list = list;
-						var clickItem = function () {
-							_status.event._result = this.link;
-							game.resume();
-						};
-						for (i = 0; i < list.length; i++) {
-							if (lib.translate[list[i] + "_info"]) {
-								var translation = get.translation(list[i]);
-								/*
-								if (translation[0] == "新" && translation.length == 3) {
-									translation = translation.slice(1, 3);
-								} else {
-									translation = translation.slice(0, 2);
-								}*/
-								var item = dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">' + translation + "</div><div>" + lib.translate[list[i] + "_info"] + "</div></div>");
-								item.firstChild.addEventListener("click", clickItem);
-								item.firstChild.link = list[i];
-							}
-						}
-						dialog.add(ui.create.div(".placeholder"));
-						event.dialog = dialog;
-						event.switchToAuto = function () {
-							event._result = event.skillai(event.list);
-							game.resume();
-						};
-						_status.imchoosing = true;
-						game.pause();
-					} else {
-						event._result = event.skillai(list);
-					}
-					"step 1";
-					_status.imchoosing = false;
-					if (event.dialog) {
-						event.dialog.close();
-					}
-					event.result = { bool: true, skill: result };
-				}
             },
             memgJingBianZhi: {
                 trigger: {
@@ -880,5 +835,5 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
     author: "农之",
     diskURL: "",
     forumURL: "",
-    version: "1.2",
+    version: "1.3",
 },files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:true}});
