@@ -152,7 +152,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 				}
 				game.chooseCharacter();
 			}
-            "step 3"
+            "step 2"
 			if(_status.connectMode){
 				_status.mode=lib.configOL.versus_mode;
                 _status.onreconnect=[function(){
@@ -182,7 +182,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 			info.push(false);
 			game.addVideo('init',null,info);
 			event.trigger('gameStart');
-            'step 4'
+            'step 3'
             var firstChoose=(_status.firstAct||game.players.randomGet());
 			game.gameDraw(firstChoose);
             game.phaseLoop(firstChoose);
