@@ -823,4 +823,4 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
     diskURL: "",
     forumURL: "",
     version: "1.1",
-},files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:false}});
+},files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:true}});
