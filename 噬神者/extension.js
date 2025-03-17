@@ -232,7 +232,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                             if(get.xiBie(card,false)=='lei') game.setXiBie(card,'feng');
                             else game.setXiBie(card,'lei');
                         }
-                        card.$init([card.xiBie,card.mingGe,card.name]);
+                        game.broadcastAll(function(card){
+                            card.$init([card.xiBie,card.mingGe,card.name]);
+                        },card);
                     }
                 },
                 subSkill: {
@@ -549,6 +551,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "1.1",
+    version: "1.2",
 },files:{"character":["shiShenZhe.jpg"],"card":["yiRenCard.jpg","moRenCard.jpg"],"skill":[],"audio":[]},connect:true} 
 });

@@ -19,7 +19,7 @@ extension["噬神者"]={
 	author:"农杰",
 	netdisk:"",
 	forum:"",
-	version:"1.1",
+	version:"1.2",
 	files:["info.json","LICENSE","moRenCard.jpg","README.md","shiShenZhe.jpg","yiRenCard.jpg"],
 	size:"999KB"
 };
