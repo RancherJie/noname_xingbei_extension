@@ -657,9 +657,11 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 },
                 content: function (){
                     'step 0'
-                    player.chooseSkill(target, function (info, skill) {
-                        return !player.hasSkill(skill);
-                    });
+					var next=game.createEvent('chooseSkill');
+					next.setContent(lib.skill.mengJingQieQu.chooseSkill);
+					next.player=player;
+					next.target=target;
+					next.func=function(info,skill){return !player.hasSkill(skill)};
                     'step 1'
                     if (result.bool) {
                         var skill = result.skill;
@@ -667,7 +669,64 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                         game.log(player, "获得了技能", skill);
                     }
                 },
-                "_priority": 0,
+                chooseSkill:function () {
+					"step 0";
+					var skills=event.target.getSkills(true, false);
+					var list = [];
+					for(var skill of skills){
+						let info = lib.skill[skill];
+						if(event.func(info, skill)){
+							list.push(skill);
+						}
+					}					
+					if (!list.length) {
+						event.result = { bool: false };
+						event.finish();
+						return;
+					}
+					event.skillai = function (list) {
+						return get.max(list, get.skillRank, "item");
+					};
+					if (event.isMine()) {
+						var dialog = ui.create.dialog("forcebutton");
+						dialog.add(event.prompt || "选择获得一项技能");
+						_status.event.list = list;
+						var clickItem = function () {
+							_status.event._result = this.link;
+							game.resume();
+						};
+						for (i = 0; i < list.length; i++) {
+							if (lib.translate[list[i] + "_info"]) {
+								var translation = get.translation(list[i]);
+								/*
+								if (translation[0] == "新" && translation.length == 3) {
+									translation = translation.slice(1, 3);
+								} else {
+									translation = translation.slice(0, 2);
+								}*/
+								var item = dialog.add('<div class="popup pointerdiv" style="width:80%;display:inline-block"><div class="skill">' + translation + "</div><div>" + lib.translate[list[i] + "_info"] + "</div></div>");
+								item.firstChild.addEventListener("click", clickItem);
+								item.firstChild.link = list[i];
+							}
+						}
+						dialog.add(ui.create.div(".placeholder"));
+						event.dialog = dialog;
+						event.switchToAuto = function () {
+							event._result = event.skillai(event.list);
+							game.resume();
+						};
+						_status.imchoosing = true;
+						game.pause();
+					} else {
+						event._result = event.skillai(list);
+					}
+					"step 1";
+					_status.imchoosing = false;
+					if (event.dialog) {
+						event.dialog.close();
+					}
+					event.result = { bool: true, skill: result };
+				}
             },
             memgJingBianZhi: {
                 trigger: {
