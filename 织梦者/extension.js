@@ -616,6 +616,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 return (from.side===to.side?num:-num);
             }
         },
+		help:{
+			'梦境复苏':`<div style="margin:10px">梦境复苏</div><br>获胜条件同星杯模式，但所有角色均为织梦者，开始技能大乱斗吧。`,
+		},
 	};
 	game.addMode('mengJingSuXing',modeContent,modeConfig);
 },help:{},config:{},package:{
@@ -835,5 +838,5 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
     author: "农之",
     diskURL: "",
     forumURL: "",
-    version: "1.3",
+    version: "1.4",
 },files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:true}});
