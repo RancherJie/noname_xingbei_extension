@@ -238,39 +238,30 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                     }
                 },
                 subSkill: {
-                    moRen:{
-                        intro:{
-                            name:'魔刃',
-                            content:"<span class=\"greentext\">[被动]魔刃</span><br><span class='tiaoJian'>(此卡视为手牌，若你拥有【魔刃】，使用、打出或弃置【魔刃】时)</span>你选择此卡视为火系或水系的血类命格攻击牌。<br><span class=\"greentext\">[被动]渗蚀</span><br><span class='tiaoJian'>(若你拥有【刃】，使用、打出或弃置【刃】时)</span>噬神者对你造成3点法术伤害③，然后移除【刃】。 <span class='tiaoJian'>(【刃】因技能放置在角色旁时)</span>对该角色造成1点法术伤害③，然后移除【刃】。",
-                            nocount:true,
-                        },
-                        markimage:'../extension/噬神者/moRenCard.png',
-                    },
-                    yiRen:{
-                        intro:{
-                            name:'异刃',
-                            content:"<span class=\"greentext\">[被动]异刃</span><br><span class='tiaoJian'>(此卡视为手牌，若你拥有【异刃】，使用、打出或弃置【异刃】时)</span>你选择此卡视为雷系或风系的血类命格攻击牌。<br><span class=\"greentext\">[被动]渗蚀</span><br><span class='tiaoJian'>(若你拥有【刃】，使用、打出或弃置【刃】时)</span>噬神者对你造成3点法术伤害③，然后移除【刃】。 <span class='tiaoJian'>(【刃】因技能放置在角色旁时)</span>对该角色造成1点法术伤害③，然后移除【刃】。",
-                            nocount:true,
-                        },
-                        markimage:'../extension/噬神者/yiRenCard.png',
-                    },
                     biaoJi:{
+                        intro: {
+                            mark:function(dialog,storage,player){
+                                var num=player.countCards('h',function(card){
+                                    return get.name(card)=='moRenCard'||get.name(card)=='yiRenCard';
+                                });
+                                return '共有'+num+'张刃';
+                            },
+                            markcount:function(storage,player){
+                                var num=player.countCards('h',function(card){
+                                    return get.name(card)=='moRenCard'||get.name(card)=='yiRenCard';
+                                });
+                                return num;
+                            },
+                        },
                         trigger: {player:['loseAfter','gainAfter']},
                         direct: true,
                         content: function(){
                             if(player.hasCard(function(card){
-                                return get.name(card)=='moRenCard';
+                                return get.name(card)=='moRenCard'||get.name(card)=='yiRenCard';
                             })){
-                                player.markSkill('ren_moRen');
+                                player.markSkill('ren_biaoJi');
                             }else{
-                                player.unmarkSkill('ren_moRen');
-                            }
-                            if(player.hasCard(function(card){
-                                return get.name(card)=='yiRenCard';
-                            })){
-                                player.markSkill('ren_yiRen');
-                            }else{
-                                player.unmarkSkill('ren_yiRen');
+                                player.unmarkSkill('ren_biaoJi');
                             }
                         }
                     },
@@ -575,6 +566,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
             "ren_zhuanHuan1": "转换刃系别",
             "ren_zhuanHuan2": "转换刃系别",
             "ren_daChuQiZhi": "[被动]渗蚀",
+            ren_biaoJi: "刃",
             "ren_gaiPai": "[被动]渗蚀",
             "ren_info": "<span class=\"greentext\">[被动]魔刃</span><br><span class='tiaoJian'>(此卡视为手牌，若你拥有【魔刃】，使用、打出或弃置【魔刃】时)</span>你选择此卡视为火系或水系的血类命格攻击牌。<br><span class=\"greentext\">[被动]异刃</span><br><span class='tiaoJian'>(此卡视为手牌，若你拥有【异刃】，使用、打出或弃置【异刃】时)</span>你选择此卡视为雷系或风系的血类命格攻击牌。<br><span class=\"greentext\">[被动]渗蚀</span><br><span class='tiaoJian'>(若你拥有【刃】，使用、打出或弃置【刃】时)</span>噬神者对你造成3点法术伤害③，然后移除【刃】。 <span class='tiaoJian'>(【刃】因技能放置在角色旁时)</span>对该角色造成1点法术伤害③，然后移除【刃】。",
             gongZhen: "[被动]共振",
@@ -587,6 +579,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "1.3",
+    version: "1.4",
 },files:{"character":["shiShenZhe.jpg"],"card":["yiRenCard.png","moRenCard.png"],"skill":[],"audio":[]},connect:true} 
 });
