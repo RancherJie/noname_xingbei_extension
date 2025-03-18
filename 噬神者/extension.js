@@ -27,7 +27,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                 filterTarget: function(card,player,target){
                     return target.side!=player.side;
                 },
-                image: "ext:噬神者/moRenCard.jpg",
+                image: "ext:噬神者/moRenCard.png",
                 fullimage: true,
                 content: function(){
                     "step 0"
@@ -47,7 +47,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                 filterTarget: function(card,player,target){
                     return target.side!=player.side;
                 },
-                image: "ext:噬神者/yiRenCard.jpg",
+                image: "ext:噬神者/yiRenCard.png",
                 fullimage: true,
                 content: function(){
                     "step 0"
@@ -222,7 +222,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                 "_priority": 0,
             },
             ren: {
-                global: ["ren_zhuanHuan1","ren_zhuanHuan2","ren_daChuQiZhi","ren_gaiPai"],
+                global: ["ren_zhuanHuan1","ren_zhuanHuan2","ren_daChuQiZhi","ren_gaiPai",'ren_biaoJi'],
                 contentx: function(){
                     for(var card of event.cards){
                         if(get.name(card)=='moRenCard'){
@@ -238,6 +238,42 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
                     }
                 },
                 subSkill: {
+                    moRen:{
+                        intro:{
+                            name:'魔刃',
+                            content:"<span class=\"greentext\">[被动]魔刃</span><br><span class='tiaoJian'>(此卡视为手牌，若你拥有【魔刃】，使用、打出或弃置【魔刃】时)</span>你选择此卡视为火系或水系的血类命格攻击牌。<br><span class=\"greentext\">[被动]渗蚀</span><br><span class='tiaoJian'>(若你拥有【刃】，使用、打出或弃置【刃】时)</span>噬神者对你造成3点法术伤害③，然后移除【刃】。 <span class='tiaoJian'>(【刃】因技能放置在角色旁时)</span>对该角色造成1点法术伤害③，然后移除【刃】。",
+                            nocount:true,
+                        },
+                        markimage:'../extension/噬神者/moRenCard.png',
+                    },
+                    yiRen:{
+                        intro:{
+                            name:'异刃',
+                            content:"<span class=\"greentext\">[被动]异刃</span><br><span class='tiaoJian'>(此卡视为手牌，若你拥有【异刃】，使用、打出或弃置【异刃】时)</span>你选择此卡视为雷系或风系的血类命格攻击牌。<br><span class=\"greentext\">[被动]渗蚀</span><br><span class='tiaoJian'>(若你拥有【刃】，使用、打出或弃置【刃】时)</span>噬神者对你造成3点法术伤害③，然后移除【刃】。 <span class='tiaoJian'>(【刃】因技能放置在角色旁时)</span>对该角色造成1点法术伤害③，然后移除【刃】。",
+                            nocount:true,
+                        },
+                        markimage:'../extension/噬神者/yiRenCard.png',
+                    },
+                    biaoJi:{
+                        trigger: {player:['loseAfter','gainAfter']},
+                        direct: true,
+                        content: function(){
+                            if(player.hasCard(function(card){
+                                return get.name(card)=='moRenCard';
+                            })){
+                                player.markSkill('ren_moRen');
+                            }else{
+                                player.unmarkSkill('ren_moRen');
+                            }
+                            if(player.hasCard(function(card){
+                                return get.name(card)=='yiRenCard';
+                            })){
+                                player.markSkill('ren_yiRen');
+                            }else{
+                                player.unmarkSkill('ren_yiRen');
+                            }
+                        }
+                    },
                     "zhuanHuan1": {
                         enable: ["gongJiOrFaShu"],
                         filter: function(event,player){
@@ -551,6 +587,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"噬�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "1.2",
-},files:{"character":["shiShenZhe.jpg"],"card":["yiRenCard.jpg","moRenCard.jpg"],"skill":[],"audio":[]},connect:true} 
+    version: "1.3",
+},files:{"character":["shiShenZhe.jpg"],"card":["yiRenCard.png","moRenCard.png"],"skill":[],"audio":[]},connect:true} 
 });
