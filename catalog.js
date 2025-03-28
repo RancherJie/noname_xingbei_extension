@@ -15,6 +15,7 @@ extension["织梦者"]={
 };
 extension["终末祷铸"]={
 	intro:"三扩(目前阿斯兰)，本体最低版本1.0.18",
+	date:'2025/03/28',
 	author:"农杰",
 	netdisk:"",
 	forum:"",
