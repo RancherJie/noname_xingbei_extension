@@ -178,7 +178,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                 trigger: {
                     player: "gongJiEnd",
                 },
-                useable: 1,
+                usable: 1,
                 filter: function (event,player){
                     return player.countZhiShiWu('yinZhiZiDan')>=2&&event.yingZhan!=true;
                 },
@@ -590,6 +590,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "1.1",
+    version: "1.2",
 },files:{"character":[],"card":[],"skill":[],"audio":[]},connect:false} 
 });

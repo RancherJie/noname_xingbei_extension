@@ -19,7 +19,7 @@ extension["终末祷铸"]={
 	author:"农杰",
 	netdisk:"",
 	forum:"",
-	version:"1.0",
+	version:"1.2",
 	files:["info.json","README.md","LICENSE","character/hongYiZhuJiao.jpg",
 	"character/tieLvZhe.jpg","zhuanShu/wangQuanBaoZhu.png"],
 	size:"976KB"
