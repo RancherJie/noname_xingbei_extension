@@ -129,6 +129,14 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     if(player.hasZhiShiWu('yinZhiZiDan')) player.markSkill('yinZhiZiDan');
                     player.addGongJi();
                 },
+                ai: {
+                    order: 3.1,
+                    result: {
+                        target: function(player,target){
+                            return -target.zhiLiao;
+                        },
+                    },
+                },
                 "_priority": 0,
             },
             zuiDuanHuoMian: {
@@ -170,8 +178,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                 trigger: {
                     player: "gongJiEnd",
                 },
+                useable: 1,
                 filter: function (event,player){
-                    return player.countZhiShiWu('shengYiWu')>=2&&event.yingZhan!=true;
+                    return player.countZhiShiWu('yinZhiZiDan')>=2&&event.yingZhan!=true;
                 },
                 cost: async function (event,trigger,player){
                     var next=player.chooseTarget();
@@ -185,7 +194,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                 },
                 content: async function (event,trigger,player){
                     player.addGongJi();
-                    await player.removeZhiShiWu('shengYiWu',2);
+                    await player.removeZhiShiWu('yinZhiZiDan',2);
                     await event.targets[0].changeZhiLiao(1);
                 },
                 "_priority": 0,
@@ -218,6 +227,8 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                             var type=get.type(trigger.cards[0]);
                             var next=player.chooseCard('h',card=>get.type(card)==_status.event.type);
                             next.set('ai',function(card){
+                                var player=_status.event.player;
+                                if(player.side!=player.storage.wangQuanBaoZhuX_player.side&&player.countCards('h')+2<=player.getHandcardLimit()) return 0;
                                 return 8-get.value(card);
                             });
                             next.set('type',type);
@@ -267,6 +278,15 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                             if(player.hasZhiShiWu('yinZhiZiDan')) list.push('选项二');
                             var next=player.chooseControl(list);
                             next.set('choiceList',choiceList);
+                            next.set('ai',function(){
+                                if(_status.event.bool) {
+                                    var num=Math.random();
+                                    if(num<0.5) return 0;
+                                    return 1;
+                                }
+                                return 0;
+                            });
+                            next.set('bool',list.length>1);
                             var control=await next.forResultControl();
                             if(control=='选项一'){
                                 player.init('hongYiZhuJiao');
@@ -280,7 +300,11 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                                 }
                                 let control=await player.chooseControl(list).set('prompt','移除X点【银质子弹】，目标角色摸X张牌').forResultControl();
                                 await player.changeZhiShiWu('yinZhiZiDan',-control);
-                                var targets=await player.chooseTarget(true,`目标角色摸${control}张牌`).forResultTargets();
+                                var targets=await player.chooseTarget(true,`目标角色摸${control}张牌`).set('ai',function(target){
+                                    var player=_status.event.player;
+                                    if(player.side==target.side) return 0;
+                                    else return target.countCards('h');
+                                }).forResultTargets();
                                 await targets[0].draw(control); 
                             }
                             await player.discard(player.getExpansions('wangQuanBaoZhuX_biaoJi'));
@@ -392,12 +416,17 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     await player.removeZhiShiWu('yinZhiZiDan',2);
                     var targets=await player.chooseTarget(true,'我方目标角色弃1张牌',function(card,player,target){
                         return player.side==target.side;
+                    }).set('ai',function(target){
+                        return target.countCards('h');
                     }).forResultTargets();
                     var cards=await targets[0].chooseToDiscard('he',true,'showCards').forResultCards();
                     if(get.mingGe(cards[0])=='sheng'){
                         await player.changeZhiLiao(1);
                         await player.draw();
                     }
+                },
+                check: function (event,player){
+                    return player.canGongJi()||player.canFaShu();
                 },
                 "_priority": 0,
             },
@@ -414,7 +443,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     next.set('prompt2',lib.translate.daoGaoShi_info);
                     next.set('ai',function(target){
                         var player=_status.event.player;
-                        return get.zhiLiaoEffect2(target,player,1);
+                        return get.zhiLiaoEffect2(target,player,1)-0.1;
                     });
                     event.result=await next.forResult();
                 },
@@ -436,7 +465,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                 },
                 selectTarget: [0,2],
                 filterTarget: function (card,player,target){
-                    return target.zhiLiao>0;
+                    return target.zhiLiao>0&&player.side==target.side;
                 },
                 filterOk: function (){
                     if(ui.selected.targets.length==0){
@@ -477,6 +506,12 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     if(player.hasZhiShiWu('shengYiWu')) player.markSkill('shengYiWu');
                     if(player.hasZhiShiWu('yinZhiZiDan')) player.markSkill('yinZhiZiDan');
                 },
+                ai: {
+                    order: 3.1,
+                    result: {
+                        player: 1,
+                    },
+                },
                 "_priority": 0,
             },
             shenXuanDaoYan: {
@@ -508,6 +543,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                         if(current.zhiLiao==0&&current.side==player.side) await current.changeZhiLiao(1);
                     }
                 },
+                check: function (event,player){
+                    return player.canGongJi()||player.canFaShu();
+                },
                 "_priority": 0,
             },
         },
@@ -521,7 +559,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
             zuiDuanHuoMian: "[响应]罪断豁免",
             "zuiDuanHuoMian_info": "<span class='tiaoJian'>(我方非因承受伤害而导致士气下降时，移除X点</span><span class='lan'>【圣遗物】</span><span class='tiaoJian'>)</span>抵御X点士气下降，你+X<span class='hong'>【银质子弹】</span>。",
             shengYinSongEn: "[响应]圣银颂恩(回合限定)",
-            "shengYinSongEn_info": "<span class='tiaoJian'>([攻击行动]结束时，移除2点</span><span class='lan'>【圣遗物】</span><span class='tiaoJian'>)</span>额外+1[攻击行动]，目标角色+1[治疗]。",
+            "shengYinSongEn_info": "<span class='tiaoJian'>([攻击行动]结束时，移除2点</span><span class='hong'>【银质子弹】</span><span class='tiaoJian'>)</span>额外+1[攻击行动]，目标角色+1[治疗]。",
             wangQuanBaoZhu: "(专)王权宝珠",
             "wangQuanBaoZhu_info": "\n            <span class=\"greentext\">[被动]圣律威压</span><br>\n            <span class='tiaoJian'>(此卡转移或放置到你面前是)</span>选择一下一项发动：<br>·<span class='tiaoJian'>(选择1张与此卡上牌种类相同的牌)</span>弃置之[展示]。<br>·摸2张牌[强制]，铁律者阵营士气-1。<span class='tiaoJian'>(若</span><span class='lan'>【圣遗物】</span><span class='tiaoJian'>数<1)</span>移除此卡。<br>\n            <span class=\"greentext\">[被动]神言咏赞</span><br>\n            <span class='tiaoJian'>(【圣律威压】结算完后)</span>将此卡转移到你右手边最近的玩家面前。<span class='tiaoJian'>(若因此转移至铁律者面前)</span>铁律者选择以下一项发动：<br>·将角色卡替换为【红衣主教】，然后移除此卡。<br>·<span class='tiaoJian'>(移除X点</span><span class='hong'>【银质子弹】</span><span class='tiaoJian'>，X<3)</span>目标角色摸X张牌[强制]，然后移除此卡。\n            ",
             wangQuanBaoZhuX: "(专)王权宝珠",
@@ -552,6 +590,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "1.0",
+    version: "1.1",
 },files:{"character":[],"card":[],"skill":[],"audio":[]},connect:false} 
 });
