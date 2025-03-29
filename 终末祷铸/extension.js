@@ -591,5 +591,5 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"ç»ˆæ
     diskURL: "",
     forumURL: "",
     version: "1.2",
-},files:{"character":[],"card":[],"skill":[],"audio":[]},connect:false} 
+},files:{"character":[],"card":[],"skill":[],"audio":[]},connect:true} 
 });
