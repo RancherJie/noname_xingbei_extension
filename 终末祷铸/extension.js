@@ -88,6 +88,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                         }
                         return false;
                     });
+                    next.set('ai',function(button){
+                        return get.value(button.link);
+                    });
                     var result=await next.forResult();
                     if(result.bool){
                         cards.remove(result.links[0]);
@@ -97,8 +100,10 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     await player.addZhiShiWu('shiLiao',cards.length);
                 },
                 ai:{
-                    order:3.3,
-                    player:1,
+                    order:3.4,
+                    result:{
+                        player:1,
+                    }
                 }
             },
             jiGuShiDian:{
@@ -133,14 +138,28 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                         fakeCard.storage.oriCard=card;
                         event.chuLi.push(fakeCard);
                     }
-                    
+                    event.xiBie=get.xiBie(trigger.card);
                     await event.trigger('yiJiLunPo');
+                    let num=0;
+                    for(var card of event.chuLi){
+                        if(get.xiBie(card)==_status.event.xiBie) num++;
+                    }
+                    let type='';
+                    if(event.length==1) type='one';
+                    else if(num>1) type='tongXi';
                     var next=player.chooseCardButton(event.chuLi,[1,Infinity],`是否发动【遗迹论破】<br><span class='tiaoJian'>(移除与攻击牌同系的X个【遗迹】)</span>本次攻击伤害额外+(X-1)；<span class='tiaoJian'>(若X>1)</span>额外+1[法术行动]；<span class='tiaoJian'>(若因此使【遗迹】数减少为0)</span>我方【战绩区】+1[宝石]。`);
                     next.set('select',[1,Infinity]);
                     next.set('filterButton',function(button){
                         return get.xiBie(button.link)==_status.event.xiBie;
                     });
-                    next.set('xiBie',get.xiBie(trigger.card));
+                    next.set('xiBie',event.xiBie);
+                    next.set('ai',function(button){
+                        var type=_status.event.type;
+                        if(type=='one') return 1;
+                        else if(type=='tongXi') return 1;
+                        else return 0;
+                    });
+                    next.set('type',type);
                     var result=await next.forResult();
                     event.result={
                         bool:result.bool,
@@ -155,7 +174,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     await player.discard(list,'yiJi');
                     var num=event.cost_data.length;
                     if(num>1){
-                        trigger.changeDamageNum(num.length-1);
+                        trigger.changeDamageNum(num-1);
                         player.addFaShu();
                     }
                     if(player.getExpansions('yiJi').length==0) await player.addZhanJi('baoShi');
@@ -187,6 +206,11 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     var dialog = ui.create.dialog("选淬精炼：选择视为的系别",[[event.indexedData], "card"]);
                     var next=player.chooseControl(list);
                     next.set('dialog',dialog);
+                    next.set('xiBie',trigger.xiBie);
+                    next.set('ai',function(){
+                        var xiBie=_status.event.xiBie;
+                        return xiBie;
+                    })
                     var control=await next.forResultControl();
                     event.result={
                         bool:control!='cancel2',
@@ -230,11 +254,21 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                             var player=_status.event.player;
                             return get.zhiLiaoEffect2(target,player,2);
                         }).forResultTargets();
+                        targets.sortBySeat();
                         for(var target of targets){
                             await target.faShuDamage(2,player);
                         }
                     }
                 },
+                ai:{
+                    order:3.4,
+                    result:{
+                        player:function(player){
+                            if(player.getExpansions('yiJi').length<=3) return 1;
+                            else return 0;
+                        }
+                    }
+                }
             },
             shiShu:{},
             shiShuX:{
@@ -338,7 +372,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                 content:async function (event,trigger,player){
                     await player.removeBiShaShuiJing();
                     await player.addZhiShiWu('shiLiao',2);
-                    if(player.countCards('h')>1){
+                    if(player.countCards('h')>=2&&player.getExpansions('yiJi').length>0){
                         var cards=player.getExpansions('yiJi');
                             var next = player.chooseToMove("古今互鉴：是否将2张手牌与X个【遗迹】交换，X>0");
                             next.set("list", [
@@ -389,6 +423,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                             await player.addToExpansion(pushs, player, "giveAuto").set('gaintag',['yiJi']);
                             await player.gain(gains, "draw");
                     }
+                },
+                check:function (event,player){
+                    return player.canGongJi()||player.canFaShu();
                 },
                 ai:{
                     shuiJing:true,
@@ -506,7 +543,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                         }
                     }
                     if(player.zhiLiao>0) await player.changeZhiLiao(-player.zhiLiao);
-                    await player.init('hongYiZhuJiao');
+                    game.broadcastAll(function(current){
+                        current.init('hongYiZhuJiao');
+                    },player);
                     player.update();
                     if(player.hasZhiShiWu('shengYiWu')) player.markSkill('shengYiWu');
                     if(player.hasZhiShiWu('yinZhiZiDan')) player.markSkill('yinZhiZiDan');
@@ -648,7 +687,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                             next.set('bool',list.length>1);
                             var control=await next.forResultControl();
                             if(control=='选项一'){
-                                player.init('hongYiZhuJiao');
+                                game.broadcastAll(function(current){
+                                    current.init('hongYiZhuJiao');
+                                },player);
                                 if(player.hasZhiShiWu('shengYiWu')) player.markSkill('shengYiWu');
                                 if(player.hasZhiShiWu('yinZhiZiDan')) player.markSkill('yinZhiZiDan');
                             }else if(control=='选项二'){
@@ -842,7 +883,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     }
                     if(player.zhiLiao>0) await player.changeZhiLiao(-player.zhiLiao);
                     if(player.countCards('h')>4) player.chooseToDiscard('h',true,player.countCards('h')-4);
-                    await player.init('tieLvZhe');
+                    game.broadcastAll(function(current){
+                        current.init('tieLvZhe');
+                    },player);
                     player.update();
                     if(player.hasZhiShiWu('shengYiWu')) player.markSkill('shengYiWu');
                     if(player.hasZhiShiWu('yinZhiZiDan')) player.markSkill('yinZhiZiDan');
@@ -950,7 +993,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
             shiShuX_yiShiWeiJing:'[被动]以史为镜',
             shiShuX_yinJiBianJian:'[响应]引稽编鉴',
             guJinHuzheng:"[启动]古今互鉴",
-            guJinHuzheng_info:"[水晶]你+2<span class='hong'>【史料】</span>；<span class='tiaoJian'>(若你手牌数>1)</span>你可将2张手牌与X个【遗迹】交换。",
+            guJinHuzheng_info:"[水晶]你+2<span class='hong'>【史料】</span>；<span class='tiaoJian'>(若你手牌数>1)</span>你可将2张手牌与X个【遗迹】交换，X>0。",
             yiJi:'遗迹',
             yiJi_info:"【遗迹】为记录者专有展示盖牌，上限为8。",
             shiLiao:'史料',
@@ -961,6 +1004,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "2.0",
+    version: "2.1",
 },files:{"character":[],"card":[],"skill":[],"audio":[]},connect:true};
 });
