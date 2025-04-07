@@ -1,11 +1,11 @@
 extension["终末祷铸"]={
-	intro:"三扩(差异教徒)，本体最低版本1.0.20，反馈QQ群966951007",
-	date:'2025/04/04',
+	intro:"三扩，本体最低版本1.0.20，反馈QQ群966951007",
+	date:'2025/04/07',
 	author:"农杰",
 	netdisk:"",
 	forum:"",
-	version:"3.0",
+	version:"4.0",
 	files:["info.json","README.md","LICENSE","character/hongYiZhuJiao.jpg",
-	"character/tieLvZhe.jpg","zhuanShu/wangQuanBaoZhu.png",'zhuanShu/shiShuCard.png','character/jiLuZhe.jpg','zhuanShu/luBiao.png','character/chuanJiaoShi.jpg'],
-	size:"1.56MB",
+	"character/tieLvZhe.jpg","zhuanShu/wangQuanBaoZhu.png",'zhuanShu/shiShuCard.png','character/jiLuZhe.jpg','zhuanShu/luBiao.png','character/chuanJiaoShi.jpg','character/yiJiaoTu.jpg','zhuanShu/diLieBoTao.png','zhuanShu/moRiYuYan.png','zhuanShu/tianLeiJieHuo.png',],
+	size:"3.53MB",
 };
