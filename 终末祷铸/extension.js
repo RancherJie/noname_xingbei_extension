@@ -1148,9 +1148,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                         await player.removeZhiShiWu('luBiaoX');
                         var target=lib.skill.shenDeWenTu.getPrevious(player);
                         player.storage.luBiaoPlayer.storage.luBiaoTarget=target;
-                        await target.addZhiShiWu('luBiaoX').set('type','zhuagYi').set('gaoJieShi',true);
+                        await target.addZhiShiWu('luBiaoX').set('type','zhuanYi').set('gaoJieShi',true);
                     }
-                    await player.storage.luBiaoPlayer.chooseToDiscard('h',1,true).set('selfSkil',true)
+                    await player.storage.luBiaoPlayer.chooseToDiscard('h',1,true,'告解式：弃1张牌').set('selfSkil',true)
                 },
                 check:function (event,player){
                     if(player.countCards('h')+2>player.getHandcardLimit()) return false;
@@ -1301,7 +1301,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                         if(cards.length+player.countExpansions('yuYan')>6){
                             cards=cards.randomGets(6-player.getExpansions('yuYan').length);
                         }
-                        game.log(player,`将${cards.length}张牌加入【预言】`);
+                        game.log(player,`将${cards.length}张牌 加入`,`#g【预言】`);
                         await player.addToExpansion(cards,'draw').set('gaintag',["yuYan"]);
                     }
                     
@@ -1361,7 +1361,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     }
                     else{
                         let cards=get.cards();
-                        game.log(player,`将${cards.length}张牌加入【预言】`);
+                        game.log(player,`将${cards.length}张牌加入`,`#g【预言】`);
                         await player.addToExpansion(cards,'draw').set('gaintag',["yuYan"]);
                         game.log(player,`将1张牌加入手牌`);
                         await player.gain(card);
@@ -1407,7 +1407,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                         return 8-get.value(card);
                     }).forResultCards();
                     cards=cards.randomSort();
-                    game.log(player,`将${cards.length}张牌加入【预言】`);
+                    game.log(player,`将${cards.length}张牌加入`,`#g【预言】`);
                     await player.addToExpansion(cards,'draw').set('gaintag',["yuYan"]);
 
                     player.addGongJiOrFaShu();
@@ -1469,7 +1469,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                     return player.hasExpansions('yuYan')&&event.cause=='damage';
                 },
                 content:async function (event,trigger,player){
-                    game.log(player,`移除了1张【预言】`);
+                    game.log(player,`移除了1张`,`#g【预言】`);
                     trigger.cards.pop();
                     var cards=player.getExpansions('yuYan');
                     trigger.cards.unshift(cards[0]);
@@ -1532,7 +1532,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                                 if(event.bool) xiBieList.push('huo');
                             }else{
                                 var xiBieList=['huo'];
-                                if(event.bool) xiBie.push('lei');
+                                if(event.bool) xiBieList.push('lei');
                             }
                             
                             for(var xiBie of xiBieList){
@@ -1599,7 +1599,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
                                 if(event.bool) xiBieList.push('shui');
                             }else{
                                 var xiBieList=['shui'];
-                                if(event.bool) xiBie.push('di');
+                                if(event.bool) xiBieList.push('di');
                             }
                             
                             for(var xiBie of xiBieList){
@@ -1766,6 +1766,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){ return {name:"终�
     author: "农杰",
     diskURL: "",
     forumURL: "",
-    version: "4.0",
+    version: "4.1",
 },files:{"character":[],"card":[],"skill":[],"audio":[]},connect:true};
 });
