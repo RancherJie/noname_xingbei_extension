@@ -830,7 +830,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             mengJingRongHe: "[法术]梦境融合",
             "mengJingRongHe_backup": "[法术]梦境融合",
             "mengJingRongHe_info": "<span class='tiaoJian'>(移除两个获得的技能)</span>你随机获得一个技能。",
-            mingJingFuSu: "[法术]梦境复苏(回合限定)",
+            mingJingFuSu: "[法术]梦境复苏[回合限定]",
             "mingJingFuSu_info": "[宝石]你失去所有获得的技能，重新获得等量的技能。",
         },
     },
