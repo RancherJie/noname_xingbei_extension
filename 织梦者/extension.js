@@ -9,7 +9,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 	var modeConfig={//模式设置
         translate:'梦境苏醒',
         connect:{
-            connect_versus_mode:{
+            connect_mengJingSuXing_mode:{
                 name:'游戏模式',
                 init:'2v2',
                 item:{
@@ -48,7 +48,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             },
         },
         config: {
-            versus_mode:{
+            mengJingSuXing_mode:{
                 name:'游戏模式',
                 init:'two',
                 item:{
@@ -101,8 +101,8 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
         name:'梦境苏醒',
         start:function(){
             "step 0"
-            _status.mode=get.config('versus_mode');
-			if(_status.connectMode) _status.mode=lib.configOL.versus_mode;
+            _status.mode=get.config('mengJingSuXing_mode');
+			if(_status.connectMode) _status.mode=lib.configOL.mengJingSuXing_mode;
 
             var playback=localStorage.getItem(lib.configprefix+'playback');
             if(playback){
@@ -127,7 +127,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             if(_status.connectMode){
                 lib.configOL.guDingRenShu=true;
 				game.waitForPlayer(function(){//联机人数确定
-					switch(lib.configOL.versus_mode){
+					switch(lib.configOL.mengJingSuXing_mode){
 						case '2v2':lib.configOL.number=4;break;
 						case '3v3':lib.configOL.number=6;break;
 						case '4v4':lib.configOL.number=8;break;
@@ -154,7 +154,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 			}
             "step 2"
 			if(_status.connectMode){
-				_status.mode=lib.configOL.versus_mode;
+				_status.mode=lib.configOL.mengJingSuXing_mode;
                 _status.onreconnect=[function(){
                     var players=game.players;
                     for(var i=0;i<players.length;i++){
@@ -341,7 +341,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 				if(_status.connectMode){
 					number=lib.configOL.number;
 					team_sequence=lib.configOL.team_sequence;
-					mode=lib.configOL.versus_mode;
+					mode=lib.configOL.mengJingSuXing_mode;
 					if(mode=='CM02'){
 						team_sequence='CM';
 					}
@@ -838,5 +838,5 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
     author: "农之",
     diskURL: "",
     forumURL: "",
-    version: "1.4",
+    version: "1.5",
 },files:{"character":["zhiMengZhe.jpg"],"card":[],"skill":[],"audio":[]},connect:true}});

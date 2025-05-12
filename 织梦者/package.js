@@ -3,7 +3,7 @@ extension["织梦者"]={
 	author:"农之",
 	netdisk:"",
 	forum:"",
-	version:"1.4",
+	version:"1.5",
 	files:["info.json","LICENSE","mengJingSuXing.jpg","package.js","README.md","zhiMengZhe.jpg"],
 	size:"1.8MB"
 };
