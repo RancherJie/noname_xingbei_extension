@@ -342,7 +342,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
 					number=lib.configOL.number;
 					team_sequence=lib.configOL.team_sequence;
 					mode=lib.configOL.mengJingSuXing_mode;
-					if(mode=='CM02'){
+					if(mode.includes('CM')){
 						team_sequence='CM';
 					}
 				}else{
