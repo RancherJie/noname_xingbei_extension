@@ -1346,7 +1346,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             yuLongJieJie: "驭龙结界"
         },
     },
-    intro: "增加星杯传说破晓角色",
+    intro: "增加星杯传说破晓角色，bug反馈：aabbcczhy@163.com",
     author: "LerU丶",
     diskURL: "",
     forumURL: "",
