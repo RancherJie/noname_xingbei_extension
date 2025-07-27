@@ -13,3 +13,13 @@ extension["织梦者"]={
 	files:["info.json","LICENSE","mengJingSuXing.jpg","package.js","README.md","zhiMengZhe.jpg"],
 	size:"1.8MB"
 };
+extension["破晓"]={
+	date:"2025/07/27",
+	intro:"增加星杯传说破晓角色。Bug反馈：aabbcczhy@163.com",
+	author:"LerU丶",
+	netdisk:"",
+	forum:"",
+	version:"1.1",
+	files:["info.json","LICENSE","youXia.jpg","zhanXingJia.jpg","tianmaqishi.jpg","shengtangcike.jpg","dasiji.jpg","lianjinshushi.jpg","xuetianshi.jpg","xinlingsushi.jpg","zhenLongNvWang.jpg","longKuangMiSuo.jpg","longMaiShuFu.jpg","longYuFengYin.jpg","yuLongJieJie.jpg","baiWanLongYan.jpg","longWangZhiLi.jpg","longShenEnHui.jpg","shengLongWeiYa.jpg","package.js","README.md"],
+	size:"5.99M"
+};
