@@ -768,15 +768,19 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     // 手牌至少要有3张才能发动
                     return player.countCards('h') >= 3;
                 },
+                selectCard: 3,
+                filterCard:function(card){
+                    return true;
+                },
+                discard:true,
+                selectTarget: 1,
+                filterTarget: function(card, player, target){
+                    return target.side != player.side;
+                },
                 content: async function(event, trigger, player) {
-                    player.storage.hiddenCard = []
-                    var anzhi = await player.chooseToDiscard(3,true,"暗置三张牌，视为一次3点伤害的暗灭攻击").forResult('cards');
-                    
-                    player.storage.hiddenCards = anzhi;
-                    var gongji = await player.chooseTarget(1,"选择攻击对象", true,function(card, player, target){
-                        return target.side != player.side;
-                    }).forResult();
-                    var target = gongji.targets[0];
+                    player.storage.hiddenCards = event.cards;
+                    console.log(event.cards);
+                    var target = event.target;
                     var options = ['翻开', '不翻开'];
                     var fankai = await target.chooseControl(['选项一', '选项二'])
                         .set('choiceList', options)
@@ -791,7 +795,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     event.effect = fankai;
                     if (event.effect == '选项一') {
                         // 选择翻开，先将暗置的牌展示出来
-                        await player.showHiddenCards(player.storage.hiddenCards);
+                        await player.showCards(player.storage.hiddenCards);
                         // 判断三同系
                         const xiBie = get.xiBie(player.storage.hiddenCards[0]);
                         if(player.storage.hiddenCards.every(card => get.xiBie(card) === xiBie)){
@@ -821,18 +825,20 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             xinLingFengBao: {
                 type: "faShu",
                 enable: "faShu",
+                selectCard: 2,
+                filterCard: function(card) {
+                    return true;
+                },
+                filterTarget: function(card, player, target){
+                    return target.side != player.side;
+                },
                 filter: function(event, player) {
                     // 手牌至少要有2张才能发动
                     return player.countCards('h') >= 2;
                 },
                 content: async function(event, trigger, player) {
-                    player.storage.hiddenCard = []
-                    player.storage.hiddenCards = await player.chooseToDiscard(2,true,"暗置两张牌，指定对一名敌方玩家造成1点法术伤害，为任意角色+1治疗").forResult('cards');
-                    
-                    var fashu = await player.chooseTarget(1,"选择一名敌方玩家造成1点法术伤害", true,function(card, player, target){
-                        return target.side != player.side;
-                    }).forResult();
-                    var target = fashu.targets[0];
+                    player.storage.hiddenCards = event.cards;
+                    var target = event.target;
                     var zhiliao = await player.chooseTarget(1,"选择任意角色+1治疗", true).forResult();
                     zhiliao.targets[0].changeZhiLiao(1,player);
                     var options = ['翻开', '不翻开'];
@@ -849,7 +855,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     event.effect = fankai;
                     if (event.effect == '选项一') {
                         // 选择翻开，先将暗置的牌展示出来
-                        await player.showHiddenCards(player.storage.hiddenCards);
+                        await player.showCards(player.storage.hiddenCards);
                         // 判断是否都为法术
                         if(player.storage.hiddenCards.every(card => get.type(card) === 'faShu')){
                             // 都为法术，再选择一个角色加1治疗，结算2点法术伤害
@@ -1090,7 +1096,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     player: "gongJiMingZhong"
                 },
                 filter: function(event, player) {
-                    return player.hasZhiShiWu('longWangZhiLi');
+                    return player.hasZhiShiWu('longWangZhiLi')  && player.countCards('h', card => get.xuanZeYiXiPai(card)) >=2;
                 },
                 async cost(event,trigger,player){
                     event.result=await player.chooseCard([2,Infinity],'h', true, card => get.xuanZeYiXiPai(card))
@@ -1138,7 +1144,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 type: 'faShu',
                 enable: 'faShu',
                 filter: function(event, player) {
-                    return player.hasZhiShiWu('baiWanLongYan');
+                    return player.hasZhiShiWu('baiWanLongYan') && player.countCards('h', card => get.xuanZeTongXiPai(card)) >=2;
                 },
                 content: async function(event,trigger,player) {
                     // 选择摸0-2张牌
@@ -1208,7 +1214,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     var options = [];
                     var buttons = [];
                     for (var key in skillMap) {
-                        if (!player.storage.longZuFuXing_removed.includes(skillMap[key].id)) {
+                        if (player.hasZhiShiWu(skillMap[key].id) && !player.storage.longZuFuXing_removed.includes(skillMap[key].id)) {
                             options.push(skillMap[key].text);
                             buttons.push(key);
                         }
@@ -1346,10 +1352,10 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             yuLongJieJie: "驭龙结界"
         },
     },
-    intro: "增加星杯传说破晓角色，bug反馈：aabbcczhy@163.com",
+    intro: "增加星杯传说破晓角色。bug反馈：aabbcczhy@163.com",
     author: "LerU丶",
     diskURL: "",
     forumURL: "",
-    version: "1.1",
+    version: "1.2",
 },files:{"character":["youXia.jpg","zhanXingJia.jpg","tianmaqishi.jpg","shengtangcike.jpg","dasiji.jpg","lianjinshushi.jpg","xuetianshi.jpg","xinlingsushi.jpg","zhenLongNvWang.jpg"],"card":["longKuangMiSuo.jpg","longMaiShuFu.jpg","longYuFengYin.jpg","yuLongJieJie.jpg","baiWanLongYan.jpg","longWangZhiLi.jpg","longShenEnHui.jpg","shengLongWeiYa.jpg"],"skill":[],"audio":[]},connect:true} 
 });

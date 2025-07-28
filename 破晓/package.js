@@ -1,9 +1,9 @@
 extension["破晓"]={
-	intro:"增加星杯传说破晓角色",
+	intro:"增加星杯传说破晓角色。bug反馈：aabbcczhy@163.com",
 	author:"LerU",
 	netdisk:"",
 	forum:"",
-	version:"1.1",
+	version:"1.2",
 	files:["info.json","LICENSE","youXia.jpg","zhanXingJia.jpg","tianmaqishi.jpg","shengtangcike.jpg","dasiji.jpg","lianjinshushi.jpg","xuetianshi.jpg","xinlingsushi.jpg","zhenLongNvWang.jpg","longKuangMiSuo.jpg","longMaiShuFu.jpg","longYuFengYin.jpg","yuLongJieJie.jpg","baiWanLongYan.jpg","longWangZhiLi.jpg","longShenEnHui.jpg","shengLongWeiYa.jpg","package.js","README.md"],
 	size:"5.99M"
 };
