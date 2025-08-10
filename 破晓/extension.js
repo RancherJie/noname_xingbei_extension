@@ -25,6 +25,9 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             shuangxuegongzhu: ["shuangxuegongzhu_name","shengGroup",3,["bingShuangLingYu","shuiJingDaoQiang","lingFengZhuFu","shuangYuZhiHuan"]],
             shouwangzhe: ["shouwangzhe_name","shengGroup",1,["huJiaoZhiXin","wuJinZhuiJi","jingZhunJuJi"]],
             wudoujia: ["wudoujia_name","jiGroup",2,["zhiYueZhiHuan","sheShenZhiDao","jianRenZhiZhi"]],
+            fengbaozhizhengguan: ["fengbaozhizhengguan_name","jiGroup","1/2",["baoFengLingYu","yiZheng","jiFengZhouYu"]],
+            longzhiqiyuezhe: ["longzhiqiyuezhe_name","longGroup","2/3",["juLongZhiLi","longZuZunYan","longXueQinYe","longXueZhuoShao","xingHongBaiLongBa"]],
+            longqitongshuai: ["longqitongshuai_name","longGroup","1/2",["xiaoTianLongQiang","juLongBenTeng"]],
         },
         translate: {
             "破晓": "破晓",
@@ -56,6 +59,12 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             shouwangzhe_name: "米莉塔",
             wudoujia: "武斗家",
             wudoujia_name: "孟克",
+            fengbaozhizhengguan: "风暴执政官",
+            fengbaozhizhengguan_name: "莱茵哈特",
+            longzhiqiyuezhe: "龙之契约者",
+            longzhiqiyuezhe_name: "洛萨",
+            longqitongshuai: "龙骑统帅",
+            longqitongshuai_name: "崔凡克",
         },
     },
     card: {
@@ -177,7 +186,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 },
                 content: function () {
                     trigger.changeDamageNum(1);
-                    console.log(player, '【践踏】发动，伤害+1 →', trigger.num);
                 },
                 ai: {
                     effect: {
@@ -297,6 +305,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 position: "h",
                 selectCard: 2,
                 discard: true,
+		        showCards: true,
                 selectTarget: 1,
                 filter: function (event, player) {
                     return player.countTongXiPai() >= 2;
@@ -306,7 +315,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 },
                 content: function () {
                     'step 0'
-                    console.log(target.hasCard(card => get.name(card) === 'anMie' || get.name(card) === 'shengGuang'))
                     const result = target.chooseToDiscard(1,'弃置一张【暗灭】或【圣光】，否则受到2点法术伤害', 'h', "showCards", function (card) {
                         return get.name(card) === 'anMie' || get.name(card) === 'shengGuang';
                     }).set('ai', function (card) {
@@ -360,7 +368,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 forced: true,
                 content: async function (event,trigger,player) {
                     var cards = get.cards(2);
-                    await player.showCards(cards, '展示预兆牌');
+                    await player.showHiddenCards(cards, '展示预兆牌');
                     game.cardsGotoOrdering(cards);
                     for (var i = 0; i < cards.length; i++) {
                         var card = cards[i];
@@ -371,7 +379,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                             card.style.transform = 'none';
                         }, card);
                         player.loseToSpecial([card], '预兆', player);
-                        // card.addGaintag('预兆');
                         if(get.xiBie(card)=="shui"){
                             await event.trigger("yuZhaoCardAdded")
                         }else if(["guang","an"].includes(get.xiBie(card))){
@@ -492,7 +499,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 forced: true,
                 content: async function (event,trigger,player) {
                     var card = get.cards(1)[0];
-                    await player.showCards(card, '展示预兆牌');
+                    await player.showHiddenCards(card, '展示预兆牌');
                     game.log(player, '因【光影交错】额外翻开', card, '作为【预兆】');
                     game.broadcastAll(function (card) {
                         ui.cardPile.insertBefore(card, ui.cardPile.firstChild);
@@ -500,7 +507,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                         card.style.transform = 'none';
                     }, card);
                     player.loseToSpecial([card], '预兆', player);
-                    // card.addGaintag('预兆');
                     if(get.xiBie(card)=="shui"){
                         await event.trigger("yuZhaoCardAdded")
                     }else if(["guang","an"].includes(get.xiBie(card))){
@@ -519,7 +525,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     // 消耗宝石
                     await player.removeBiShaBaoShi();
                     var cards = get.cards(2);
-                    await player.showCards(cards, '展示预兆牌');
+                    await player.showHiddenCards(cards, '展示预兆牌');
                     game.cardsGotoOrdering(cards);
                     for (var i = 0; i < cards.length; i++) {
                         var card = cards[i];
@@ -530,7 +536,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                             card.style.transform = 'none';
                         }, card);
                         player.loseToSpecial([card], '预兆', player);
-                        // card.addGaintag('预兆');
                         if(get.xiBie(card)=="shui"){
                             await event.trigger("yuZhaoCardAdded")
                         }else if(["guang","an"].includes(get.xiBie(card))){
@@ -636,8 +641,10 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     return player.canBiShaShuiJing();
                 },
                 selectTarget: 1,
+                filterTarget: function (card, player, target) {
+                    return true;
+                },
                 content: async function (event,trigger,player) {
-                    'step 0'
                     await player.removeBiShaShuiJing();
                     var options = ['你们各弃2张牌', '你们各摸2张牌'];
                     var res = await player.chooseControl(['选项一', '选项二'])
@@ -651,7 +658,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                         .forResult();
 
                     event.effect = res.control;
-                    'step 1'
                     var target = _status.event.target;
                     if (event.effect == '选项一') {
                         if (player.countCards('h') >= 2) {
@@ -686,6 +692,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 },
                 selectCard: 1,
                 discard: true,
+                showCards: true,
                 selectTarget: 1,
                 filter: function (event, player) {
                     return player.countCards('h', card => get.xiBie(card) == 'lei' || get.xiBie(card) == 'di') > 0;
@@ -715,6 +722,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 position: "h",
                 selectCard: 2,
                 discard: true,
+                showCards: true,
                 filter: function (event, player) {
                     return player.countCards('h', card => get.xiBie(card) == 'lei') >= 2 || player.countCards('h', card => get.xiBie(card) == 'di') >= 2;
                 },
@@ -737,10 +745,10 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             },
             shiXueZhiXin: {
                 trigger: {
-                    global: "chanShengShangHai",
+                    source: "zaoChengShangHai",
                 },
                 filter: function (event, player) {
-                    return !player.storage._shiXueUsed && event.faShu==true && player.canBiShaBaoShi() && event.source == player;
+                    return !player.storage._shiXueUsed && event.faShu && player.canBiShaBaoShi();
                 },
                 content: async function (event,trigger,player) {
                     await player.removeBiShaBaoShi();  // 消耗1颗宝石
@@ -791,7 +799,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 },
                 content: async function(event, trigger, player) {
                     player.storage.hiddenCards = event.cards;
-                    console.log(event.cards);
                     var target = event.target;
                     var options = ['翻开', '不翻开'];
                     var fankai = await target.chooseControl(['选项一', '选项二'])
@@ -1111,16 +1118,18 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     return player.hasZhiShiWu('longWangZhiLi') && player.countYiXiPai() >=2;
                 },
                 async cost(event,trigger,player){
-                    event.result=await player.chooseCard([2,Infinity],'h', true, card => get.xuanZeYiXiPai(card))
-                    .set('prompt',"攻击命中后弃X张异系牌,本次伤害额外+X")
+                    event.result=await player.chooseCard([2,Infinity],'h', card => get.xuanZeYiXiPai(card))
+                    .set('prompt',"龙王之力：攻击命中后弃X张异系牌,本次伤害额外+X")
                     .set('complexCard',true)
                     .set('ai',function(card){
                             return 1;
                     }).forResult();
                 },
                 content: async function(event,trigger,player) {
-                    await player.discard(event.cards).set('showCards',true);
-                    await trigger.changeDamageNum(event.cards.length);
+                    if(event.cards){
+                        await player.discard(event.cards).set('showCards',true);
+                        await trigger.changeDamageNum(event.cards.length);
+                    }
                 },
                 "_priority": 0,
             },
@@ -1176,7 +1185,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     }
                     // 弃X张同系
                     var qiPai = await player.chooseCard([2,Infinity],'h', card => get.xuanZeTongXiPai(card))
-                    .set('prompt',"弃X张同系牌,对自己和任一对手各造成X点法术伤害")
+                    .set('prompt',"百万龙炎：弃X张同系牌,对自己和任一对手各造成X点法术伤害")
                     .set('complexCard',true)
                     .set('ai',function(card){
                             return 1;
@@ -1399,30 +1408,30 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 content: async function(event,trigger,player) {
                     await player.removeBiShaShuiJing();
                     if(player.countCards('h',card => get.type(card)=="faShu")>=2 && player.countTongXiPai()>=3){
-                        event.qiPaiWay = await player.chooseControl(["弃法术","弃同系"])
+                        event.qiPaiWay = await player.chooseControl(["弃2张法术","弃3张同系"])
                         .set('prompt', '弃2张法术牌或3张同系牌')
                         .set('ai', function(){
-                            return "弃同系";
+                            return "弃3张同系";
                         }).forResult('control');
                     }else if (player.countCards('h',card => get.type(card)=="faShu")>=2){
-                        event.qiPaiWay = "弃法术";
+                        event.qiPaiWay = "弃2张法术";
                     }else if (player.countTongXiPai()>=3){
-                        event.qiPaiWay = "弃同系";
+                        event.qiPaiWay = "弃3张同系";
                     }
-                    if(event.qiPaiWay == "弃法术"){
-                        await player.chooseToDiscard(2,'h', "showCards", card => get.type(card)=="faShu")
+                    if(event.qiPaiWay == "弃2张法术"){
+                        event.qipai = await player.chooseToDiscard(2,'h', "showCards", true, card => get.type(card)=="faShu")
                         .set('prompt',"弃2张法术牌")
                         .set('complexCard',true)
                         .set('ai',function(card){
                                 return 1;
-                        });
-                    }else if (event.qiPaiWay == "弃同系") {
-                        await player.chooseToDiscard(3,'h', "showCards", card => get.xuanZeTongXiPai(card))
+                        }).forResult();
+                    }else if (event.qiPaiWay == "弃3张同系") {
+                        event.qipai = await player.chooseToDiscard(3,'h', "showCards", true, card => get.xuanZeTongXiPai(card))
                         .set('prompt',"弃3张同系牌")
                         .set('complexCard',true)
                         .set('ai',function(card){
                                 return 1;
-                        });
+                        }).forResult();
                     }
                     var duishou = await player.chooseTarget(1,'选择任意玩家，各造成2点法术伤害',true).forResult();
                     var target = duishou.targets[0];
@@ -1439,8 +1448,6 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     return !event.yingZhan && player.countCards('h',card => get.type(card)=='faShu') > 0;
                 },
                 async cost(event, trigger, player) {
-                    console.log(event);
-                    console.log(trigger);
                     event.result=await player.chooseCard('h',[1,Infinity],function(card){
                         return get.type(card) == 'faShu';
                     })
@@ -1453,11 +1460,31 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     .forResult();
                 },
                 content: async function(event,trigger,player) {
+                    player.storage.weiJianErShengTargets=trigger.player;
                     await player.discard(event.cards).set('showCards',true);
                     var choose = await player.chooseTarget(1,"选择除本次攻击的角色以外的另一角色造成X点伤害", true, function(card, player, target) {
-                        return trigger.player != target && player.side !=target.side;
+                        return player.storage.weiJianErShengTargets != target && player.side != target.side;
                     }).forResult();
                     await choose.targets[0].faShuDamage(event.cards.length,player);
+                },
+                group: "weiJianErSheng_clear",
+                subSkill: {
+                    clear: {
+                        trigger: {
+                            source: "gongJiAfter",
+                        },
+                        silent: true,
+                        content: function () {
+                            if(player.storage.weiJianErShengTargets){
+                                player.storage.weiJianErShengTargets = undefined;
+                            }
+                        },
+                        sub: true,
+                        sourceSkill: "weiJianErSheng",
+                        forced: true,
+                        popup: false,
+                        "_priority": 1,
+                    },
                 },
                 "_priority": 0
             },
@@ -1481,11 +1508,31 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     .forResult();
                 },
                 content: async function(event,trigger,player) {
+                    player.storage.duiJianErShiTargets=trigger.target;
                     await player.discard(event.cards).set('showCards',true);
                     var choose = await player.chooseTarget(1,"选择除本次攻击的角色以外的另一角色造成X点伤害", true, function(card, player, target) {
-                        return trigger.target != target && player.side !=target.side;
+                        return player.storage.duiJianErShiTargets != target && player.side !=target.side;
                     }).forResult();
                     await choose.targets[0].faShuDamage(event.cards.length,player);
+                },
+                group: "duiJianErShi_clear",
+                subSkill: {
+                    clear: {
+                        trigger: {
+                            source: "gongJiAfter",
+                        },
+                        silent: true,
+                        content: function () {
+                            if(player.storage.duiJianErShiTargets){
+                                player.storage.duiJianErShiTargets = undefined;
+                            }
+                        },
+                        sub: true,
+                        sourceSkill: "duiJianErShi",
+                        forced: true,
+                        popup: false,
+                        "_priority": 1,
+                    },
                 },
                 "_priority": 0
             },
@@ -1634,7 +1681,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                     player: "gongJiAfter"
                 },
                 filter: function(event,player) {
-                    return player.canBiShaShuiJing();
+                    return !event.yingZhan && player.canBiShaShuiJing();
                 },
                 content: async function(event,trigger,player) {
                     await player.removeBiShaShuiJing();
@@ -1646,7 +1693,7 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                         trigger:{player:'gongJiSheZhi'},
                         direct:true,
                         filter:function(event,player){
-                            return event.yingZhan!=true;
+                            return !event.yingZhan;
                         },
                         content:function(){
                             'step 0'
@@ -1665,33 +1712,40 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 filter: function(event,player){
                     return player.countTongXiPai() >=2;
                 },
-                async cost(event,trigger,player){
-                    event.result=await player.chooseCard(2,'h', true, card => get.xuanZeTongXiPai(card))
+                content: async function(event,trigger,player) {
+                    await player.addSkill('zhiYueZhiHuan_weiMingZhong');
+                    await player.chooseToDiscard(2,'h', "showCards", true, card => get.xuanZeTongXiPai(card))
                     .set('prompt',"弃2张同系牌")
                     .set('complexCard',true)
                     .set('ai',function(card){
                             return 1;
-                    }).forResult();
+                    });
                 },
-                content: function() {
-                    player.discard(event.cards).set('showCards',true);
-                    player.storage._zhiYue = true;
-                },
+                group: "zhiYueZhiHuan_mingZhong",
                 subSkill:{
+                    mingZhong: {
+                        trigger: {
+                            source: "gongJiMingZhong"
+                        },
+                        forced: true,
+                        content: async function(event,trigger,player) {
+                            await player.removeSkill('zhiYueZhiHuan_weiMingZhong');
+                        },
+                        "_priority": 1
+                    },
                     weiMingZhong: {
                         trigger: {
                             source: "gongJiWeiMingZhong"
                         },
-                        filter: function(event,player) {
-                            return player.storage._zhiYue;
-                        },
+                        forced: true,
                         content: async function(event,trigger,player) {
                             await player.faShuDamage(4);
-                            player.storage._zhiYue = false;
-                        }
+                            await player.removeSkill('zhiYueZhiHuan_weiMingZhong');
+                        },
+                        "_priority": 1
                     }
                 },
-                "_priority": 0
+                "_priority": 1
             },
             sheShenZhiDao: {
                 trigger: {
@@ -1726,6 +1780,209 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
                 content: async function(event,trigger,player) {
                     await player.removeBiShaBaoShi();
                     trigger.num = 0;
+                },
+                "_priority": 0
+            },
+            baoFengLingYu: {
+                forced: true,
+                trigger: {
+                    source: "gongJiSheZhi"
+                },
+                filter: function(event,player) {
+                    return ['feng','lei'].includes(get.xiBie(event.card));
+                },
+                content: function(){
+                    trigger.changeDamageNum(1);
+                },
+                "_priority": 0
+            },
+            yiZheng: {
+                enable: "faShu",
+                type: "faShu",
+                selectTarget: 1,
+                filterTarget: function(card,player,target) {
+                    return player.side == target.side && player != target;
+                },
+                content: async function(event,trigger,player) {
+                    event.giveWay = await player.chooseControl(["你给目标1张牌","目标给你1张牌"])
+                    .set('prompt', '你选择一项发动：<br>将1张牌交给目标队友<br>目标队友给你1张牌')
+                    .set('ai', function(){
+                        return "你给目标1张牌";
+                    }).forResult('control');
+                    if(event.giveWay == "你给目标1张牌") {
+                        if(player.countCards('h')>0){
+                            const giveCard = await player.chooseCard('h',"将1张牌交给目标队友",true,1).forResult();
+                            await player.give(giveCard.cards[0],event.target);
+                        }
+                    }else {
+                        if(event.target.countCards('h')>0) {
+                            const giveCard = await event.target.chooseCard('h',"将1张牌交给目标队友",true,1).forResult()
+                            await event.target.give(giveCard.cards[0],player);
+                        }
+                    }
+                    await player.addGongJi();
+                },
+                "_priority": 0
+            },
+            jiFengZhouYu: {
+                trigger: {
+                    player: "gongJiAfter"
+                },
+                filter: function(event,player) {
+                    return !event.yingZhan && player.canBiShaShuiJing();
+                },
+                content: async function(event,trigger,player) {
+                    await player.removeBiShaShuiJing();
+                    await player.addGongJi();
+                },
+                "_priority": 0
+            },
+            juLongZhiLi: {
+                trigger: {
+                    source: "gongJiSheZhi"
+                },
+                forced: true,
+                filter: function(event,player) {
+                    return !event.yingZhan;
+                },
+                content: function() {
+                    const handCardNum = player.countCards("h");
+                    trigger.changeDamageNum(handCardNum-1);
+                },
+                "_priority": 0
+            },
+            longZuZunYan: {
+                trigger:{global:'gameStart'},
+                forced: true,
+                content: function() {
+
+                },
+                mod:{
+                    playerEnabled:function(card,player,target){
+                        if(get.type(card)=='gongJi' && player.countCards("h")<=target.countCards("h") && !player.isHengZhi()){
+                            if(_status.event.yingZhan!=true) return false;
+                        }
+                    }
+                },
+                "_priority": 0
+            },
+            longXueQinYe: {
+                enable: "faShu",
+                type: "faShu",
+                content: async function(event,trigger,player) {
+                    await player.draw(1);
+                    var duishou = await player.chooseTarget(1,'选择任意角色造成1点法术伤害',true).forResult();
+                    var target = duishou.targets[0];
+                    await target.faShuDamage(1,player);
+                },
+                "_priority": 0
+            },
+            longXueZhuoShao: {
+                enable: "faShu",
+                type: "faShu",
+                content: async function(event,trigger,player) {
+                    await player.draw(3);
+                    var duishou = await player.chooseTarget(1,'选择任意角色造成2点法术伤害',true).forResult();
+                    var target = duishou.targets[0];
+                    await target.faShuDamage(2,player);
+                    if(player.isHengZhi()){
+                        await player.addGongJi();
+                    }
+                },
+                "_priority": 0
+            },
+            xingHongBaiLongBa: {
+                trigger: {
+                    player: "phaseBegin"
+                },
+                filter: function(event,player) {
+                    return player.canBiShaBaoShi() && !player.isHengZhi();
+                },
+                content: async function(event,trigger,player) {
+                    player.storage.huaLongFlag = true;
+                    await player.removeBiShaBaoShi();
+                    await player.hengZhi();
+                },
+                group: ["xingHongBaiLongBa_tag","xingHongBaiLongBa_clear"],
+                subSkill: {
+                    tag: {
+                        trigger:{player:['faShuBefore','teShuBefore']},
+                        direct:true,
+                        content:function(){
+                            player.storage.huaLongFlag = false;
+                        },
+                        "_priority": 0
+                    },
+                    clear: {
+                        trigger:{player:['phaseEnd']},
+                        filter:function(event,player){
+                            return player.isHengZhi() && !player.storage.huaLongFlag;
+                        }, 
+                        direct:true,
+                        content:function(){
+                            player.chongZhi();
+                        },
+                        "_priority": 1
+                    }
+                },
+                "_priority": 0
+            },
+            xiaoTianLongQiang: {
+                trigger: {
+                    source: "gongJiWeiMingZhong"
+                },
+                filter: function(event,player) {
+                    return !event.yingZhan;
+                },
+                async cost(event,trigger,player){
+                    event.result=await player.chooseCard([1,2],'h', function(card) {
+                        if(ui.selected.cards.length==0) return get.type(card) =="gongJi";
+                        // 接法术牌
+                        else
+                            return get.type(card) =="faShu";
+                    }).set('filterOk',function(){
+                        return ui.selected.cards.some(card => get.type(card)=="gongJi");
+                    })
+                    .set('prompt',get.prompt('xiaoTianLongQiang'))
+                    .set('prompt2',lib.translate.xiaoTianLongQiang_info)
+                    .set('complexCard',true).forResult();
+                },
+                content: async function(event,trigger,player) {
+                    if(event.cards){
+                        await player.discard(event.cards).set("showCards",true);
+                        if(event.cards.length == 2) {
+                            await trigger.player.faShuDamage(3,player);
+                        } else {
+                            await trigger.player.faShuDamage(2,player);
+                        }
+                        await player.faShuDamage(2,player);
+                    }
+                },
+                "_priority": 0
+            },
+            juLongBenTeng: {
+                enable: "faShu",
+                type: "faShu",
+                filter: function(event,player) {
+                    return player.canBiShaShuiJing();
+                },
+                content: async function(event,trigger,player) {
+                    await player.removeBiShaShuiJing();
+                    const duishou = await player.chooseTarget(2,true)
+                    .set('prompt',get.prompt('juLongBenTeng'))
+                    .set('prompt2',lib.translate.juLongBenTeng_info)
+                    .set('filterTarget',function(card,player,target){
+                        if(ui.selected.targets.length == 0) return true;
+                        else return target.side != ui.selected.targets[0].side;
+                    }).set('complexTarget',true).forResult();
+                    for(let target of duishou.targets) {
+                        if(target.countCards('h')>5){
+                            await target.chooseToDiscard(true,target.countCards('h')-5);
+                        }else if(target.countCards('h')<5){
+                            await target.draw(5-target.countCards('h'));
+                        }
+                    }
+                    await player.addGongJiOrFaShu();
                 },
                 "_priority": 0
             },
@@ -1841,12 +2098,32 @@ game.import("extension",function(lib,game,ui,get,ai,_status){
             "sheShenZhiDao_info": "<span class='tiaoJian'>(主动攻击命中后发动)</span>摸X张牌，本次攻击伤害额外+(X-1)。(2≤X≤4)",
             jianRenZhiZhi: "[响应]坚忍之志",
             "jianRenZhiZhi_info": "[宝石]<span class='tiaoJian'>(受到法术伤害时)</span>本次法术伤害数值为0。",
+            baoFengLingYu: "[被动]暴风领域",
+            "baoFengLingYu_info": "你的雷系攻击和风系攻击的伤害额外+1",
+            yiZheng: "[法术]议政",
+            "yiZheng_info": "你选择以下一项发动：<br>将1张牌交给目标队友<br>目标队友给你1张牌<br>然后你额外+1【攻击行动】",
+            jiFengZhouYu: "[响应]疾风骤雨",
+            "jiFengZhouYu_info":"[水晶]<span class='tiaoJian'>(【攻击行动】结束后)</span>额外+1【攻击行动】。",
+            juLongZhiLi: "[被动]巨龙之力",
+            "juLongZhiLi_info": "你的主动攻击伤害等于你当前手牌数量+1。",
+            longZuZunYan: "[被动]龙族尊严",
+            "longZuZunYan_info": "<span class='tiaoJian'>(仅【普通形态】下)</span>你不能主动攻击手牌比你多的角色。",
+            longXueQinYe: "[法术]龙血倾曳",
+            "longXueQinYe_info": "<span class='tiaoJian'>(摸1张牌【强制】)</span>对目标角色造成1点法术伤害③。",
+            longXueZhuoShao: "[法术]龙血灼烧",
+            "longXueZhuoShao_info": "<span class='tiaoJian'>(摸3张牌【强制】)</span>对目标角色造成2点法术伤害③；<span class='tiaoJian'>(若你处于【化龙形态】)</span>额外+1【攻击行动】。",
+            xingHongBaiLongBa: "[响应]猩红百龙霸",
+            "xingHongBaiLongBa_info": "[宝石]<span class='tiaoJian'>(回合开始时)</span>【横置】转为【化龙形态】。此形态下你只能执行【攻击行动】；若你不如此做，回合结束时【重置】脱离【化龙形态】。",
+            xiaoTianLongQiang: "[响应]啸天龙枪",
+            "xiaoTianLongQiang_info":"<span class='tiaoJian'>(主动攻击未命中时②，弃1张攻击牌【展示】)</span>对攻击目标和自己各造成2点法术伤害③；<span class='tiaoJian'>(若你额外弃1张法术牌【展示】)</span>，本次对攻击目标的法术伤害③额外+1",
+            juLongBenTeng: "[法术]巨龙奔腾",
+            "juLongBenTeng_info": "[水晶]我方一名角色和目标对手的手牌数目调整至5【强制】，额外+1【攻击行动】或【法术行动】",
         },
     },
-    intro: "星杯传说：破晓ver1.4。增加星杯传说破晓角色。bug反馈：aabbcczhy@163.com",
+    intro: "星杯传说：破晓ver1.5。增加星杯传说破晓角色。bug反馈：aabbcczhy@163.com",
     author: "LerU丶",
     diskURL: "",
     forumURL: "",
-    version: "1.4",
-},files:{"character":["youXia.jpg","zhanXingJia.jpg","tianmaqishi.jpg","shengtangcike.jpg","dasiji.jpg","lianjinshushi.jpg","xuetianshi.jpg","xinlingsushi.jpg","zhenLongNvWang.jpg","jianwuzhe.jpg","caijuezhe.jpg"],"card":["longKuangMiSuo.jpg","longMaiShuFu.jpg","longYuFengYin.jpg","yuLongJieJie.jpg","baiWanLongYan.jpg","longWangZhiLi.jpg","longShenEnHui.jpg","shengLongWeiYa.jpg","shuangxuegongzhu.jpg","shouwangzhe.jpg","wudoujia.jpg"],"skill":[],"audio":[]},connect:true} 
+    version: "1.5",
+},files:{"character":["youXia.jpg","zhanXingJia.jpg","tianmaqishi.jpg","shengtangcike.jpg","dasiji.jpg","lianjinshushi.jpg","xuetianshi.jpg","xinlingsushi.jpg","zhenLongNvWang.jpg","jianwuzhe.jpg","caijuezhe.jpg"],"card":["longKuangMiSuo.jpg","longMaiShuFu.jpg","longYuFengYin.jpg","yuLongJieJie.jpg","baiWanLongYan.jpg","longWangZhiLi.jpg","longShenEnHui.jpg","shengLongWeiYa.jpg","shuangxuegongzhu.jpg","shouwangzhe.jpg","fengbaozhizhengguan.jpg","longzhiqiyuezhe.jpg","longqitongshuai.jpg","wudoujia.jpg"],"skill":[],"audio":[]},connect:true} 
 });
