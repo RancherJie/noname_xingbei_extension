@@ -1,9 +1,0 @@
-extension["破晓"]={
-	intro:"星杯传说：破晓ver1.6。增加星杯传说破晓角色。bug反馈：aabbcczhy@163.com",
-	author:"LerU丶",
-	netdisk:"",
-	forum:"",
-	version:"1.6",
-	files:["info.json","LICENSE","youXia.jpg","zhanXingJia.jpg","tianmaqishi.jpg","shengtangcike.jpg","dasiji.jpg","lianjinshushi.jpg","xuetianshi.jpg","xinlingsushi.jpg","zhenLongNvWang.jpg","longKuangMiSuo.jpg","longMaiShuFu.jpg","longYuFengYin.jpg","yuLongJieJie.jpg","baiWanLongYan.jpg","longWangZhiLi.jpg","longShenEnHui.jpg","jianwuzhe.jpg","caijuezhe.jpg","shuangxuegongzhu.jpg","shouwangzhe.jpg","fengbaozhizhengguan.jpg","longzhiqiyuezhe.jpg","longqitongshuai.jpg","wudoujia.jpg","shengLongWeiYa.jpg","package.js","README.md",,"qumozhe.jpg","longyuzhe.jpg","youhunfashi.jpg","dadiwushi.jpg","beifangzhuzhe.jpg"],
-	size:"7.12M"
-};
