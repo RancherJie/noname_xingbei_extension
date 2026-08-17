@@ -1,0 +1,29 @@
+extension["创世纪"]={
+    intro:"添加角色贝亚娜斗神、百花缭乱、露米娅、天启者、狱血魔神。",
+    author:"蒙牛",
+    netdisk:"",
+    forum:"",
+    version:"1.8",
+    files:[
+    "info.json",
+    "README.md",
+    "LICENSE",
+    "package.js",
+    "extension.js",
+    "beiyanadopushen.jpg",
+    "baiHuaLiaoLuan.jpg",
+    "luMiYa.jpg",
+    "tianQiZhe.jpg",
+    "yuXueMoShen.jpg",
+    "mark_nianQi.png",
+    "mark_luMiYaYanJiu.png",
+    "mark_shenPan.png",
+    "mark_rongYuZhuFu.png",
+    "mark_shouHuHuiZhang.png",
+    "mark_wuQiZhuFu.png",
+    "mark_tianShiZhuFu.png",
+    "mark_xueQi.png",
+    "mark_xueShaXingTai.png"
+],
+    size:"4.01MB"
+};
