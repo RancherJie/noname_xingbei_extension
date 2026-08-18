@@ -1,0 +1,33 @@
+extension["bigcowcow"]={
+    intro:"添加角色优菈、赫克托、史蒂夫、桐谷和人、一姬、萧炎。",
+    author:"蒙牛",
+    netdisk:"",
+    forum:"",
+    version:"2.2",
+    files:[
+    "info.json",
+    "README.md",
+    "LICENSE",
+    "package.js",
+    "extension.js",
+    "youLa.jpg",
+    "huiFengQiangShi.jpg",
+    "steve.jpg",
+    "tongGuHeRen.jpg",
+    "yiJi.jpg",
+    "xiaoYan.jpg",
+    "mark_fuChou.png",
+    "mark_qiangShi.png",
+    "mark_lianJi.png",
+    "mark_miaoYun.png",
+    "mark_douQi.png",
+    "mark_anJin.png",
+    "mark_qingLianDiXinHuo.png",
+    "mark_yunLuoXinYan.png",
+    "mark_guLingLengHuo.png",
+    "mark_anDanQingLianDiXinHuo.png",
+    "mark_anDanYunLuoXinYan.png",
+    "mark_anDanGuLingLengHuo.png"
+],
+    size:"4.91MB"
+};

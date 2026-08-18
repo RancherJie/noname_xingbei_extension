@@ -1,0 +1,25 @@
+extension["永夜残响"]={
+    intro:"添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三。",
+    author:"蒙牛",
+    netdisk:"",
+    forum:"",
+    version:"1.0",
+    files:[
+    "info.json",
+    "README.md",
+    "LICENSE",
+    "package.js",
+    "extension.js",
+    "wHeQingLi.jpg",
+    "shiXiang.jpg",
+    "siMiNai.jpg",
+    "shiQiKuangSan.jpg",
+    "mark_qinLiLingLi.png",
+    "mark_shiXiangLingLi.png",
+    "mark_siMiNaiBingJing.png",
+    "mark_siMiNaiDongJie.png",
+    "mark_shiCha.png",
+    "mark_shiJianJingZhi.png"
+],
+    size:"4.24MB"
+};

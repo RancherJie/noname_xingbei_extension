@@ -1,0 +1,24 @@
+extension["电啸龙吟"]={
+    intro:"添加角色奶龙、电棍Otto、永雏塔菲。",
+    author:"蒙牛",
+    netdisk:"",
+    forum:"",
+    version:"1.1",
+    files:[
+    "info.json",
+    "README.md",
+    "LICENSE",
+    "package.js",
+    "extension.js",
+    "naiLong.jpg",
+    "otto.jpg",
+    "yongChuTaFei.jpg",
+    "mark_hongWen.png",
+    "mark_fangGuan.png",
+    "mark_taFeiLiuLiang.png",
+    "mark_gongJiReBang.png",
+    "mark_faShuReBang.png",
+    "mark_teShuReBang.png"
+],
+    size:"2.41MB"
+};

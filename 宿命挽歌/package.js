@@ -1,0 +1,24 @@
+extension["宿命挽歌"]={
+    intro:"添加角色赵灵儿、李逍遥、林月如、阿奴。",
+    author:"蒙牛",
+    netdisk:"",
+    forum:"",
+    version:"1.0",
+    files:[
+    "info.json",
+    "README.md",
+    "LICENSE",
+    "package.js",
+    "extension.js",
+    "zhaoLingEr.jpg",
+    "liXiaoYao.jpg",
+    "linYueRu.jpg",
+    "aNu.jpg",
+    "wuDuZhu.jpg",
+    "mark_lingLi.png",
+    "mark_jianY.png",
+    "mark_qiJing.png",
+    "mark_wuDuZhu.png"
+],
+    size:"2.85MB"
+};
