@@ -38,7 +38,7 @@ extension["十周年-AI优化版"] = {
 };
 
 extension["十周年-噩梦人机"] = {
-	date: "2026/08/17",
+	date: "2026/08/19",
 	intro: "继承十周年-AI优化版，为70名电脑角色添加140项噩梦强化；全部角色均预置默认与噩梦头像路径。",
 	author: "蒙牛 / Codex",
 	netdisk: "",
@@ -189,7 +189,7 @@ extension["十周年-噩梦人机"] = {
 		"image/character/nightmare/zhouFuShi.png",
 		"image/character/nightmare/zhuLvZhe.png"
 	],
-	size: "83.85MB"
+	size: "125.64MB"
 };
 
 extension["宿命挽歌"] = {
