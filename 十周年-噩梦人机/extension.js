@@ -148,7 +148,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         nightmare_liShiChongYan: ["【历史重演】", "每回合限一次，发动【秘境万象】后+1法术行动，弃1张牌并将【史书】加入手牌。"],
         nightmare_shenYiYinLu: ["【神意引路】", "将【路标】转移给对手后，对其造成2点法术伤害。"],
         nightmare_shiJieBuDao: ["【世界布道】", "将【路标】转移给队友后，令其+1【宝石】。"],
-        nightmare_moRiQiShi: ["【末日启示】", "手牌上限+2；发动【末日预言】后+1【水晶】。"],
+        nightmare_moRiQiShi: ["【末日启示】", "手牌上限+2；发动【放逐】后+1【水晶】。"],
         nightmare_yuYanBianZuan: ["【预言编纂】", "【天雷劫火】与【地裂波涛】的X固定为4。"],
         nightmare_wuDiWeiDai: ["【无底胃袋】", "回合开始时弃1张手牌，将【魔弹】加入手牌。"],
         nightmare_heiDongXiaoHua: ["【黑洞消化】", "发动【食欲的黑洞】后弃置2张手牌。"],
@@ -380,6 +380,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (!game.phaseNumber) grantNightmareOpeningResource(player, "nightmareGuoZaiDanCangGranted", "baoShi", 3);
                 else player.storage.nightmareGuoZaiDanCangGranted = true;
             }
+            if (desired.includes("nightmare_shangZhiShiKong")) {
+                if (!game.phaseNumber) grantNightmareOpeningResource(player, "nightmareShangZhiShiKongGranted", "shuiJing", 3);
+                else player.storage.nightmareShangZhiShiKongGranted = true;
+            }
         }
         // 只记录框架实际添加的技能，控制权变化时不会误删角色原本拥有的同名技能。
         player.storage.xingBeiNightmareSkills = addedByFramework;
@@ -425,7 +429,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             popup: false,
             priority: 10000,
             filter: function () { return true; },
-            content: function (event) {
+            content: async function (event, trigger, player) {
                 // 联机或延迟载入角色包时，原角色技能可能晚于扩展 precontent 才注册。
                 var runtime = lib.xingBeiNightmare;
                 if (!runtime) return;
@@ -444,7 +448,25 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         if (skills.includes("nightmare_guoZaiDanCang")) {
                             runtime.grantOpeningResource(current, "nightmareGuoZaiDanCangGranted", "baoShi", 3);
                         }
+                        if (skills.includes("nightmare_shangZhiShiKong")) {
+                            runtime.grantOpeningResource(current, "nightmareShangZhiShiKongGranted", "shuiJing", 3);
+                        }
                     });
+                }
+                if (event.triggername == "phaseBegin") {
+                    var current = trigger.player || player;
+                    if (!current || !runtime.isNightmareAi(current)) return;
+                    var currentSkills = runtime.skillsFor(current);
+                    if (currentSkills.includes("nightmare_yingXiongBenNeng")) {
+                        current.addZhiShiWu(Math.random() < 0.5 ? "nuQi" : "zhiXing");
+                    }
+                    if (currentSkills.includes("nightmare_ziDongZhuangTian")) {
+                        var cards = get.cards(3);
+                        if (cards && cards.length) {
+                            await current.addGaiPai(cards, "chongNengPai");
+                            current.markSkill("chongNengPai");
+                        }
+                    }
                 }
             }
         };
@@ -468,6 +490,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
         function addSkill(name, info, title, description) {
             lib.skill[name] = info;
+            // 运行时写入的技能不会稳定经过角色包导入阶段的 subSkill 展开流程。
+            // 显式注册子技能，确保 group 引用的后续结算技能在所有加载顺序下均可触发。
+            if (info && info.subSkill) {
+                Object.keys(info.subSkill).forEach(function (key) {
+                    lib.skill[name + "_" + key] = info.subSkill[key];
+                });
+            }
             lib.translate[name] = title;
             lib.translate[name + "_info"] = description;
         }
@@ -713,15 +742,42 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             trigger: { global: "changeZhiLiaoAfter" },
             forced: true,
             filter: function (event, player) {
-                return event.player && event.player.side == player.side && event.num < 0 && !!getParentEvent(event, "damage") &&
-                    game.hasPlayer(function (current) { return current.side == player.side && current != event.player && current.zhiLiao < current.getZhiLiaoLimit(); });
+                return event.player && event.player.side == player.side && event.num < 0 && !!getParentEvent(event, "damage");
             },
-            async content(event, trigger, player) {
-                var list = allies(player, true).filter(function (current) {
-                    return current != trigger.player && current.zhiLiao < current.getZhiLiaoLimit();
-                });
-                var target = chooseBestAlly(player, list, function (current) { return get.zhiLiaoEffect2(current, player, 1); });
-                if (target) await target.changeZhiLiao(1, player);
+            content: function (event, trigger, player) {
+                var damage = getParentEvent(trigger, "damage");
+                if (!damage) return;
+                damage._nightmareShenShengLingYu = damage._nightmareShenShengLingYu || [];
+                damage._nightmareShenShengLingYu.push({ owner: player, excluded: trigger.player });
+            },
+            group: "nightmare_shenShengLingYu_flush",
+            subSkill: {
+                flush: {
+                    trigger: { global: "damageAfter" },
+                    forced: true,
+                    lastDo: true,
+                    filter: function (event, player) {
+                        return event._nightmareShenShengLingYu && event._nightmareShenShengLingYu.some(function (record) {
+                            return record.owner == player;
+                        });
+                    },
+                    async content(event, trigger, player) {
+                        var pending = trigger._nightmareShenShengLingYu || [];
+                        var records = pending.filter(function (record) { return record.owner == player; });
+                        trigger._nightmareShenShengLingYu = pending.filter(function (record) { return record.owner != player; });
+                        for (var i = 0; i < records.length; i++) {
+                            var excluded = records[i].excluded;
+                            var list = allies(player, true).filter(function (current) {
+                                return current != excluded && current.zhiLiao < current.getZhiLiaoLimit();
+                            });
+                            var target = chooseBestAlly(player, list, function (current) {
+                                return get.zhiLiaoEffect2(current, player, 1);
+                            });
+                            if (target) await target.changeZhiLiao(1, player);
+                        }
+                        if (!trigger._nightmareShenShengLingYu.length) delete trigger._nightmareShenShengLingYu;
+                    }
+                }
             }
         }, "【神圣领域】", "我方角色的【治疗】被消耗后，令另一名【治疗】未满的我方角色+1【治疗】。");
         register("shengNv", ["nightmare_shenEn", "nightmare_shenShengLingYu"]);
@@ -1092,12 +1148,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
         // 21. 勇者
         addSkill("nightmare_yingXiongBenNeng", {
-            trigger: { global: ["gameStart", "enterGame"], player: "phaseBegin" },
+            trigger: { global: ["gameStart", "enterGame"] },
             forced: true,
-            filter: function (event, player) { return event.triggername == "phaseBegin" || !player.storage.nightmareYingXiongBenNengGranted; },
+            filter: function (event, player) { return !player.storage.nightmareYingXiongBenNengGranted; },
             content: function () {
-                if (event.triggername == "phaseBegin") player.addZhiShiWu(Math.random() < 0.5 ? "nuQi" : "zhiXing");
-                else lib.xingBeiNightmare.grantOpeningResource(player, "nightmareYingXiongBenNengGranted", "baoShi");
+                lib.xingBeiNightmare.grantOpeningResource(player, "nightmareYingXiongBenNengGranted", "baoShi");
             }
         }, "【英雄本能】", "游戏开始时，你+1【宝石】；回合开始时，你随机+1【怒气】或【知性】。");
         addSkill("nightmare_buMieYongZhe", {
@@ -1225,13 +1280,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             mod: { maxHandcardFinal: function (player, num) { if (lib.xingBeiNightmare.isNightmareAi(player)) return num + 2; } }
         }, "【过载弹仓】", "你的手牌上限+2；游戏开始时，你+3【宝石】。");
         addSkill("nightmare_ziDongZhuangTian", {
-            trigger: { player: "phaseBegin" },
-            forced: true,
-            async content(event, trigger, player) {
-                var cards = get.cards(3);
-                await player.loseToSpecial(cards, "chongNengPai", player);
-                player.markSkill("chongNengPai");
-            }
+            charlotte: true
         }, "【自动装填】", "回合开始时，将牌堆顶3张牌面朝下放置为【充能】。");
         register("moGong", ["nightmare_guoZaiDanCang", "nightmare_ziDongZhuangTian"]);
 
@@ -1840,9 +1889,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             purchase.ai.order = function (item, player) {
                 var room = helper.handRoom(player);
                 var empty = get.emptyZhanJi(player.side);
-                var order = 2.7 + Math.min(1.2, room * 0.18) + Math.min(0.7, empty * 0.25);
-                if (player.countCards("h") == 0) order += 1.5;
-                if (!helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu")) order += 0.8;
+                var hand = player.countCards("h");
+                var lacksAction = !helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu");
+                var order = 1.2 + Math.min(0.6, room * 0.1) + Math.min(0.35, empty * 0.12);
+                if (hand == 0) order += 3;
+                else if (hand <= 2) order += 1.25;
+                if (lacksAction) order += 1.35;
                 return order;
             };
             purchase.ai.result.player = function (player) {
@@ -1850,11 +1902,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (empty <= 0) return 0;
                 var hand = player.countCards("h");
                 var room = helper.handRoom(player);
-                var score = room * 0.18 + empty * 0.28;
-                if (hand == 0) score += 1.2;
-                else if (hand <= 2) score += 0.55;
-                if (!helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu")) score += 0.45;
-                return score >= 0.95 ? score : 0;
+                var lacksAction = !helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu");
+                var score = Math.min(0.5, room * 0.1) + Math.min(0.45, empty * 0.12);
+                if (hand == 0) score += 1.35;
+                else if (hand <= 2) score += 0.6;
+                if (lacksAction) score += 0.85;
+                return score >= 1.4 ? score : 0;
             };
         }
 
@@ -1864,17 +1917,64 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (helper.canWinningSynthesis(_status.event, player)) return 30;
                 var enemyMorale = get.shiQi(!player.side);
                 var records = get.zhanJi(player.side).length;
-                return 4.2 + Math.max(0, 5 - enemyMorale) * 0.65 + Math.max(0, records - 3) * 0.35;
+                var recordLimit = typeof get.zhanJiMax == "function" ? get.zhanJiMax(player.side) : 5;
+                var cups = typeof get.xingBei == "function" ? get.xingBei(player.side) : 0;
+                var cupLimit = typeof game.xingBeiMax == "number" ? game.xingBeiMax : 3;
+                var lowMorale = enemyMorale <= 3;
+                var recordPressure = records >= Math.max(4, recordLimit - 1);
+                var cupPressure = cups + 2 >= cupLimit;
+                if (!lowMorale && !recordPressure && !cupPressure) return 1.1;
+                return 3.4 + (lowMorale ? (4 - enemyMorale) * 0.75 : 0)
+                    + (recordPressure ? 0.9 : 0) + (cupPressure ? 0.8 : 0);
             };
             synthesis.ai.result.player = function (player) {
                 if (helper.canWinningSynthesis(_status.event, player)) return 20;
                 var enemyMorale = get.shiQi(!player.side);
                 var records = get.zhanJi(player.side).length;
-                var score = 0.3 + helper.handRoom(player) * 0.12;
-                if (enemyMorale <= 3) score += 1.2;
-                if (records >= 4) score += 0.9;
-                if (player.countCards("h") <= 2) score += 0.55;
+                var recordLimit = typeof get.zhanJiMax == "function" ? get.zhanJiMax(player.side) : 5;
+                var cups = typeof get.xingBei == "function" ? get.xingBei(player.side) : 0;
+                var cupLimit = typeof game.xingBeiMax == "number" ? game.xingBeiMax : 3;
+                var lowMorale = enemyMorale <= 3;
+                var recordPressure = records >= Math.max(4, recordLimit - 1);
+                var cupPressure = cups + 2 >= cupLimit;
+                if (!lowMorale && !recordPressure && !cupPressure) return 0;
+                var score = 0.25;
+                if (lowMorale) score += 0.85 + (3 - enemyMorale) * 0.25;
+                if (recordPressure) score += 0.75;
+                if (cupPressure) score += 0.65;
                 return score;
+            };
+        }
+
+        var shield = lib.card && lib.card.shengDun;
+        if (shield && markPatched(shield, "proactiveDefenseValue")) {
+            shield.ai = shield.ai || {};
+            shield.ai.result = shield.ai.result || {};
+            function shieldTargetScore(player, target) {
+                if (!target || target.side != player.side || target.hasJiChuXiaoGuo && target.hasJiChuXiaoGuo("_shengDun")) return 0;
+                var hand = target.countCards("h");
+                var limit = target.getHandcardLimit();
+                var morale = get.shiQi(target.side);
+                var pressure = Math.max(0, hand + 2 - limit);
+                var attackers = game.countPlayer(function (current) {
+                    return current.side != target.side && helper.hasActionCard(current, "gongJi");
+                });
+                var score = 0;
+                if (pressure > 0) score += 0.75 + Math.min(0.8, pressure * 0.35);
+                if (morale <= 3) score += 0.65 + (3 - morale) * 0.2;
+                if ((target.zhiLiao || 0) <= 0) score += 0.3;
+                if (attackers > 0) score += 0.45 + Math.min(0.35, (attackers - 1) * 0.15);
+                if (target.hasSkill && target.hasSkill("moFaHuDun")) score += 0.35;
+                return score >= 1.15 ? score : 0;
+            }
+            shield.ai.order = function (item, player) {
+                var best = 0;
+                game.countPlayer(function (target) { best = Math.max(best, shieldTargetScore(player, target)); });
+                if (best <= 0) return 0;
+                return best >= 2 ? 3.1 : 2.15;
+            };
+            shield.ai.result.target = function (player, target) {
+                return shieldTargetScore(player, target);
             };
         }
     }
@@ -7940,6 +8040,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             lib.skill[name] = info;
             if (placeholder && placeholder.nopop) info.nopop = true;
             guardNightmareSkill(name);
+            // 与角色包静态导入不同，扩展运行时注册不会可靠地自动展开 subSkill。
+            // group 使用的是完整子技能名，因此这里同步建立并隔离每个子技能定义。
+            if (info && info.subSkill) {
+                Object.keys(info.subSkill).forEach(function (key) {
+                    var childName = name + "_" + key;
+                    lib.skill[childName] = info.subSkill[key];
+                    guardNightmareSkill(childName);
+                });
+            }
         }
         function register(character, skills) { registerNightmareSkills(character, skills); }
         function parentNamed(event, names) {
@@ -8053,11 +8162,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         var oldLuEnFilter = lib.skill.luEn && lib.skill.luEn.filter;
         var oldLuEnContent = lib.skill.luEn && lib.skill.luEn.content;
         if (oldLuEnFilter) lib.skill.luEn.filter = function (event, player) {
-            if (player.hasSkill && player.hasSkill("nightmare_mingDingXingTu")) return player.countGaiPai("luEn") > 12;
+            if (isNightmareAi(player) && player.hasSkill && player.hasSkill("nightmare_mingDingXingTu")) {
+                return player.countGaiPai("luEn") > 12;
+            }
             return oldLuEnFilter.apply(this, arguments);
         };
         if (oldLuEnContent) lib.skill.luEn.content = async function (event, trigger, player) {
-            if (!(player.hasSkill && player.hasSkill("nightmare_mingDingXingTu"))) return oldLuEnContent.apply(this, arguments);
+            if (!(isNightmareAi(player) && player.hasSkill && player.hasSkill("nightmare_mingDingXingTu"))) {
+                return oldLuEnContent.apply(this, arguments);
+            }
             var cards = player.getGaiPai("luEn");
             if (cards.length <= 12) return;
             var removed = await player.chooseCardButton(cards, true, cards.length - 12, "舍弃多余的【卢恩】")
@@ -8077,9 +8190,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         register("xingZhuiNvWu", ["nightmare_xingHenCanXiang", "nightmare_mingDingXingTu"]);
 
         addSkill("nightmare_shangZhiShiKong", {
-            trigger: { player: ["gameStart", "moLiShangZengAfter"] }, forced: true,
-            filter: function (event, player, name) { return name == "gameStart" || name == "moLiShangZengAfter"; },
-            content: function (event, trigger, player) { player.addNengLiang("shuiJing", event.triggername == "gameStart" ? 3 : 1); }
+            trigger: { player: "moLiShangZengAfter" },
+            forced: true,
+            content: function (event, trigger, player) { player.addNengLiang("shuiJing", 1); }
         });
         addSkill("nightmare_zhanFaYanSuan", {
             trigger: { player: ["gongJiAfter", "faShuAfter"] }, forced: true,
@@ -8092,30 +8205,59 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         register("zhanDouFaShi", ["nightmare_shangZhiShiKong", "nightmare_zhanFaYanSuan"]);
 
         addSkill("nightmare_lieWuShenXun", {
-            trigger: { player: "gongJiShi", source: "gongJiMingZhongAfter" }, forced: true,
-            filter: function (event, player, name) { return name != "gongJiShi" || (get.is.zhuDongGongJi(event) && event.target && event.target.countCards("h") < 4); },
+            trigger: { player: ["gongJiShi", "gongJiEnd"] }, forced: true,
+            filter: function (event, player, name) {
+                if (name == "gongJiShi") {
+                    return get.is.zhuDongGongJi(event) && event.target &&
+                        event.target.countCards("h") > 0 && event.target.countCards("h") < 4 &&
+                        player.getGaiPai("moLiPing").length < 4;
+                }
+                return event.nightmareLieWuShenXun === true && event.gongJiMingZhong === true && event.target;
+            },
             content: function (event, trigger) {
-                if (event.triggername == "gongJiShi") trigger.qiangZhiMingZhong();
+                if (event.triggername == "gongJiShi") {
+                    trigger.nightmareLieWuShenXun = true;
+                    trigger.qiangZhiMingZhong();
+                }
                 else if (trigger.target && trigger.target.countCards("h") < trigger.target.getHandcardLimit()) trigger.target.drawTo(trigger.target.getHandcardLimit());
             }
         });
         addSkill("nightmare_lieWuChuXing", {
             trigger: { player: "guanYinDuRenAfter" }, forced: true,
-            filter: function (event, player) { var target = player.storage.guanYinDuRenPlayer; return target && get.zhanJi(target.side).length > 0; },
+            filter: function (event, player) {
+                var target = player.storage.guanYinDuRenPlayer;
+                return target && target.countNengLiangAll() > 0;
+            },
             content: async function (event, trigger, player) {
                 var target = player.storage.guanYinDuRenPlayer;
-                var stone = get.zhanJi(target.side)[0];
-                if (!stone) return;
-                await player.changeZhanJi(stone, -1, target.side);
-                await player.changeZhanJi(stone, 1, player.side);
+                var stone = target.countNengLiang("baoShi") > 0 ? "baoShi" : "shuiJing";
+                await target.removeNengLiang(stone, 1);
+                await player.addNengLiang(stone, 1);
             }
         });
         register("lieWuRen", ["nightmare_lieWuShenXun", "nightmare_lieWuChuXing"]);
 
         addSkill("nightmare_wuJianFengXue", {
             trigger: { global: ["yingZhiXueAfter", "yingFengAfter"] }, forced: true,
-            filter: function (event, player) { return event.player == player && event.target && get.zhanJi(event.target.side).length > 0; },
-            content: function () { trigger.target.changeZhanJi("xingShi", -1); }
+            filter: function (event, player) {
+                if (event.player != player) return false;
+                var target = event.target;
+                if (!target && event.name == "yingFeng") {
+                    var phase = event.getTrigger && event.getTrigger();
+                    target = phase && phase.player;
+                }
+                return target && target.countNengLiangAll() > 0;
+            },
+            content: async function (event, trigger) {
+                var target = trigger.target;
+                if (!target && trigger.name == "yingFeng") {
+                    var phase = trigger.getTrigger && trigger.getTrigger();
+                    target = phase && phase.player;
+                }
+                if (!target || target.countNengLiangAll() <= 0) return;
+                var stone = target.countNengLiang("baoShi") > 0 ? "baoShi" : "shuiJing";
+                await target.removeNengLiang(stone, 1);
+            }
         });
         addSkill("nightmare_qianYingYiXing", {
             trigger: { player: "changeZhiShiWuEnd" }, forced: true,
@@ -8168,8 +8310,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         });
         addSkill("nightmare_shenQiLingYu", {
             trigger: { global: "changeShiQiAfter" }, forced: true,
-            filter: function (event, player) { var damage = parentNamed(event, "damage"); return event.num < 0 && event.side == player.side && damage && damage.player == player && player.isHengZhi(); },
-            content: function () { player.changeShiQi(trigger.num, enemySide(player)); }
+            filter: function (event, player) {
+                if (event.nightmareShenQiLingYu || player.storage.nightmareShenQiLingYuResolving) return false;
+                return event.num < 0 && event.side == player.side && event.cause == "damage" &&
+                    event.player == player && player.isHengZhi();
+            },
+            content: async function (event, trigger, player) {
+                player.storage.nightmareShenQiLingYuResolving = true;
+                try {
+                    var next = player.changeShiQi(trigger.num, enemySide(player));
+                    if (next) next.nightmareShenQiLingYu = true;
+                    await next;
+                } finally {
+                    delete player.storage.nightmareShenQiLingYuResolving;
+                }
+            }
         });
         register("ranWuZhe", ["nightmare_eYiManYing", "nightmare_shenQiLingYu"]);
 
@@ -8221,15 +8376,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         });
         register(["hongYiZhuJiao", "zhuLvZhe"], ["nightmare_shuangMianZhiZheng", "nightmare_shengLvTeShe"]);
 
-        function gainShiShu(player) {
-            if (!player.countCards("h", { name: "shiShuCard" })) player.gain(game.createCard("shiShuCard"), "gain2");
+        async function gainShiShu(player) {
+            if (player.countCards("h", { name: "shiShuCard" })) return;
+            if (!player.hasSkill("shiShuX")) player.addSkill("shiShuX");
+            var card = game.createCard("shiShuCard", "", "");
+            game.broadcastAll(function (card) {
+                card.$init(["di", "huan", card.name]);
+            }, card);
+            await player.gain(card, "gain2").set("skill", "jiGuShiDian");
         }
         addSkill("nightmare_shiLiaoXuBian", {
             trigger: { player: "phaseBegin" }, forced: true,
             filter: function (event, player) { return !player.countCards("h", { name: "shiShuCard" }) && player.countCards("h") > 0; },
             content: async function (event, trigger, player) {
                 await player.chooseToDiscard(1, "h", true).set("ai", function (card) { return 8 - get.value(card); });
-                gainShiShu(player);
+                await gainShiShu(player);
             }
         });
         addSkill("nightmare_liShiChongYan", {
@@ -8237,7 +8398,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             content: async function (event, trigger, player) {
                 player.addFaShu();
                 if (player.countCards("h")) await player.chooseToDiscard(1, "h", true).set("ai", function (card) { return 8 - get.value(card); });
-                gainShiShu(player);
+                await gainShiShu(player);
             }
         });
         register("jiLuZhe", ["nightmare_shiLiaoXuBian", "nightmare_liShiChongYan"]);
@@ -8256,7 +8417,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
         addSkill("nightmare_moRiQiShi", {
             mod: { maxHandcard: function (player, num) { return num + 2; } },
-            trigger: { player: "moRiYuYanAfter" }, forced: true,
+            trigger: { player: "fangZhuAfter" }, forced: true,
             content: function () { player.addNengLiang("shuiJing", 1); }
         });
         addSkill("nightmare_yuYanBianZuan", { charlotte: true });
@@ -8360,6 +8521,28 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 }
             }
         });
+        // 运行时注册不会像角色包导入阶段那样稳定展开 subSkill；显式注册后续三系效果。
+        addSkill("nightmare_wanNengDanCang_hit", {
+            trigger: { source: "gongJiMingZhong" }, forced: true, popup: false,
+            filter: function (event) { return event.customArgs && event.customArgs.nightmareWanNengDanCang; },
+            content: async function (event, trigger, player) {
+                player.logSkill("nightmare_wanNengDanCang");
+                var healTargets = await player.chooseTarget("【万能弹仓·水】：选择目标角色+1【治疗】", true)
+                    .set("ai", function (target) { return get.zhiLiaoEffect2(target, _status.event.player, 1); }).forResultTargets();
+                if (healTargets.length) await healTargets[0].changeZhiLiao(1, player);
+                var damageTargets = await player.chooseTarget("【万能弹仓·地】：选择目标角色受到1点法术伤害", true)
+                    .set("ai", function (target) { return get.damageEffect2(target, _status.event.player, 1); }).forResultTargets();
+                if (damageTargets.length) await damageTargets[0].faShuDamage(1, player);
+            }
+        });
+        addSkill("nightmare_wanNengDanCang_after", {
+            trigger: { player: "gongJiAfter" }, forced: true, popup: false,
+            filter: function (event) { return event.customArgs && event.customArgs.nightmareWanNengDanCang; },
+            content: function () {
+                player.logSkill("nightmare_wanNengDanCang");
+                player.addGongJi();
+            }
+        });
         addSkill("nightmare_zhanShuHuanDan", {
             trigger: { source: "gongJiMingZhongAfter" }, forced: true,
             filter: function (event, player) { return event.yingZhan != true && player.countCards("h") > 0; },
@@ -8417,7 +8600,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         lib.skill.xuanHuaShangDeng.content = async function (event, trigger, player) {
             if (!player.hasSkill || !player.hasSkill("nightmare_maDaMaDa")) return oldXuanHuaContent.apply(this, arguments);
             var num = 0, stopped = false;
-            while (num < 6) {
+            while (num < 3) {
                 var cards = get.cards();
                 await player.showHiddenCards(cards);
                 num++;
@@ -8433,7 +8616,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         addSkill("nightmare_maDaMaDa", { charlotte: true });
         addSkill("nightmare_moYiQiDuo", {
             trigger: { player: "xuanHuaShangDengAfter" }, forced: true,
-            filter: function (event, player) { return (player.storage.nightmareMoYiQiDuo || 0) >= 3; },
+            filter: function (event, player) { return player.storage.nightmareMoYiQiDuo === 3; },
             content: function () { player.storage.nightmareMoYiQiDuo = 0; player.addGongJi(); }
         });
         register("luoLiFanZhang", ["nightmare_maDaMaDa", "nightmare_moYiQiDuo"]);
@@ -8444,7 +8627,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         });
         addSkill("nightmare_wangGuoYiChan", { charlotte: true });
         var oldJinKuBefore = lib.skill.wangNvJinKu.contentBefore;
-        var oldJinKuContent = lib.skill.wangNvJinKu.content;
         lib.skill.wangNvJinKu.contentBefore = async function (event, trigger, player) {
             await oldJinKuBefore.apply(this, arguments);
             if (!(player.hasSkill && player.hasSkill("nightmare_wangGuoYiChan"))) return;
@@ -8457,11 +8639,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 }
             }
         };
-        lib.skill.wangNvJinKu.content = function (event, trigger, player) {
+        lib.skill.wangNvJinKu.content = async function (event, trigger, player) {
+            if (!event.target) return;
+            var damage = 1 + (player.storage.wangNvJinKu_num || 0);
             if (player.hasSkill && player.hasSkill("nightmare_wangGuoYiChan")) {
-                return event.target.faShuDamage(1 + (player.storage.wangNvJinKu_num || 0) + (player.storage.nightmareWangGuoYiChan || 0), player);
+                damage += player.storage.nightmareWangGuoYiChan || 0;
             }
-            return oldJinKuContent.apply(this, arguments);
+            await event.target.faShuDamage(damage, player);
         };
         register("tanLanShaoNv", ["nightmare_yiBenWanLi", "nightmare_wangGuoYiChan"]);
 
