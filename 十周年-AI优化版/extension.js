@@ -273,9 +273,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             purchase.ai.order = function (item, player) {
                 var room = helper.handRoom(player);
                 var empty = get.emptyZhanJi(player.side);
-                var order = 2.7 + Math.min(1.2, room * 0.18) + Math.min(0.7, empty * 0.25);
-                if (player.countCards("h") == 0) order += 1.5;
-                if (!helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu")) order += 0.8;
+                var hand = player.countCards("h");
+                var lacksAction = !helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu");
+                var order = 1.2 + Math.min(0.6, room * 0.1) + Math.min(0.35, empty * 0.12);
+                if (hand == 0) order += 3;
+                else if (hand <= 2) order += 1.25;
+                if (lacksAction) order += 1.35;
                 return order;
             };
             purchase.ai.result.player = function (player) {
@@ -283,11 +286,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (empty <= 0) return 0;
                 var hand = player.countCards("h");
                 var room = helper.handRoom(player);
-                var score = room * 0.18 + empty * 0.28;
-                if (hand == 0) score += 1.2;
-                else if (hand <= 2) score += 0.55;
-                if (!helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu")) score += 0.45;
-                return score >= 0.95 ? score : 0;
+                var lacksAction = !helper.hasActionCard(player, "gongJi") && !helper.hasActionCard(player, "faShu");
+                var score = Math.min(0.5, room * 0.1) + Math.min(0.45, empty * 0.12);
+                if (hand == 0) score += 1.35;
+                else if (hand <= 2) score += 0.6;
+                if (lacksAction) score += 0.85;
+                return score >= 1.4 ? score : 0;
             };
         }
 
@@ -297,17 +301,64 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (helper.canWinningSynthesis(_status.event, player)) return 30;
                 var enemyMorale = get.shiQi(!player.side);
                 var records = get.zhanJi(player.side).length;
-                return 4.2 + Math.max(0, 5 - enemyMorale) * 0.65 + Math.max(0, records - 3) * 0.35;
+                var recordLimit = typeof get.zhanJiMax == "function" ? get.zhanJiMax(player.side) : 5;
+                var cups = typeof get.xingBei == "function" ? get.xingBei(player.side) : 0;
+                var cupLimit = typeof game.xingBeiMax == "number" ? game.xingBeiMax : 3;
+                var lowMorale = enemyMorale <= 3;
+                var recordPressure = records >= Math.max(4, recordLimit - 1);
+                var cupPressure = cups + 2 >= cupLimit;
+                if (!lowMorale && !recordPressure && !cupPressure) return 1.1;
+                return 3.4 + (lowMorale ? (4 - enemyMorale) * 0.75 : 0)
+                    + (recordPressure ? 0.9 : 0) + (cupPressure ? 0.8 : 0);
             };
             synthesis.ai.result.player = function (player) {
                 if (helper.canWinningSynthesis(_status.event, player)) return 20;
                 var enemyMorale = get.shiQi(!player.side);
                 var records = get.zhanJi(player.side).length;
-                var score = 0.3 + helper.handRoom(player) * 0.12;
-                if (enemyMorale <= 3) score += 1.2;
-                if (records >= 4) score += 0.9;
-                if (player.countCards("h") <= 2) score += 0.55;
+                var recordLimit = typeof get.zhanJiMax == "function" ? get.zhanJiMax(player.side) : 5;
+                var cups = typeof get.xingBei == "function" ? get.xingBei(player.side) : 0;
+                var cupLimit = typeof game.xingBeiMax == "number" ? game.xingBeiMax : 3;
+                var lowMorale = enemyMorale <= 3;
+                var recordPressure = records >= Math.max(4, recordLimit - 1);
+                var cupPressure = cups + 2 >= cupLimit;
+                if (!lowMorale && !recordPressure && !cupPressure) return 0;
+                var score = 0.25;
+                if (lowMorale) score += 0.85 + (3 - enemyMorale) * 0.25;
+                if (recordPressure) score += 0.75;
+                if (cupPressure) score += 0.65;
                 return score;
+            };
+        }
+
+        var shield = lib.card && lib.card.shengDun;
+        if (shield && markPatched(shield, "proactiveDefenseValue")) {
+            shield.ai = shield.ai || {};
+            shield.ai.result = shield.ai.result || {};
+            function shieldTargetScore(player, target) {
+                if (!target || target.side != player.side || target.hasJiChuXiaoGuo && target.hasJiChuXiaoGuo("_shengDun")) return 0;
+                var hand = target.countCards("h");
+                var limit = target.getHandcardLimit();
+                var morale = get.shiQi(target.side);
+                var pressure = Math.max(0, hand + 2 - limit);
+                var attackers = game.countPlayer(function (current) {
+                    return current.side != target.side && helper.hasActionCard(current, "gongJi");
+                });
+                var score = 0;
+                if (pressure > 0) score += 0.75 + Math.min(0.8, pressure * 0.35);
+                if (morale <= 3) score += 0.65 + (3 - morale) * 0.2;
+                if ((target.zhiLiao || 0) <= 0) score += 0.3;
+                if (attackers > 0) score += 0.45 + Math.min(0.35, (attackers - 1) * 0.15);
+                if (target.hasSkill && target.hasSkill("moFaHuDun")) score += 0.35;
+                return score >= 1.15 ? score : 0;
+            }
+            shield.ai.order = function (item, player) {
+                var best = 0;
+                game.countPlayer(function (target) { best = Math.max(best, shieldTargetScore(player, target)); });
+                if (best <= 0) return 0;
+                return best >= 2 ? 3.1 : 2.15;
+            };
+            shield.ai.result.target = function (player, target) {
+                return shieldTargetScore(player, target);
             };
         }
     }
@@ -569,11 +620,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var max = Math.min(4, availableTreatment);
             var before = attackOutcome(target, baseDamage, targetTreatment);
             var best = { amount: 0, score: 0 };
+            // 只要把当前可支付的【治疗】全部投入能够令目标爆牌，
+            // 地枪直接取最大值，不再为后续天枪保留治疗。
+            if (max > 0) {
+                var maximum = attackOutcome(target, baseDamage + max, targetTreatment);
+                if (maximum.overflow > 0) return { amount: max, score: 100 + maximum.overflow };
+            }
             var futureAttack = helper.countUsableCards(player, "gongJi") > 0;
             for (var amount = 1; amount <= max; amount++) {
                 var after = attackOutcome(target, baseDamage + amount, targetTreatment);
-                var score = after.score - before.score - amount * 0.48 - 0.45;
-                if (futureAttack && availableTreatment - amount < 2) score -= 0.35;
+                // 地枪的治疗就是进攻资源。旧模型几乎只认可新增爆牌，
+                // 导致普通命中后连1点有效增伤也不愿支付。
+                var score = after.score - before.score + amount * 0.65 - amount * 0.32 - 0.1;
+                if (futureAttack && availableTreatment - amount < 2) score -= 0.2;
                 if (after.overflow > before.overflow) score += 0.45;
                 if (after.overflow >= get.shiQi(!player.side) && after.overflow > 0) score += 8;
                 if (score > best.score + 0.05) best = { amount: amount, score: score };
@@ -588,8 +647,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var blockedHit = hitChance(player, target, card, true);
             var outcome = attackOutcome(target, 2, targetTreatment);
             var hitValue = 1.1 + outcome.score;
-            var cost = 1.25 + (availableTreatment <= 2 ? 0.4 : 0);
-            return (blockedHit - normalHit) * hitValue - cost;
+            var handGap = target.getHandcardLimit() - target.countCards("h");
+            var handPressure = handGap <= 0 ? 1.6 : (handGap == 1 ? 0.85 : 0);
+            if (get.shiQi(target.side) <= 3) handPressure += 0.45;
+            var cost = 0.95 + (availableTreatment <= 2 ? 0.25 : 0);
+            return (blockedHit - normalHit) * hitValue + handPressure - cost;
         }
 
         function attackCards(player, excludedCard) {
@@ -761,7 +823,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         if (heavenly && markPatched(heavenly, "fullActionChain")) {
             heavenly.check = function (event, player) {
                 var target = event.target || event.targets && event.targets[0];
-                return tianQiangValue(player, target, event.card, player.zhiLiao || 0, target && target.zhiLiao || 0) >= 0.35;
+                return tianQiangValue(player, target, event.card, player.zhiLiao || 0, target && target.zhiLiao || 0) >= 0.1;
             };
         }
 
@@ -775,7 +837,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 var plan = bestDiSpend(player, trigger.target, trigger.damageNum || 2, player.zhiLiao || 0, trigger.target.zhiLiao || 0);
                 var result = await player.chooseControl(list)
                     .set("prompt", "是否发动【地枪】<br>" + lib.translate.diQiang_info)
-                    .set("choice", plan.amount && plan.score >= 0.45 ? plan.amount : "cancel2")
+                    .set("choice", plan.amount && plan.score >= 0.1 ? plan.amount : "cancel2")
                     .set("ai", function () { return _status.event.choice; }).forResult();
                 event.result = {
                     bool: result.control != "cancel2" && typeof result.control == "number",
@@ -4647,6 +4709,83 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }, 0);
         }
 
+        function cardsAfterSpending(cards, spent) {
+            return (cards || []).filter(function (card) { return !(spent || []).includes(card); });
+        }
+
+        function distinctCardCombinations(player, count) {
+            var available = distinctCards(player), result = [];
+            function visit(index, selected) {
+                if (selected.length == count) { result.push(selected.slice()); return; }
+                for (var i = index; i <= available.length - (count - selected.length); i++) {
+                    selected.push(available[i]); visit(i + 1, selected); selected.pop();
+                }
+            }
+            visit(0, []);
+            return result;
+        }
+
+        function wisdomSimulation(player, state, actual) {
+            var next = { cards: state.cards.slice(), treatment: state.treatment, score: 0 };
+            if (actual <= 3) return next;
+            next.score += Math.min(2, Math.max(0, player.getNengLiangLimit() - player.countNengLiangAll())) * 1.45;
+            if (next.cards.length) {
+                var discarded = helper.lowValueCards(next.cards, 1)[0];
+                next.cards = cardsAfterSpending(next.cards, [discarded]);
+                next.score -= cardCost(player, [discarded]);
+            }
+            return next;
+        }
+
+        // 自伤不会按承伤摸牌或爆牌。逐段枚举治疗量；实际伤害为1时，
+        // 立即递归进入该段伤害产生的【法术反弹】窗口。
+        function simulateSelfDamageSequence(player, damages, state, depth) {
+            if (!damages.length || depth > 10) return { score: 0, cards: state.cards.slice(), treatment: state.treatment, firstTreatment: 0 };
+            var raw = Math.max(0, damages[0] || 0), maximum = Math.min(state.treatment, raw), best = null;
+            for (var used = 0; used <= maximum; used++) {
+                var actual = raw - used;
+                var next = { cards: state.cards.slice(), treatment: state.treatment - used };
+                var score = -used * 0.35;
+                if (actual > 3) {
+                    var wisdom = wisdomSimulation(player, next, actual);
+                    next.cards = wisdom.cards; next.treatment = wisdom.treatment; score += wisdom.score;
+                } else if (actual == 1) {
+                    var rebound = simulateBestRebound(player, next, depth + 1);
+                    next.cards = rebound.cards; next.treatment = rebound.treatment; score += rebound.score;
+                }
+                var rest = simulateSelfDamageSequence(player, damages.slice(1), next, depth + 1);
+                score += rest.score;
+                if (!best || score > best.score) best = { score: score, cards: rest.cards, treatment: rest.treatment, firstTreatment: used };
+            }
+            return best;
+        }
+
+        function simulateBestRebound(player, state, depth) {
+            var best = { score: 0, cards: state.cards.slice(), treatment: state.treatment, mode: null };
+            if (depth > 10 || state.cards.length < 2) return best;
+            var groups = {};
+            state.cards.forEach(function (card) { var suit = get.xiBie(card); (groups[suit] || (groups[suit] = [])).push(card); });
+            Object.keys(groups).forEach(function (suit) {
+                var suitCards = helper.lowValueCards(groups[suit], 99);
+                for (var count = 2; count <= suitCards.length; count++) {
+                    var spent = suitCards.slice(0, count);
+                    var afterCost = { cards: cardsAfterSpending(state.cards, spent), treatment: state.treatment };
+                    var cost = cardCost(player, spent);
+                    var enemy = helper.bestEnemy(player, function (target) { return helper.damagePressure(target, player, count - 1); });
+                    if (enemy.target) {
+                        var enemySelf = simulateSelfDamageSequence(player, [count], afterCost, depth + 1);
+                        var enemyScore = enemy.score + enemySelf.score - cost;
+                        if (enemyScore > best.score) best = { score: enemyScore, cards: enemySelf.cards, treatment: enemySelf.treatment, mode: "enemy", target: enemy.target, spent: spent, suit: suit, count: count, targetScore: enemy.score };
+                    }
+                    // 自指反弹的X-1与X为两个先后独立的自伤事件。
+                    var self = simulateSelfDamageSequence(player, [count - 1, count], afterCost, depth + 1);
+                    var selfScore = self.score - cost;
+                    if (selfScore > best.score) best = { score: selfScore, cards: self.cards, treatment: self.treatment, mode: "self", target: player, spent: spent, suit: suit, count: count, targetScore: 0 };
+                }
+            });
+            return best;
+        }
+
         function projectedDamage(player, rawDamage, treatmentBonus, cardsLeaving) {
             var treatment = Math.max(0, player.zhiLiao || 0) + Math.max(0, treatmentBonus || 0);
             var damage = Math.max(0, rawDamage || 0);
@@ -4661,12 +4800,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         }
 
         function projectedSelfRisk(player, rawDamage, cardsLeaving, treatmentBonus) {
-            var actual = projectedDamage(player, rawDamage, treatmentBonus, cardsLeaving);
-            var handAfterCost = Math.max(0, player.countCards("h") - Math.max(0, cardsLeaving || 0));
-            var overflow = Math.max(0, handAfterCost + actual - player.getHandcardLimit());
-            var risk = actual * 0.45 + overflow * 3;
-            if (overflow >= get.shiQi(player.side)) risk += 20;
-            return risk;
+            return 0;
         }
 
         function wisdomResult(player, rawDamage, cardsLeaving, energyPayment, treatmentBonus) {
@@ -4675,8 +4809,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var afterPayment = Math.max(0, player.countNengLiangAll() - Math.max(0, energyPayment || 0));
             var room = Math.max(0, player.getNengLiangLimit() - afterPayment);
             var energy = Math.min(2, room);
-            var handAfterDamage = Math.max(0, player.countCards("h") - cardsLeaving + actual);
-            var discardTax = handAfterDamage > 0 ? (handAfterDamage > player.getHandcardLimit() ? -0.1 : 0.22) : 0;
+            var handAfterDamage = Math.max(0, player.countCards("h") - cardsLeaving);
+            var discardTax = handAfterDamage > 0 ? 0.22 : 0;
             return {
                 triggered: true,
                 actual: actual,
@@ -4706,42 +4840,35 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         }
 
         function bestReboundPlan(player) {
-            var groups = {};
-            player.getCards("h").forEach(function (card) {
-                var suit = get.xiBie(card);
-                if (!groups[suit]) groups[suit] = [];
-                groups[suit].push(card);
-            });
-            var best = null;
-            Object.keys(groups).forEach(function (suit) {
-                var suitCards = helper.lowValueCards(groups[suit], 99);
-                for (var count = 2; count <= suitCards.length; count++) {
-                    var cards = suitCards.slice(0, count);
-                    var enemy = helper.bestEnemy(player, function (target) {
-                        return helper.damagePressure(target, player, count - 1);
-                    });
-                    if (!enemy.target) continue;
-                    var branch = selfDamageBranchScore(player, count, cards, 0, 0);
-                    var score = enemy.score + branch.score - cardCost(player, cards);
-                    if (!best || score > best.score) {
-                        best = { suit: suit, cards: cards, count: count, target: enemy.target, targetScore: enemy.score, score: score };
-                    }
-                }
-            });
-            return best;
+            var plan = simulateBestRebound(player, { cards: player.getCards("h").slice(), treatment: Math.max(0, player.zhiLiao || 0) }, 0);
+            if (!plan.mode) return null;
+            return { suit: plan.suit, cards: plan.spent, count: plan.count, target: plan.target, targetScore: plan.targetScore, score: plan.score, mode: plan.mode };
         }
 
-        function arcanePlanForCount(player, count) {
-            var available = distinctCards(player);
-            if (count < 2 || count > available.length) return null;
-            var cards = available.slice(0, count);
+        function arcanePlanForCards(player, cards) {
+            var count = cards.length;
+            var afterCost = { cards: cardsAfterSpending(player.getCards("h"), cards), treatment: Math.max(0, player.zhiLiao || 0) };
             var enemy = helper.bestEnemy(player, function (target) {
                 return helper.damagePressure(target, player, count - 1);
             });
-            if (!enemy.target) return null;
-            var branch = selfDamageBranchScore(player, count - 1, cards, 1, 0);
-            var score = enemy.score + branch.score - cardCost(player, cards) - 1.35;
-            return { cards: cards, count: count, target: enemy.target, targetScore: enemy.score, score: score, branch: branch };
+            var best = null;
+            if (enemy.target) {
+                var enemySelf = simulateSelfDamageSequence(player, [count - 1], afterCost, 0);
+                best = { cards: cards, count: count, target: enemy.target, targetScore: enemy.score, score: enemy.score + enemySelf.score - cardCost(player, cards) - 0.7, mode: "enemy" };
+            }
+            // 2系魔道法典自指时，这里会依次模拟两次1点自伤与两个反弹窗口。
+            var self = simulateSelfDamageSequence(player, [count - 1, count - 1], afterCost, 0);
+            var selfPlan = { cards: cards, count: count, target: player, targetScore: 0, score: self.score - cardCost(player, cards) - 0.7, mode: "self" };
+            return !best || selfPlan.score > best.score ? selfPlan : best;
+        }
+
+        function arcanePlanForCount(player, count) {
+            var best = null;
+            distinctCardCombinations(player, count).forEach(function (cards) {
+                var plan = arcanePlanForCards(player, cards);
+                if (plan && (!best || plan.score > best.score)) best = plan;
+            });
+            return best;
         }
 
         function bestArcanePlan(player) {
@@ -4752,6 +4879,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (plan && (!best || plan.score > best.score)) best = plan;
             }
             return best;
+        }
+
+        function shouldUseArcanePlan(plan) {
+            if (!plan) return false;
+            return plan.score > 0.15;
         }
 
         function alliedTargets(player) {
@@ -4778,25 +4910,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         }
 
         function holyPlanForCount(player, count) {
-            var available = distinctCards(player);
-            if (count < 3 || count > available.length) return null;
-            var cards = available.slice(0, count);
-            var subsets = targetSubsets(alliedTargets(player), count - 2);
             var best = null;
-            subsets.forEach(function (targets) {
-                var healValue = 0;
-                var selfTreatment = 0;
-                targets.forEach(function (target) {
-                    var room = Math.max(0, target.getZhiLiaoLimit() - (target.zhiLiao || 0));
-                    var amount = Math.min(2, room);
-                    if (amount > 0) healValue += helper.healScore(target, player, amount);
-                    if (target == player) selfTreatment = amount;
+            distinctCardCombinations(player, count).forEach(function (cards) {
+                targetSubsets(alliedTargets(player), count - 2).forEach(function (targets) {
+                    var healValue = 0, selfTreatment = 0;
+                    targets.forEach(function (target) {
+                        var room = Math.max(0, target.getZhiLiaoLimit() - (target.zhiLiao || 0));
+                        var amount = Math.min(2, room);
+                        if (amount > 0) healValue += helper.healScore(target, player, amount);
+                        if (target == player) selfTreatment = amount;
+                    });
+                    var afterCost = { cards: cardsAfterSpending(player.getCards("h"), cards), treatment: Math.max(0, player.zhiLiao || 0) + selfTreatment };
+                    var self = simulateSelfDamageSequence(player, [count - 1], afterCost, 0);
+                    var score = healValue + self.score - cardCost(player, cards) - 1.35;
+                    if (!best || score > best.score) best = { cards: cards, count: count, targets: targets, healValue: healValue, score: score };
                 });
-                var branch = selfDamageBranchScore(player, count - 1, cards, 1, selfTreatment);
-                var score = healValue + branch.score - cardCost(player, cards) - 1.35;
-                if (!best || score > best.score) {
-                    best = { cards: cards, count: count, targets: targets, healValue: healValue, score: score, branch: branch };
-                }
             });
             return best;
         }
@@ -4891,6 +5019,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 }
                 var protectedRedLotusSelfDamage = damageEvent.source == player && player.isHengZhi() && player.hasSkill("reXueFeiTeng");
                 if (protectedRedLotusSelfDamage) treatment = 0;
+                else if (damageEvent.source == player && player.hasSkill("faShuFanTan")) {
+                    var selfChoice = simulateSelfDamageSequence(player, [damage], { cards: player.getCards("h").slice(), treatment: maximum }, 0);
+                    treatment = Math.min(maximum, Math.max(0, selfChoice.firstTreatment || 0));
+                }
                 else if (shouldSaveTreatmentForCodex(player, damageEvent, damage, maximum)) treatment = 0;
 
                 var result = await player.chooseControl(list)
@@ -4912,9 +5044,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         if (rebound && markPatched(rebound, "fullActionChain")) {
             rebound.cost = async function (event, trigger, player) {
                 var plan = bestReboundPlan(player);
-                var bestSuit = plan && plan.score > 0.25 ? plan.suit : null;
-                var desired = plan && plan.score > 0.25 ? plan.count : 0;
-                var bestTarget = plan && plan.score > 0.25 ? plan.target : null;
+                var bestSuit = plan && plan.score > 0.05 ? plan.suit : null;
+                var desired = plan && plan.score > 0.05 ? plan.count : 0;
+                var bestTarget = plan && plan.score > 0.05 ? plan.target : null;
                 event.result = await player.chooseCardTarget({
                     filterCard: function (card) { if (!ui.selected.cards.length) return true; return get.xiBie(card) == get.xiBie(ui.selected.cards[0]); },
                     selectCard: [2, Infinity], filterTarget: true, complexCard: true,
@@ -4930,19 +5062,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             arcane.check = function (card) {
                 var player = _status.event.player;
                 var plan = bestArcanePlan(player);
-                if (!plan || plan.score <= 0.35 || !plan.cards.includes(card)) return 0;
+                if (!shouldUseArcanePlan(plan) || !plan.cards.includes(card)) return 0;
                 return 10 - get.value(card, player);
             };
             arcane.ai.order = function (item, player) {
                 if (helper.shouldReserveSpecial(_status.event, player)) return 0;
                 var plan = bestArcanePlan(player);
-                return plan && plan.score > 0.35 ? 4.2 + Math.min(2, plan.score * 0.2) : 0;
+                if (!shouldUseArcanePlan(plan)) return 0;
+                return (plan.count >= 3 ? 7.2 : 5.2) + Math.min(1.5, Math.max(0, plan.score) * 0.15);
             };
             arcane.ai.result.target = function (player, target) {
-                if (target.side == player.side) return -100;
                 var selected = ui.selected && ui.selected.cards ? ui.selected.cards.length : 0;
                 var plan = selected ? arcanePlanForCount(player, selected) : bestArcanePlan(player);
-                if (!plan || plan.score <= 0.35 || target != plan.target) return 0;
+                if (!shouldUseArcanePlan(plan) || target != plan.target) return 0;
+                if (target == player) return 10;
+                if (target.side == player.side) return 0;
                 return -Math.max(0.5, plan.targetScore);
             };
         }
@@ -6356,6 +6490,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
+        version: "1.5",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();

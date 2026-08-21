@@ -2171,7 +2171,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.0",
+            "version": "1.1",
         },
         "files": {
             "character": [
