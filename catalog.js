@@ -43,7 +43,7 @@ extension["十周年-噩梦人机"] = {
 	author: "迅捷 / 蒙牛 / Codex",
 	netdisk: "",
 	forum: "",
-	version: "1.0",
+	version: "1.1",
 	files: [
 		"info.json",
 		"package.js",
@@ -338,7 +338,7 @@ extension["宿命挽歌"] = {
 	author: "蒙牛",
 	netdisk: "",
 	forum: "",
-	version: "1.0",
+	version: "1.1",
 	files: ["info.json", "README.md", "LICENSE", "package.js", "zhaoLingEr.jpg", "liXiaoYao.jpg", "linYueRu.jpg", "aNu.jpg", "wuDuZhu.jpg", "mark_lingLi.png", "mark_jianY.png", "mark_qiJing.png", "mark_wuDuZhu.png"],
 	size: "3.01MB"
 };
@@ -349,7 +349,7 @@ extension["峡谷幻音"] = {
 	author: "蒙牛",
 	netdisk: "",
 	forum: "",
-	version: "1.0",
+	version: "1.1",
 	files: ["info.json", "README.md", "LICENSE", "package.js", "tiMo.jpg", "yaTuoKeSi.jpg", "mark_tiMoZhongMoGuKa.png", "mark_xueRen.png", "mark_xueJi.png", "mark_eHuoShuLianKa.png"],
 	size: "2.24MB"
 };
@@ -360,7 +360,7 @@ extension["永夜残响"] = {
 	author: "蒙牛",
 	netdisk: "",
 	forum: "",
-	version: "1.0",
+	version: "1.1",
 	files: ["info.json", "README.md", "LICENSE", "package.js", "wHeQingLi.jpg", "shiXiang.jpg", "siMiNai.jpg", "shiQiKuangSan.jpg", "mark_qinLiLingLi.png", "mark_shiXiangLingLi.png", "mark_siMiNaiBingJing.png", "mark_siMiNaiDongJie.png", "mark_shiCha.png", "mark_shiJianJingZhi.png"],
 	size: "4.46MB"
 };

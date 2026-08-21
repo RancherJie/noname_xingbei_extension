@@ -6490,6 +6490,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
+        version: "1.5",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();
