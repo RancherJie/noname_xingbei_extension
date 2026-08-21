@@ -32,7 +32,7 @@ extension["十周年-AI优化版"] = {
 	author: "蒙牛 / Codex",
 	netdisk: "",
 	forum: "",
-	version: "1.0",
+	version: "1.5",
 	files: ["info.json", "README.md", "package.js"],
 	size: "414KB"
 };
@@ -40,10 +40,10 @@ extension["十周年-AI优化版"] = {
 extension["十周年-噩梦人机"] = {
 	date: "2026/08/21",
 	intro: "继承十周年-AI优化版，为70名电脑角色添加140项噩梦强化；支持原版、高清与Q版三档头像，并允许联机玩家独立选择。",
-	author: "蒙牛 / Codex",
+	author: "迅捷 / 蒙牛 / Codex",
 	netdisk: "",
 	forum: "",
-	version: "0.1",
+	version: "1.0",
 	files: [
 		"info.json",
 		"package.js",
