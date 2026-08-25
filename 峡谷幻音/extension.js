@@ -264,7 +264,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "forced": true,
                         "filter": function(event, player) {
-                    return event && event.target && get.is.zhuDongGongJi(event);
+                    return event && event.target && event.target.isIn();
                 },
                         "content": async function(event, trigger, player) {
                     await trigger.target.faShuDamage(1, player);
@@ -312,7 +312,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             cards,
                             true,
                             count,
-                            '蘑菇放置：选择' + count +
+                            '蘑菇生成：选择' + count +
                                 '张本次弃置的牌作为【蘑菇】'
                         ).set('ai', function(button) {
                             return 6 - get.value(button.link);
@@ -744,27 +744,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "content": async function(event, trigger, player) {
                     await player.changeZhiLiao(1, player);
                     var target = trigger.target;
-                    var removeText = '移除目标1【治疗】';
-                    var damageText =
-                        '若目标没有【治疗】，本次攻击伤害额外+1';
-                    var choice = await player.chooseControl(
-                        [removeText, damageText]
-                    ).set(
-                        'prompt',
-                        '赐死剑气：选择一项'
-                    ).set('target', target)
-                        .set('ai', function() {
-                            var target = _status.event.target;
-                            if(target && target.zhiLiao > 0) {
-                                return '移除目标1【治疗】';
-                            }
-                            return '若目标没有【治疗】，本次攻击伤害额外+1';
-                        }).forResultControl();
-                    if(choice == removeText) {
-                        if(target && target.isIn() &&
-                            target.zhiLiao > 0) {
-                            await target.changeZhiLiao(-1, player);
-                        }
+                    if(target && target.isIn() && target.zhiLiao > 0) {
+                        await target.changeZhiLiao(-1, player);
                     } else if(target && target.zhiLiao == 0) {
                         trigger.changeDamageNum(1);
                     }
@@ -1295,56 +1276,56 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                 "translate": {
                     "yinXingDeChiBang": "被动【隐形的翅膀】",
-                    "yinXingDeChiBang_info": "<span class='tiaoJian'>（【特殊行动】结束后）</span>你【横置】，持续到你的下个回合结束，期间不能成为主动攻击的目标；<span class='tiaoJian'>（你的回合开始时，若你【横置】）</span>【重置】并在本回合额外+1【攻击行动】；<span class='tiaoJian'>（你在【横置】时受到伤害③后）</span>【重置】。",
+                    "yinXingDeChiBang_info": "<span class='tiaoJian'>（【特殊行动】结束后）</span>【横置】；直到你的下个回合结束，你不能成为主动攻击的目标。<span class='tiaoJian'>（你的回合开始时，若你【横置】）</span>【重置】，本回合额外+1【攻击行动】。<span class='tiaoJian'>（你在【横置】时受到伤害后）</span>【重置】。",
                     "tiMoYinXing": "隐形",
                     "tiMoYinXing_info": "持续到提莫的下个回合结束，不能成为主动攻击的目标。",
                     "zhiMangChuiJian": "法术【致盲吹箭】",
-                    "zhiMangChuiJian_info": "<span class='tiaoJian'>（弃1张法术牌【展示】）</span>将【致盲】置于尚未持有【致盲】的目标对手面前。",
+                    "zhiMangChuiJian_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对目标对手施加【致盲】；已有【致盲】的角色不能成为目标。",
                     "tiMoZhiMang": "专属【致盲】",
-                    "tiMoZhiMang_info": "持有者主动攻击伤害-2、应战攻击伤害-1；其回合结束后移除。",
+                    "tiMoZhiMang_info": "持有者主动攻击伤害-2、应战攻击伤害-1；<span class='tiaoJian'>（其回合结束后）</span>移除。",
                     "xiaoMoKuaiPao": "法术【小莫快跑】",
                     "xiaoMoKuaiPao_info": "<span class='tiaoJian'>（手牌数大于2时）</span>摸1张牌【强制】，然后面朝下弃置2张牌。",
                     "duXingSheJi": "被动【毒性射击】",
-                    "duXingSheJi_info": "<span class='tiaoJian'>（主动攻击命中时）</span>额外对攻击目标造成1点法术伤害③。",
-                    "moGuFangZhi": "响应【蘑菇放置】",
-                    "moGuFangZhi_info": "<span class='tiaoJian'>（你的能量区有【宝石】且你面朝下弃牌时）</span>将本次弃牌放置于自己角色旁作为<span class='lan'>【蘑菇】</span>；超过上限的部分仍进入弃牌堆。",
+                    "duXingSheJi_info": "<span class='tiaoJian'>（攻击命中时）</span>对攻击目标额外造成1点法术伤害。",
+                    "moGuFangZhi": "响应【蘑菇生成】",
+                    "moGuFangZhi_info": "<span class='tiaoJian'>（你的能量区有【宝石】且你面朝下弃牌时）</span>将弃牌置于自己角色旁作为<span class='lan'>【蘑菇】</span>，最多放置至上限。",
                     "tiMoMoGu": "蘑菇",
-                    "tiMoMoGu_info": "<span class='lan'>【蘑菇】</span>为提莫专属盖牌，提莫自己角色旁上限为3。",
+                    "tiMoMoGu_info": "提莫的专属盖牌；自己角色旁上限为3。",
                     "zhongMoGu": "法术【种蘑菇】",
-                    "zhongMoGu_info": "【水晶】×1。<span class='tiaoJian'>（移除场上任意1个<span class='lan'>【蘑菇】</span>）</span>将该【蘑菇】置于专属卡【种蘑菇】上，并将【种蘑菇】及其上原有【蘑菇】转移至目标对手面前；专属卡上最多有2个【蘑菇】。",
+                    "zhongMoGu_info": "【水晶】<span class='tiaoJian'>（移除场上1个<span class='lan'>【蘑菇】</span>）</span>将其置于专属卡【种蘑菇】上，然后将该卡转移给目标对手；其上最多有2个【蘑菇】。",
                     "tiMoZhongMoGuKa": "专属卡【种蘑菇】",
-                    "tiMoZhongMoGuKa_info": "其上的【蘑菇】实体牌仅提莫可见。持有者打出或展示与其上【蘑菇】同系的牌时，移除1个对应系别的【蘑菇】【展示】；提莫对其造成3点法术伤害③。",
+                    "tiMoZhongMoGuKa_info": "其上的【蘑菇】仅提莫可见。<span class='tiaoJian'>（持有者打出或展示与其中1个【蘑菇】同系的牌时）</span>移除该【蘑菇】【展示】，提莫对其造成3点法术伤害③。",
                     "tiMoZhongMoGuPai": "种蘑菇上的蘑菇",
                     "tiMoZhongMoGuPai_info": "置于专属卡【种蘑菇】上的【蘑菇】，上限为2；实体牌仅提莫可见。",
                     "xueRen": "血刃",
-                    "xueRen_info": "<span class='hong'>【血刃】</span>为亚托克斯的专属指示物，上限为3；跨回合保留，只在第三档【暗裔利刃】的攻击行动结束后清空。",
+                    "xueRen_info": "亚托克斯的专属指示物，上限为3；跨回合保留，<span class='tiaoJian'>（第3层【暗裔利刃】的攻击行动结束后）</span>清空。",
                     "xueJi": "血祭",
-                    "xueJi_info": "<span class='hong'>【血祭】</span>为亚托克斯的专属指示物，上限为2。",
+                    "xueJi_info": "亚托克斯的专属指示物，上限为2。",
                     "mieJueXingTai": "被动【灭绝形态】",
-                    "mieJueXingTai_info": "处于【灭绝形态】时：攻击伤害额外+1；不能以【治疗】抵御伤害；自身回合首次令对方士气下降后+1<span class='hong'>【血祭】</span>。你的回合开始时移除1<span class='hong'>【血祭】</span>维持形态；没有<span class='hong'>【血祭】</span>则【重置】并退出。",
+                    "mieJueXingTai_info": "<span class='tiaoJian'>（【灭绝形态】下）</span>攻击伤害额外+1；不能以【治疗】抵御伤害；<span class='tiaoJian'>（你的回合内首次令对方士气下降后）</span>+1<span class='hong'>【血祭】</span>。<span class='tiaoJian'>（你的回合开始时）</span>若有【血祭】，移除1点；否则【重置】并退出该形态。",
                     "mieJueXingTaiZhuangTai": "灭绝形态",
                     "mieJueXingTaiZhuangTai_info": "攻击伤害额外+1；不能以【治疗】抵御伤害；自身回合首次令对方士气下降后+1<span class='hong'>【血祭】</span>。",
                     "ciSiJianQi": "响应【赐死剑气】",
-                    "ciSiJianQi_info": "【回合限定】<span class='tiaoJian'>（你的主动攻击命中后②）</span>+1【治疗】，然后选择一项：移除目标1【治疗】；或若目标没有【治疗】，本次攻击伤害额外+1。始终可以二选一，条件不成立的效果无效。",
+                    "ciSiJianQi_info": "【回合限定】<span class='tiaoJian'>（主动攻击命中后②）</span>+1【治疗】。移除目标1【治疗】；若其没有【治疗】，本次攻击伤害额外+1。",
                     "anYiLiRen": "响应【暗裔利刃】",
-                    "anYiLiRen_info": "<span class='tiaoJian'>（主动攻击前①）</span>对自己造成1点法术伤害③，然后+1<span class='hong'>【血刃】</span>。1层：本次攻击伤害额外+1；2层：伤害额外+1，若对拥有【恶火束链】的目标造成实际伤害，行动结束后获得1个只能攻击该目标的额外【攻击行动】；3层：伤害额外+2，行动结束后移除全部<span class='hong'>【血刃】</span>，若造成过实际伤害则+1<span class='hong'>【血祭】</span>。自伤减至0时仍继续结算。",
+                    "anYiLiRen_info": "<span class='tiaoJian'>（主动攻击前①）</span>对自己造成1点法术伤害③，然后+1<span class='hong'>【血刃】</span>并按其数量结算；即使未承受此次伤害，仍继续结算：<br>1层：本次攻击伤害额外+1。<br>2层：本次攻击伤害额外+1；若对【恶火束链】持有者造成实际伤害，行动结束后额外+1【攻击行动】，只能攻击该角色。<br>3层：本次攻击伤害额外+2；行动结束后移除全部<span class='hong'>【血刃】</span>，若造成过实际伤害，+1<span class='hong'>【血祭】</span>。",
                     "anYiLiRenZhuiJi": "暗裔利刃·断空",
                     "anYiLiRenZhuiJi_info": "下一次额外【攻击行动】只能主动攻击本次【暗裔利刃·断空】命中的【恶火束链】拥有者；目标或束链失效时取消该行动。",
                     "eHuoShuLian": "法术【恶火束链】",
-                    "eHuoShuLian_info": "【回合限定】仅场上没有【恶火束链】时可以发动。摸2张牌【强制】，再指定一名对手，对其造成1点法术伤害③并放置【恶火束链】，然后额外+1【攻击行动】。",
+                    "eHuoShuLian_info": "【回合限定】<span class='tiaoJian'>（场上没有【恶火束链】时）</span>摸2张牌【强制】，对目标对手造成1点法术伤害③并施加【恶火束链】，然后额外+1【攻击行动】。",
                     "eHuoShuLianKa": "(专)【恶火束链】",
-                    "eHuoShuLianKa_info": "全场上限为1。拥有者的应战攻击伤害-1；拥有者的回合结束时移除。",
+                    "eHuoShuLianKa_info": "全场上限为1。持有者应战攻击伤害-1；<span class='tiaoJian'>（其回合结束时）</span>移除。",
                     "anYingChongJue": "响应【暗影冲决】",
-                    "anYingChongJue_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①）</span>本次攻击无法被应战，但攻击伤害-2。可以与【暗裔利刃】作用于同一次攻击。",
+                    "anYingChongJue_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①）</span>本次攻击无法被应战，但伤害-2。",
                     "daMie": "启动【大灭】",
-                    "daMie_info": "【宝石】×1。拥有至少1<span class='hong'>【血祭】</span>且处于未横置的普通状态时，对自己造成2点法术伤害③，然后【横置】并进入【灭绝形态】。",
+                    "daMie_info": "【宝石】<span class='tiaoJian'>（【普通形态】下，<span class='hong'>【血祭】</span>＞0）</span>对自己造成2点法术伤害③，然后【横置】并进入【灭绝形态】。",
                 },
             },
             "intro": "添加角色提莫、亚托克斯。",
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.0",
+            "version": "1.5",
         },
         "files": {
             "character": [
