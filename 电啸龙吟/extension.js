@@ -257,11 +257,26 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             '【奶龙大笑】：弃置1张手牌'
                         ).set('filterCard', function(card, target) {
                             return lib.filter.cardDiscardable(card, target);
+                        }).set('ai', function(card) {
+                            var target = _status.event.player;
+                            var type = get.type(card, target);
+                            var actionCards = target.countCards('h', function(current) {
+                                var currentType = get.type(current, target);
+                                return currentType == 'gongJi' || currentType == 'faShu';
+                            });
+                            if((type == 'gongJi' || type == 'faShu') && actionCards <= 1) {
+                                return -20;
+                            }
+                            return 8 - get.value(card, target);
                         }).set('naiLongSkillSource', player.playerid);
                         await next;
                     }
                 },
                         "check": function(event, player) {
+                    var discardableHand = player.countCards('h', function(card) {
+                        return lib.filter.cardDiscardable(card, player);
+                    });
+                    if(discardableHand <= 2) return false;
                     if(lib.skill._heCheng &&
                         lib.skill._heCheng.filter(event, player) &&
                         (get.shiQi(!player.side) <= 1 ||
@@ -676,32 +691,31 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         teShu: 'teShuReBang',
                     }[type];
                 },
+                        "eventActionType": function(event) {
+                    if(!event) return null;
+                    var name=event.triggername;
+                    if(name=='gongJiEnd') return 'gongJi';
+                    if(name=='faShuEnd') return 'faShu';
+                    if(name=='teShuEnd') return 'teShu';
+                    name=event.name;
+                    if(name=='gongJi'||name=='gongJiEnd') return 'gongJi';
+                    if(name=='faShu'||name=='faShuEnd') return 'faShu';
+                    if(name=='teShu'||name=='teShuEnd') return 'teShu';
+                    return null;
+                },
                         "isCompletedAction": function(event) {
                     if(!event || !event.player) return false;
-                    var triggername = event.triggername || event.name;
-                    if(triggername == 'gongJiEnd' &&
+                    var type=lib.skill.suanFaTuiJian
+                        .eventActionType(event);
+                    if(type=='gongJi' &&
                         event.yingZhan == true) {
                         return false;
                     }
-                    if(triggername == 'gongJiEnd' ||
-                        triggername == 'faShuEnd') {
-                        if(get.is && get.is.xingDong &&
-                            get.is.xingDong(event)) return true;
-                        var phase = event.getParent &&
-                            event.getParent('xingDong');
-                        return !!phase && phase.player == event.player &&
-                            phase.name == 'xingDong';
-                    }
-                    if(triggername == 'teShuEnd') return true;
-                    return false;
+                    return !!type&&_status.currentPhase==event.player;
                 },
                         "actionType": function(event) {
-                    if(!event) return null;
-                    var triggername = event.triggername || event.name;
-                    if(triggername == 'gongJiEnd') return 'gongJi';
-                    if(triggername == 'faShuEnd') return 'faShu';
-                    if(triggername == 'teShuEnd') return 'teShu';
-                    return null;
+                    return lib.skill.suanFaTuiJian
+                        .eventActionType(event);
                 },
                         "setHot": async function(player, type) {
                     var old = player.storage.yongChuTaFeiReBang;
@@ -770,32 +784,69 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                 },
                         "group": [
-                            "suanFaTuiJian_jiLu",
+                            "suanFaTuiJian_jiLuGongJi",
+                            "suanFaTuiJian_jiLuFaShu",
+                            "suanFaTuiJian_jiLuTeShu",
                             "suanFaTuiJian_chongZhi",
                             "suanFaTuiJian_kaiJu",
                         ],
                         "subSkill": {
-                            "jiLu": {
+                            "jiLuGongJi": {
                                 "trigger": {
-                                    "global": [
-                                        "gongJiEnd",
-                                        "faShuEnd",
-                                        "teShuEnd",
-                                    ],
+                                    "global": "gongJiEnd",
                                 },
                                 "forced": true,
                                 "lastDo": true,
                                 "priority": -100,
                                 "popup": false,
                                 "filter": function(event, player) {
-                            return lib.skill.suanFaTuiJian
-                                .isCompletedAction(event);
+                            return !!event.player&&
+                                event.player==_status.currentPhase&&
+                                event.yingZhan!=true;
                         },
                                 "content": function(event, trigger, player) {
                             trigger.player.storage
-                                .yongChuTaFeiLastAction =
-                                lib.skill.suanFaTuiJian
-                                    .actionType(trigger);
+                                .yongChuTaFeiLastAction='gongJi';
+                            trigger.player.syncStorage(
+                                'yongChuTaFeiLastAction'
+                            );
+                        },
+                            },
+                            "jiLuFaShu": {
+                                "trigger": {
+                                    "global": "faShuEnd",
+                                },
+                                "forced": true,
+                                "lastDo": true,
+                                "priority": -100,
+                                "popup": false,
+                                "filter": function(event,player){
+                            return !!event.player&&
+                                event.player==_status.currentPhase;
+                        },
+                                "content": function(event,trigger,player){
+                            trigger.player.storage
+                                .yongChuTaFeiLastAction='faShu';
+                            trigger.player.syncStorage(
+                                'yongChuTaFeiLastAction'
+                            );
+                        },
+                            },
+                            "jiLuTeShu": {
+                                "trigger": {
+                                    "global": "teShuEnd",
+                                },
+                                "forced": true,
+                                "lastDo": true,
+                                "priority": -100,
+                                "popup": false,
+                                "filter": function(event,player){
+                            return !!event.player&&
+                                event.player==_status.currentPhase;
+                        },
+                                "content": function(event,trigger,player){
+                            trigger.player.storage
+                                .yongChuTaFeiLastAction='teShu';
                             trigger.player.syncStorage(
                                 'yongChuTaFeiLastAction'
                             );
@@ -868,12 +919,23 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                     return null;
                 },
+                        "isDirectResponseToActiveAttack": function(yingZhan, player) {
+                    if(!yingZhan || yingZhan.source != player) return false;
+                    var parent = typeof yingZhan.getParent == 'function' ?
+                        yingZhan.getParent() : null;
+                    return !!parent && parent.yingZhan != true;
+                },
                         "findBoundAttack": function(event, player) {
                     var current = event;
                     var guard = 0;
                     while(current && guard < 16) {
                         if(current.qianShiHeiTaoYingOwner ==
                             player.playerid) return current;
+                        if(current.type=='gongJi'||
+                            (current.name=='useCard'&&current.card&&
+                                get.type(current.card)=='gongJi')){
+                            return null;
+                        }
                         if(typeof current.getParent != 'function') break;
                         var parent = current.getParent();
                         if(!parent || parent == current) break;
@@ -901,8 +963,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             if(!event || event.yingZhan != true) return false;
                             var yingZhan = lib.skill.qianShiHeiTaoYing
                                 .findYingZhan(event);
-                            return !!yingZhan &&
-                                yingZhan.source == player;
+                            return lib.skill.qianShiHeiTaoYing
+                                .isDirectResponseToActiveAttack(
+                                    yingZhan,
+                                    player
+                                );
                         },
                                 "content": async function(event, trigger, player) {
                             trigger.qianShiHeiTaoYingOwner =
@@ -958,8 +1023,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 event.qianShiHeiTaoYingTransfer) {
                                 return false;
                             }
-                            return !!lib.skill.qianShiHeiTaoYing
-                                .findBoundAttack(event, player);
+                            var attack=lib.skill.qianShiHeiTaoYing
+                                .findBoundAttack(event,player);
+                            return !!attack&&event.player==attack.target&&
+                                (!event.source||event.source==attack.player);
                         },
                                 "content": async function(event, trigger, player) {
                             var num = Math.max(0, trigger.num || 0);
@@ -1010,6 +1077,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "yongChuTaFeiShuTiao": {
+                        "markimage": "extension/电啸龙吟/mark_taFeiShuTiao.png",
                         "intro": {
                             "name": "薯条",
                             "markcount": "gaiPai",
@@ -1020,66 +1088,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var cards = player.getGaiPai(skill);
                     if(cards.length) player.loseToDiscardpile(cards);
                 },
-                        "group": [
-                            "yongChuTaFeiShuTiao_shiYong",
-                        ],
-                        "subSkill": {
-                            "shiYong": {
-                                "enable": [
-                                    "gongJi",
-                                    "faShu",
-                                    "yingZhan",
-                                ],
-                                "position": "hs",
-                                "filter": function(event, player) {
-                            if(_status.currentPhase != player) return false;
-                            return player.getCards('s', function(card) {
-                                return card.hasGaintag(
+                        "mod": {
+                            "cardEnabled2": function(card, player) {
+                                if(card.hasGaintag && card.hasGaintag(
                                     'yongChuTaFeiShuTiao'
-                                ) && event.filterCard(
-                                    card,
-                                    player,
-                                    event
-                                );
-                            }).length > 0;
-                        },
-                                "filterCard": function(card, player, event) {
-                            return card.hasGaintag(
-                                'yongChuTaFeiShuTiao'
-                            ) && event.filterCard(card, player, event);
-                        },
-                                "viewAs": function(cards) {
-                            if(!cards.length) return;
-                            var card = cards[0];
-                            return {
-                                name: get.name(card),
-                                xiBie: get.xiBie(card),
-                                mingGe: get.mingGe(card),
-                                duYou: card.duYou,
-                            };
-                        },
-                                "check": function(card) {
-                            return get.value(card);
-                        },
-                                "ai": {
-                                    "order": function(event, player) {
-                                var cards = player.getCards(
-                                    's',
-                                    function(card) {
-                                        return card.hasGaintag(
-                                            'yongChuTaFeiShuTiao'
-                                        );
-                                    }
-                                );
-                                if(!cards.length) return 0;
-                                return Math.max.apply(
-                                    null,
-                                    cards.map(function(card) {
-                                        return get.order(card);
-                                    })
-                                );
-                            },
-                                },
+                                ) && _status.currentPhase != player){
+                                    return false;
+                                }
                             },
                         },
                     },
@@ -1175,48 +1190,47 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                 "translate": {
                     "hongWen": "红温",
-                    "hongWen_info": "<span class='hong'>【红温】</span>为电棍Otto专属指示物，上限为3。",
+                    "hongWen_info": "电棍Otto的专属指示物，上限为3。",
                     "baiYinWanQi": "被动【白银晚期】",
-                    "baiYinWanQi_info": "<span class='tiaoJian'>（你承受实际伤害后⑤）</span>+1<span class='hong'>【红温】</span>。当<span class='hong'>【红温】</span>达到上限时，移除所有<span class='hong'>【红温】</span>并【横置】，进入【白银晚期】状态。该状态下你造成和承受的伤害额外+1，且不能获得<span class='hong'>【红温】</span>；持续到你的下个行动阶段结束，届时【重置】并退出状态。",
+                    "baiYinWanQi_info": "<span class='tiaoJian'>（承受实际伤害后⑤）</span>+1<span class='hong'>【红温】</span>。达到上限时，移除全部<span class='hong'>【红温】</span>并【横置】，进入【白银晚期】状态：你造成和承受的伤害额外+1，且不能获得<span class='hong'>【红温】</span>。持续到你的下个行动阶段结束，届时【重置】并退出。",
                     "baiYinWanQiZhuangTai": "白银晚期",
                     "baiYinWanQiZhuangTai_info": "你造成和承受的伤害额外+1；你不能获得<span class='hong'>【红温】</span>。持续到你的下个行动阶段结束。",
                     "shuaiOttoShuai": "响应【帅otto帅】",
-                    "shuaiOttoShuai_info": "<span class='tiaoJian'>（主动攻击前）</span>可以对自己造成1点法术伤害③，令本次攻击伤害额外+2。",
+                    "shuaiOttoShuai_info": "<span class='tiaoJian'>（主动攻击前①）</span>可以对自己造成1点法术伤害③，令本次攻击伤害额外+2。",
                     "zunNiHuoJia": "法术【尊尼获加】",
-                    "zunNiHuoJia_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】，指定一名没有【房管】的目标对手）</span>将【房管】放置于其面前。",
+                    "zunNiHuoJia_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对一名没有【房管】的目标对手施加【房管】。",
                     "fangGuan": "(专)【房管】",
-                    "fangGuan_info": "拥有者下个行动阶段内首次进行主动攻击时，只能指定电棍Otto为目标；该【攻击行动】结束后移除。拥有者的行动阶段结束时，若【房管】仍存在，电棍Otto对其造成2点法术伤害③，然后移除【房管】。",
+                    "fangGuan_info": "持有者下个行动阶段内首次主动攻击只能以电棍Otto为目标，该【攻击行动】结束后移除。<span class='tiaoJian'>（其行动阶段结束时）</span>若【房管】仍存在，电棍Otto对其造成2点法术伤害③，然后移除。",
                     "dianGunShengJing": "响应【电棍圣经】",
-                    "dianGunShengJing_info": "【宝石】×1。<span class='tiaoJian'>（仅【白银晚期】状态下，你承受伤害导致士气下降时）</span>指定一名对手，对其造成X点法术伤害③，再对其他所有对手各造成1点法术伤害③；X为本次士气下降数。全部伤害享受【白银晚期】增伤，随后你【重置】并立即退出该状态。",
+                    "dianGunShengJing_info": "【宝石】<span class='tiaoJian'>（【白银晚期】下，因承受伤害导致士气下降时）</span>对目标对手造成X点法术伤害③，对其他所有对手各造成1点法术伤害③；X为本次士气下降数。上述伤害均享受【白银晚期】加成，随后【重置】并退出该形态。",
                     "woShiNaiLong": "被动【我是奶龙】",
-                    "woShiNaiLong_info": "任意角色每次因你的技能产生一个弃牌事件后，该角色+1【治疗】；同一事件弃置多张牌仍只触发一次。<br><span class='tiaoJian'>（你的攻击命中后②）</span>可以指定一名奶龙以外且有可弃置手牌的同阵营角色，令其弃置1张手牌。",
+                    "woShiNaiLong_info": "角色因你的技能弃牌后，+1【治疗】；每次弃牌事件限一次。<br><span class='tiaoJian'>（你的攻击命中后②）</span>可以令一名有手牌的其他队友弃置1张手牌。",
                     "buShiZhuangTangShiZhenTang": "响应【不是装唐，是真唐】",
-                    "buShiZhuangTangShiZhenTang_info": "<span class='tiaoJian'>（你成为其他角色攻击的目标时①）</span>摸1张牌【强制】并展示之，在标准爆牌结算前判断：若该牌与本次攻击同系，将其保留，本次攻击你无法应战；若不同系，弃置该牌，本次攻击伤害-1。完成系别处理后再执行标准爆牌；该爆牌弃牌视为因本技能弃置。",
+                    "buShiZhuangTangShiZhenTang_info": "<span class='tiaoJian'>（成为其他角色攻击的目标时①）</span>摸1张牌【强制】并展示：若与本次攻击同系，保留该牌且本次攻击无法应战；否则弃置该牌，本次攻击伤害-1。然后执行标准爆牌；此次爆牌弃牌视为因本技能弃置。",
                     "naiLongDaXiao": "启动【奶龙大笑】",
-                    "naiLongDaXiao_info": "【水晶】×1。从你开始按座次依次结算：每名角色弃置1张可弃置的手牌；没有可弃置手牌的角色跳过。即使所有角色均无法弃牌，也可以发动。",
+                    "naiLongDaXiao_info": "【水晶】从你开始，每名角色按座次依次弃置1张手牌；无法弃置者跳过。",
                     "suanFaTuiJian": "被动【算法推荐】",
-                    "suanFaTuiJian_info": "游戏开始时，你没有【热榜】。每名角色的回合结束时，记录其本回合最后实际完成的【攻击行动】【法术行动】或【特殊行动】：没有【热榜】或类型不同时，放置或替换为对应【热榜】；类型相同且该角色不是你时，你+1<span class='lan'>【流量】</span>，该角色+1【治疗】。你自己的同类行动只保持【热榜】。",
+                    "suanFaTuiJian_info": "游戏开始时没有【热榜】。<span class='tiaoJian'>（角色回合结束时）</span>记录其本回合最后完成的行动类型：没有【热榜】或类型不同时，放置或替换为对应【热榜】；<span class='tiaoJian'>（类型相同且该角色不是你时）</span>你+1<span class='lan'>【流量】</span>，其+1【治疗】。你自己的同类行动只维持【热榜】。",
                     "guoQiZhuBao": "被动【过气主包】",
-                    "guoQiZhuBao_info": "<span class='tiaoJian'>（你的回合结束时，若<span class='lan'>【流量】</span>不为0）</span>移除1<span class='lan'>【流量】</span>，然后你+1【治疗】。",
+                    "guoQiZhuBao_info": "<span class='tiaoJian'>（回合结束时，若<span class='lan'>【流量】</span>＞0）</span>移除1点，然后+1【治疗】。",
                     "guanZhuTaFeiMiao": "被动【关注塔菲喵】",
-                    "guanZhuTaFeiMiao_info": "你拥有3<span class='lan'>【流量】</span>时，其他角色回合结束后，若其最后实际完成的行动类型与当前【热榜】不同，不替换【热榜】，改为由你对其造成2点法术伤害③。",
+                    "guanZhuTaFeiMiao_info": "<span class='tiaoJian'>（拥有3<span class='lan'>【流量】</span>时，其他角色回合结束后）</span>若其最后完成的行动类型与【热榜】不同，不替换【热榜】，改为对其造成2点法术伤害③。",
                     "qianShiHeiTaoYing": "被动【前世·黑桃影】",
-                    "qianShiHeiTaoYing_info": "你的主动攻击被成功应战时，应战攻击的目标+1【治疗】。该应战攻击若命中，将原目标完成【治疗】、减伤与抵御后最终将要承受的实际攻击伤害转移给你，来源仍为应战者，然后你+1<span class='lan'>【流量】</span>；最终伤害为0时仍增加<span class='lan'>【流量】</span>。若未命中，你+1【治疗】。",
+                    "qianShiHeiTaoYing_info": "<span class='tiaoJian'>（你的主动攻击被成功应战时）</span>应战攻击的目标+1【治疗】。<span class='tiaoJian'>（本次应战攻击命中时）</span>其实际伤害由你承受，你+1<span class='lan'>【流量】</span>；<span class='tiaoJian'>（未命中时）</span>你+1【治疗】。仅响应对手直接应战你的主动攻击产生的攻击，不响应你的应战攻击及其后续应战。",
                     "qianShiYiBaoShuTiaoXiXi": "响应【前世·一包薯条嘻嘻】",
-                    "qianShiYiBaoShuTiaoXiXi_info": "<span class='tiaoJian'>（你的回合开始时，若你有至少1<span class='lan'>【流量】</span>、至少1张手牌且【薯条】未满）</span>可以移除1<span class='lan'>【流量】</span>，将1张手牌面朝下作为【薯条】。你可在自己的行动阶段将【薯条】如手牌般使用；其不计入手牌，不能用于普通弃牌或其他技能费用，且仅你可见。",
+                    "qianShiYiBaoShuTiaoXiXi_info": "<span class='tiaoJian'>（回合开始时，若<span class='lan'>【流量】</span>＞0、拥有手牌且【薯条】未满）</span>可以移除1<span class='lan'>【流量】</span>，将1张手牌面朝下作为【薯条】。你可以在行动阶段将【薯条】如手牌般使用；其不计入手牌，仅你可见，不能用于普通弃牌或其他技能费用。",
                     "yuanShengYao": "响应【原生摇】",
-                    "yuanShengYao_info": "【水晶】×1。<span class='tiaoJian'>（你拥有3<span class='lan'>【流量】</span>，完整结算一个与当前【热榜】同类型的合法行动后）</span>移除3<span class='lan'>【流量】</span>，摸1张牌【强制】，移除【热榜】，结束当前回合并立即进行一个全新的完整回合。额外回合中可以再次发动。",
+                    "yuanShengYao_info": "【水晶】<span class='tiaoJian'>（拥有3<span class='lan'>【流量】</span>时，完整结算一个与【热榜】同类型的合法行动后，移除3<span class='lan'>【流量】</span>）</span>摸1张牌【强制】，移除【热榜】，结束当前回合并立即开始一个新的完整回合。新回合中可以再次发动。",
                     "yongChuTaFeiLiuLiang": "流量",
-                    "yongChuTaFeiLiuLiang_info": "<span class='lan'>【流量】</span>为永雏塔菲专属指示物，上限为3。",
+                    "yongChuTaFeiLiuLiang_info": "永雏塔菲的专属指示物，上限为3。",
                     "gongJiReBang": "(专)【攻击热榜】",
-                    "gongJiReBang_info": "正面朝上的【热榜】，记录【攻击行动】；三种【热榜】合计上限为1。",
+                    "gongJiReBang_info": "记录【攻击行动】；三种【热榜】合计上限为1。",
                     "faShuReBang": "(专)【法术热榜】",
-                    "faShuReBang_info": "正面朝上的【热榜】，记录【法术行动】；三种【热榜】合计上限为1。",
+                    "faShuReBang_info": "记录【法术行动】；三种【热榜】合计上限为1。",
                     "teShuReBang": "(专)【特殊热榜】",
-                    "teShuReBang_info": "正面朝上的【热榜】，记录【特殊行动】；三种【热榜】合计上限为1。",
+                    "teShuReBang_info": "记录【特殊行动】；三种【热榜】合计上限为1。",
                     "yongChuTaFeiShuTiao": "(专)【薯条】",
-                    "yongChuTaFeiShuTiao_info": "面朝下放置于永雏塔菲角色旁的专属牌，上限为3，仅永雏塔菲可以查看；可在自己的行动阶段如手牌般使用。",
-                    "yongChuTaFeiShuTiao_shiYong": "使用【薯条】",
+                    "yongChuTaFeiShuTiao_info": "永雏塔菲的专属牌，上限为3，面朝下置于角色旁且仅自己可见；行动阶段内可以如手牌般使用。",
                     "naiLongLinShiShouPai": "不是装唐，是真唐",
                 },
             },
@@ -1237,6 +1251,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 "mark_hongWen.png",
                 "mark_fangGuan.png",
                 "mark_taFeiLiuLiang.png",
+                "mark_taFeiShuTiao.png",
                 "mark_gongJiReBang.png",
                 "mark_faShuReBang.png",
                 "mark_teShuReBang.png",

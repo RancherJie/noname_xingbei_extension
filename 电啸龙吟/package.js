@@ -3,7 +3,7 @@ extension["电啸龙吟"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"1.1",
+    version:"1.3",
     files:[
     "info.json",
     "README.md",
