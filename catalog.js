@@ -15,6 +15,17 @@ extension["织梦者"] = {
 	size: "1.8MB"
 };
 
+extension["无名杯UI优化包"] = {
+	date: "2026/08/26",
+	intro: "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志的美术语言。",
+	author: "蒙牛 / Codex",
+	netdisk: "",
+	forum: "",
+	version: "1.4",
+	files: ["info.json", "README.md", "package.js", "extension.css", "image/shuiJing_xianxia.png", "image/baoShi_xianxia.png", "image/cardback_xianxia.png", "image/zhiLiaoCao_xianxia.png", "image/zhiLiao_xianxia.png", "image/huangDeng_xianxia.png", "image/lanDeng_xianxia.png", "image/xingJi_xianxia.png", "image/card/anMie_xianxia.png", "image/card/shuiLianZhan_xianxia.png", "image/card/huoYanZhan_xianxia.png", "image/card/fengShenZhan_xianxia.png", "image/card/leiGuangZhan_xianxia.png", "image/card/diLieZhan_xianxia.png", "image/card/shengGuang_xianxia.png", "image/card/shengDun_xianxia.png", "image/card/xuRuo_xianxia.png", "image/card/zhongDu_xianxia.png", "image/card/moDan_xianxia.png", "image/card/moRen_xianxia.png", "image/card/yiRen_xianxia.png"],
+	size: "11.40MB"
+};
+
 extension["创世纪"] = {
 	date: "2026/08/26",
 	intro: "添加角色贝亚娜斗神、百花缭乱、露米娅、天启者、狱血魔神。",
