@@ -3,7 +3,7 @@ extension["宿命挽歌"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"1.8",
+    version:"1.9",
     files:[
     "info.json",
     "README.md",
@@ -11,6 +11,7 @@ extension["宿命挽歌"]={
     "package.js",
     "extension.js",
     "zhaoLingEr.jpg",
+    "zhaoLingEr_mengShe.png",
     "liXiaoYao.jpg",
     "linYueRu.jpg",
     "aNu.jpg",
@@ -23,6 +24,7 @@ extension["宿命挽歌"]={
     "mark_wuDuZhu.png",
     "mark_fengMo.png",
     "mark_hongShui.png",
+    "mark_jueXingDu.png",
     "audio/bgm/taoHuaHuanMeng.mp3",
     "audio/bgm/qingYuan.mp3",
     "audio/bgm/yuJianFuMo.mp3",
@@ -38,5 +40,5 @@ extension["宿命挽歌"]={
     "audio/bgm/douPoCangQiong.mp3",
     "audio/bgm/pigstep.mp3"
 ],
-    size:"48.33MB"
+    size:"49.03MB"
 };

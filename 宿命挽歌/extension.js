@@ -57,6 +57,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "wuLingXianShu",
                             "nvWaHouRen",
                             "mengShe",
+                            "zhaoLingErMengSheTu",
                             "tianSheZhang",
                             "wuQiChaoYuan",
                             "guanYinZhou",
@@ -830,6 +831,51 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "content": "你已失去【女娲后人】；造成的攻击伤害与法术伤害+1。",
                         },
                     },
+                    "zhaoLingErMengSheTu": {
+                        "charlotte": true,
+                        "trigger": {
+                            "player": ["hengZhiAfter", "chongZhiAfter"],
+                            "global": "gameStart",
+                        },
+                        "forced": true,
+                        "popup": false,
+                        "firstDo": true,
+                        "setAvatar": function(target, dream) {
+                            game.broadcastAll(function(target, dream) {
+                                var setNode = function(node) {
+                                    if(!node) return;
+                                    if(dream) {
+                                        node.setBackgroundImage(
+                                            'extension/宿命挽歌/' +
+                                            'zhaoLingEr_mengShe.png'
+                                        );
+                                    }
+                                    else {
+                                        node.setBackground(
+                                            'zhaoLingEr', 'character'
+                                        );
+                                    }
+                                };
+                                if(target.name == 'zhaoLingEr' ||
+                                    target.name1 == 'zhaoLingEr') {
+                                    setNode(target.node.avatar);
+                                }
+                                if(target.name2 == 'zhaoLingEr') {
+                                    setNode(target.node.avatar2);
+                                }
+                                if(target == game.me && ui.fakeme &&
+                                    target.node.avatar) {
+                                    ui.fakeme.style.backgroundImage =
+                                        target.node.avatar.style.backgroundImage;
+                                }
+                            }, target, dream);
+                        },
+                        "content": function(event, trigger, player) {
+                            lib.skill.zhaoLingErMengSheTu.setAvatar(
+                                player, player.isHengZhi()
+                            );
+                        },
+                    },
                     "tianSheZhang": {
                         "trigger": {
                             "source": "zaoChengShangHai",
@@ -1093,6 +1139,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "mark": true,
                         "marktext": "醒",
                         "onremove": "storage",
+                        "markimage": "extension/宿命挽歌/mark_jueXingDu.png",
                     },
                     "yuJianShu": {
                         "trigger": {
@@ -3340,7 +3387,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "wuLingXianShu_leiJi": "[法术]雷咒",
                     "wuLingXianShu_info": "你可以使用元素师独有技；你造成的伤害均视为法术伤害。",
                     "nvWaHouRen": "被动【女娲后人】",
-                    "nvWaHouRen_info": "【五灵仙术】与【武神】不能以满手牌角色为目标。你每消耗1点<span class='hong'>【灵力】</span>，+1<span class='hong'>【觉醒度】</span>；觉醒度达到10时，你【横置】并进入【梦蛇形态】。",
+                    "nvWaHouRen_info": "【五灵仙术】与【武神】不能以满手牌角色为目标。你每消耗1点<span class='hong'>【灵力】</span>，+1<span class='lan'>【觉醒度】</span>；<span class='lan'>【觉醒度】</span>达到10时，你【横置】并进入【梦蛇形态】。",
                     "mengShe": "被动【梦蛇】",
                     "mengShe_info": "<span class='tiaoJian'>（梦蛇形态下）</span>失去【女娲后人】；你造成的攻击伤害与法术伤害+1。",
                     "mengSheXingTai": "梦蛇形态",
@@ -3362,7 +3409,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "lingLi": "灵力",
                     "lingLi_info": "<span class='hong'>【灵力】</span>为赵灵儿专有指示物，上限为6。",
                     "jueXingDu": "觉醒度",
-                    "jueXingDu_info": "<span class='hong'>【觉醒度】</span>为赵灵儿专属指示物，上限为10；每实际消耗1点【灵力】便增加1点。",
+                    "jueXingDu_info": "<span class='lan'>【觉醒度】</span>为赵灵儿专属指示物，上限为10；每实际消耗1点【灵力】便增加1点。",
                     "yuJianShu": "被动【御剑术】",
                     "yuJianShu_info": "<span class='tiaoJian'>（攻击命中后②）</span>+1<span class='hong'>【剑】</span>。",
                     "qiXingJian": "被动【七星剑】",
@@ -3444,11 +3491,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.8",
+            "version": "1.9",
         },
         "files": {
             "character": [
                 "zhaoLingEr.jpg",
+                "zhaoLingEr_mengShe.png",
                 "liXiaoYao.jpg",
                 "linYueRu.jpg",
                 "aNu.jpg",
@@ -3464,6 +3512,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 "mark_wuDuZhu.png",
                 "mark_fengMo.png",
                 "mark_hongShui.png",
+                "mark_jueXingDu.png",
             ],
             "audio": [
                 "audio/bgm/taoHuaHuanMeng.mp3",
