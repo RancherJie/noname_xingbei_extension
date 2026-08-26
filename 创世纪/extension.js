@@ -186,7 +186,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "nuQiBaoFa",
                             "shiHunFengMoZhan",
                             "siWangKangJu",
-                            "baoZou",
+                            "shiXue",
                             "bengShanLieDiZhan",
                             "moYuXueSha",
                             "yuXueMoShenXueQi",
@@ -3024,96 +3024,23 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "shiHunZhiShou": {
-                        "getAttackEvent": function(event) {
-                    var current = event;
-                    var guard = 0;
-                    while(current && guard < 20) {
-                        if(current.name == 'useCard' &&
-                            current.type == 'gongJi') {
-                            return current;
-                        }
-                        if(typeof current.getParent != 'function') break;
-                        var parent = current.getParent();
-                        if(!parent || parent == current) break;
-                        current = parent;
-                        guard++;
-                    }
-                    return null;
-                },
                         "trigger": {
                             "source": "chengShouShangHaiAfter",
                         },
-                        "usable": 1,
+                        "forced": true,
                         "filter": function(event, player) {
-                    if(!event || event.num <= 0 ||
-                        !event.card ||
-                        get.type(event.card) != 'gongJi') {
-                        return false;
-                    }
-                    var attack =
-                        lib.skill.shiHunZhiShou.getAttackEvent(event);
-                    return !!attack &&
-                        attack.player == player &&
-                        attack.yingZhan != true &&
-                        (!attack.customArgs ||
-                            attack.customArgs.shiHunZhiShouAsked !== true);
-                },
-                        "cost": async function(event, trigger, player) {
-                    var attack =
-                        lib.skill.shiHunZhiShou.getAttackEvent(trigger);
-                    if(!attack) {
-                        event.result = { bool: false };
-                        return;
-                    }
-                    attack.customArgs = attack.customArgs || {};
-                    if(attack.customArgs.shiHunZhiShouAsked === true) {
-                        event.result = { bool: false };
-                        return;
-                    }
-                    attack.customArgs.shiHunZhiShouAsked = true;
-                    event.result = await player.chooseBool(
-                        '是否发动【嗜魂之手】？'
-                    ).set('ai', function() {
-                        var player = _status.event.player;
-                        var bloodFull = player.isZhiShiWuMax(
-                            'yuXueMoShenXueQi'
-                        );
-                        var canHeal = !player.hasSkill('xueShaJinLiao') &&
-                            player.countZhiLiao() <
-                                player.getZhiLiaoLimit();
-                        return !bloodFull || canHeal;
-                    }).forResult();
+                    return !!event && event.num > 0 && !!event.card &&
+                        get.type(event.card) == 'gongJi';
                 },
                         "content": async function(event, trigger, player) {
-                    var attack =
-                        lib.skill.shiHunZhiShou.getAttackEvent(trigger);
-                    if(!attack) return;
-                    attack.customArgs = attack.customArgs || {};
-                    if(attack.customArgs.shiHunZhiShouUsed === true) {
-                        return;
-                    }
-                    attack.customArgs.shiHunZhiShouUsed = true;
-                    var choice = await player.chooseControl([
-                        '+2【血气】',
-                        '+1【治疗】',
-                    ]).set(
-                        'prompt',
-                        '【嗜魂之手】：选择一项'
-                    ).set('ai', function() {
-                        var player = _status.event.player;
-                        if(player.hasSkill('xueShaJinLiao') ||
-                            player.countZhiLiao() >=
-                                player.getZhiLiaoLimit()) {
-                            return '+2【血气】';
-                        }
-                        return '+1【治疗】';
-                    }).forResultControl();
-                    if(choice == '+1【治疗】') {
+                    var before = player.countZhiLiao();
+                    if(before < player.getZhiLiaoLimit()) {
                         await player.changeZhiLiao(1, player);
-                    } else {
+                    }
+                    if(player.countZhiLiao() <= before) {
                         await player.addZhiShiWu(
                             'yuXueMoShenXueQi',
-                            2
+                            1
                         );
                     }
                 },
@@ -3275,23 +3202,20 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             },
                         },
                     },
-                    "baoZou": {
+                    "shiXue": {
                         "type": "faShu",
                         "enable": "faShu",
                         "usable": 1,
                         "filter": function(event, player) {
-                    return !player.hasSkill('baoZouZhuangTai') &&
-                        player.countZhiShiWu(
-                            'yuXueMoShenXueQi'
-                        ) >= 2;
+                    return player.countZhiLiao() > 0;
                 },
                         "content": async function(event, trigger, player) {
-                    await player.removeZhiShiWu(
+                    await player.changeZhiLiao(-1, player);
+                    await player.addZhiShiWu(
                         'yuXueMoShenXueQi',
                         2
                     );
                     player.addGongJi(1);
-                    player.addSkill('baoZouZhuangTai');
                 },
                         "ai": {
                             "order": 5,
@@ -3299,7 +3223,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 "player": function(player) {
                             return player.countCards('h', function(card) {
                                 return get.type(card) == 'gongJi';
-                            }) > 0 ? 2 : 0;
+                            }) > 0 ? 1.5 : 0;
                         },
                             },
                         },
@@ -3385,6 +3309,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     if(!player.isHengZhi()) {
                         await player.hengZhi();
                     }
+                    player.storage.xueShaXingTaiPhaseCount = 0;
+                    player.syncStorage('xueShaXingTaiPhaseCount');
                     player.addSkill('xueShaXingTai');
                 },
                         "check": function(event, player) {
@@ -3413,57 +3339,6 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                 },
                     },
-                    "baoZouZhuangTai": {
-                        "charlotte": true,
-                        "mark": true,
-                        "intro": {
-                            "name": "暴走",
-                            "content": "攻击伤害额外+1；承受的攻击伤害额外+1【强制】。持续至你的下个回合开始。",
-                        },
-                        "trigger": {
-                            "player": "phaseBegin",
-                        },
-                        "forced": true,
-                        "firstDo": true,
-                        "priority": 100,
-                        "popup": false,
-                        "content": function(event, trigger, player) {
-                    player.removeSkill('baoZouZhuangTai');
-                },
-                        "group": [
-                            "baoZouZhuangTai_gongJi",
-                            "baoZouZhuangTai_chengShou",
-                        ],
-                        "subSkill": {
-                            "gongJi": {
-                                "trigger": {
-                                    "player": "gongJiSheZhi",
-                                },
-                                "forced": true,
-                                "filter": function(event, player) {
-                            return !!event;
-                        },
-                                "content": function(event, trigger, player) {
-                            trigger.changeDamageNum(1);
-                        },
-                            },
-                            "chengShou": {
-                                "trigger": {
-                                    "player": "chengShouShangHaiBefore",
-                                },
-                                "forced": true,
-                                "firstDo": true,
-                                "filter": function(event, player) {
-                            return !!event &&
-                                event.num > 0 &&
-                                event.faShu != true;
-                        },
-                                "content": function(event, trigger, player) {
-                            trigger.changeDamageNum(1);
-                        },
-                            },
-                        },
-                    },
                     "xueShaJinLiao": {
                         "charlotte": true,
                         "trigger": {
@@ -3485,7 +3360,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "mark": true,
                         "intro": {
                             "name": "血刹形态",
-                            "content": "不能获得【治疗】；任意角色每次承受实际伤害后，你+1【血气】。持续至你的下个回合开始并结算终结效果。",
+                            "content": "不能获得【治疗】；任意角色每次承受实际伤害后，你+1【血气】。持续至你的下下个回合开始并结算终结效果。",
                         },
                         "markimage": "extension/创世纪/mark_xueShaXingTai.png",
                         "group": [
@@ -3498,6 +3373,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         player.removeSkill('xueShaJinLiao');
                     }
                     delete player.storage.xueShaXingTaiFinishing;
+                    delete player.storage.xueShaXingTaiPhaseCount;
                 },
                         "subSkill": {
                             "xueQi": {
@@ -3528,6 +3404,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return player.hasSkill('xueShaXingTai');
                         },
                                 "content": async function(event, trigger, player) {
+                            player.storage.xueShaXingTaiPhaseCount =
+                                (player.storage.xueShaXingTaiPhaseCount || 0) + 1;
+                            player.syncStorage('xueShaXingTaiPhaseCount');
+                            if(player.storage.xueShaXingTaiPhaseCount < 2) {
+                                return;
+                            }
                             var removed = player.countZhiShiWu(
                                 'yuXueMoShenXueQi'
                             );
@@ -3560,12 +3442,6 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             ).forResultTargets();
                             var primary = targets[0];
                             var others = game.players.slice();
-                            if(player.isHengZhi()) {
-                                await player.chongZhi();
-                            }
-                            player.storage.xueShaXingTaiFinishing = true;
-                            player.removeSkill('xueShaXingTai');
-                            delete player.storage.xueShaXingTaiFinishing;
                             try {
                                 var damage = Math.min(
                                     4,
@@ -3586,13 +3462,19 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                             continue;
                                         }
                                         await target.faShuDamage(
-                                            2,
+                                            1,
                                             player,
                                             'nocard'
                                         );
                                     }
                                 }
                             } finally {
+                                player.storage.xueShaXingTaiFinishing = true;
+                                if(player.isHengZhi()) {
+                                    await player.chongZhi();
+                                }
+                                player.removeSkill('xueShaXingTai');
+                                delete player.storage.xueShaXingTaiFinishing;
                                 player.removeSkill('xueShaJinLiao');
                             }
                         },
@@ -3714,24 +3596,22 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "xueQiWangSheng_info": "<span class='tiaoJian'>（承受实际伤害后⑤）</span>+X<span class='hong'>【血气】</span>，X为实际伤害，至多为2。其他角色造成的伤害及自伤均可触发。",
                     "xueQiHuanXing": "被动【血气唤醒】",
                     "xueQiHuanXing_info": "<span class='tiaoJian'>（没有【治疗】时）</span>攻击伤害+1；承受的所有伤害+1【强制】，包括自伤。",
-                    "shiHunZhiShou": "响应【嗜魂之手】",
-                    "shiHunZhiShou_info": "【回合限定】<span class='tiaoJian'>（主动攻击造成实际伤害后⑤）</span>选择一项：+2<span class='hong'>【血气】</span>；或+1【治疗】。",
+                    "shiHunZhiShou": "被动【嗜魂之手】",
+                    "shiHunZhiShou_info": "<span class='tiaoJian'>（攻击造成实际伤害后⑤）</span>+1【治疗】；若【治疗】已满或无法实际获得【治疗】，改为+1<span class='hong'>【血气】</span>。",
                     "nuQiBaoFa": "响应【怒气爆发】",
                     "nuQiBaoFa_info": "【回合限定】<span class='tiaoJian'>（主动攻击命中时②，移除2<span class='hong'>【血气】</span>）</span>对目标造成1点法术伤害③；可以对另一名对手再造成1点法术伤害③；然后对自己造成1点法术伤害③。",
                     "shiHunFengMoZhan": "响应【嗜魂封魔斩】",
                     "shiHunFengMoZhan_info": "<span class='tiaoJian'>（主动攻击前①，移除3<span class='hong'>【血气】</span>）</span>本次攻击无法被应战。",
                     "siWangKangJu": "法术【死亡抗拒】",
                     "siWangKangJu_info": "<span class='tiaoJian'>（你没有【治疗】且未被禁止获得【治疗】，移除2<span class='hong'>【血气】</span>）</span>+2【治疗】，然后弃置2张牌；不足时弃置全部可弃置牌。",
-                    "baoZou": "法术【暴走】",
-                    "baoZou_info": "【回合限定】<span class='tiaoJian'>（移除2<span class='hong'>【血气】</span>）</span>+1【攻击行动】。直到你的下个回合开始前，攻击伤害+1，承受的攻击伤害+1【强制】；可以与【血气唤醒】叠加。",
-                    "baoZouZhuangTai": "暴走",
-                    "baoZouZhuangTai_info": "攻击伤害额外+1；承受的攻击伤害额外+1【强制】。持续至你的下个回合开始，可以与【血气唤醒】叠加。",
+                    "shiXue": "法术【嗜血】",
+                    "shiXue_info": "【回合限定】<span class='tiaoJian'>（移除你的1【治疗】）</span>+2<span class='hong'>【血气】</span>，额外+1【攻击行动】。",
                     "bengShanLieDiZhan": "法术【崩山裂地斩】",
                     "bengShanLieDiZhan_info": "【水晶】<span class='tiaoJian'>（移除4<span class='hong'>【血气】</span>）</span>对一名对手造成2点法术伤害③，对其他对手各造成1点法术伤害③，然后对自己造成1点法术伤害③。",
                     "moYuXueSha": "启动【魔狱血刹】",
-                    "moYuXueSha_info": "【持续】【宝石】<span class='tiaoJian'>（移除全部【治疗】）</span>【横置】并进入【血刹形态】；没有【治疗】也可发动。<br><span class='tiaoJian'>（下个回合开始时）</span>移除全部<span class='hong'>【血气】</span>，选择一名对手，然后【重置】并退出形态。对其造成X点法术伤害③，X为移除数的一半（向上取整），至多为4；若移除数≥6，再对其他对手各造成2点法术伤害③。全部伤害结算后解除治疗禁止。",
+                    "moYuXueSha_info": "【持续】【宝石】<span class='tiaoJian'>（移除全部【治疗】）</span>【横置】并进入【血刹形态】；没有【治疗】也可发动。<br><span class='tiaoJian'>（下下个回合开始时）</span>移除全部<span class='hong'>【血气】</span>并选择一名对手，对其造成X点法术伤害③，X为移除数的一半（向上取整），至多为4；若移除数≥6，再对其他对手各造成1点法术伤害③。全部伤害结算后【重置】、退出形态并解除治疗禁止。",
                     "xueShaXingTai": "血刹形态",
-                    "xueShaXingTai_info": "<span class='tiaoJian'>（【血刹形态】下）</span>不能获得【治疗】；<span class='tiaoJian'>（任意角色承受实际伤害后）</span>你+1<span class='hong'>【血气】</span>。自身受伤时可与【血气旺盛】叠加。持续至你的下个回合开始并结算【魔狱血刹】。",
+                    "xueShaXingTai_info": "<span class='tiaoJian'>（【血刹形态】下）</span>不能获得【治疗】；<span class='tiaoJian'>（任意角色承受实际伤害后）</span>你+1<span class='hong'>【血气】</span>。自身受伤时可与【血气旺盛】叠加。持续至你的下下个回合开始并结算【魔狱血刹】。",
                 },
             },
             "intro": "添加角色贝亚娜斗神、百花缭乱、露米娅、天启者、狱血魔神。",
