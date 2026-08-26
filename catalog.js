@@ -16,34 +16,34 @@ extension["织梦者"] = {
 };
 
 extension["创世纪"] = {
-	date: "2026/08/25",
+	date: "2026/08/26",
 	intro: "添加角色贝亚娜斗神、百花缭乱、露米娅、天启者、狱血魔神。",
 	author: "蒙牛",
 	netdisk: "",
 	forum: "",
 	version: "2.2",
 	files: ["info.json", "README.md", "LICENSE", "package.js", "beiyanadopushen.png", "baiHuaLiaoLuan.png", "luMiYa.png", "tianQiZhe.png", "yuXueMoShen.png", "mark_nianQi.png", "mark_luMiYaYanJiu.png", "mark_shenPan.png", "mark_rongYuZhuFu.png", "mark_shouHuHuiZhang.png", "mark_wuQiZhuFu.png", "mark_tianShiZhuFu.png", "mark_xueQi.png", "mark_xueShaXingTai.png"],
-	size: "10.21MB"
+	size: "10.20MB"
 };
 
 extension["十周年-AI优化版"] = {
-	date: "2026/08/23",
+	date: "2026/08/26",
 	intro: "独立的十周年角色AI优化补丁，不修改原版技能设计。",
 	author: "蒙牛 / Codex",
 	netdisk: "",
 	forum: "",
-	version: "1.5",
+	version: "1.6",
 	files: ["info.json", "README.md", "package.js"],
-	size: "427KB"
+	size: "431KB"
 };
 
 extension["十周年-噩梦人机"] = {
-	date: "2026/08/23",
+	date: "2026/08/26",
 	intro: "继承十周年-AI优化版，为70名电脑角色添加140项噩梦强化；支持原版、高清与Q版三档头像，并允许联机玩家独立选择。",
 	author: "蒙牛 / Codex",
 	netdisk: "",
 	forum: "",
-	version: "1.1",
+	version: "1.3",
 	files: [
 		"info.json",
 		"README.md",
@@ -338,20 +338,20 @@ extension["宿命挽歌"] = {
 	author: "蒙牛",
 	netdisk: "",
 	forum: "",
-	version: "1.8",
-	files: ["info.json", "README.md", "LICENSE", "package.js", "zhaoLingEr.jpg", "liXiaoYao.jpg", "linYueRu.jpg", "aNu.jpg", "baiYueJiaoZhu.png", "shuiMoShouBaiYueJiaoZhu.png", "mark_lingLi.png", "mark_jianY.png", "mark_qiJing.png", "mark_gu.png", "mark_wuDuZhu.png", "mark_fengMo.png", "mark_hongShui.png", "audio/bgm/taoHuaHuanMeng.mp3", "audio/bgm/qingYuan.mp3", "audio/bgm/yuJianFuMo.mp3", "audio/bgm/niTianErXing.mp3", "audio/bgm/niTianErXing2.mp3", "audio/bgm/biWuZhaoQin.mp3", "audio/bgm/yunGuHeFeng.mp3", "audio/bgm/ending.mp3", "audio/bgm/dateALive.mp3", "audio/bgm/fengYiYangDeYongShi.mp3", "audio/bgm/swordland.mp3", "audio/bgm/gangGangJiJi.mp3", "audio/bgm/douPoCangQiong.mp3", "audio/bgm/pigstep.mp3"],
-	size: "50.69MB"
+	version: "1.9",
+	files: ["info.json", "README.md", "LICENSE", "package.js", "zhaoLingEr.jpg", "zhaoLingEr_mengShe.png", "liXiaoYao.jpg", "linYueRu.jpg", "aNu.jpg", "baiYueJiaoZhu.png", "shuiMoShouBaiYueJiaoZhu.png", "mark_lingLi.png", "mark_jianY.png", "mark_qiJing.png", "mark_gu.png", "mark_wuDuZhu.png", "mark_fengMo.png", "mark_hongShui.png", "mark_jueXingDu.png", "audio/bgm/taoHuaHuanMeng.mp3", "audio/bgm/qingYuan.mp3", "audio/bgm/yuJianFuMo.mp3", "audio/bgm/niTianErXing.mp3", "audio/bgm/niTianErXing2.mp3", "audio/bgm/biWuZhaoQin.mp3", "audio/bgm/yunGuHeFeng.mp3", "audio/bgm/ending.mp3", "audio/bgm/dateALive.mp3", "audio/bgm/fengYiYangDeYongShi.mp3", "audio/bgm/swordland.mp3", "audio/bgm/gangGangJiJi.mp3", "audio/bgm/douPoCangQiong.mp3", "audio/bgm/pigstep.mp3"],
+	size: "51.42MB"
 };
 
 extension["峡谷幻音"] = {
 	date: "2026/08/25",
-	intro: "添加角色提莫、亚托克斯。",
+	intro: "添加角色提莫、娑娜、亚托克斯。",
 	author: "蒙牛",
 	netdisk: "",
 	forum: "",
-	version: "1.5",
-	files: ["info.json", "README.md", "LICENSE", "package.js", "tiMo.jpg", "yaTuoKeSi.jpg", "mark_tiMoZhongMoGuKa.png", "mark_xueRen.png", "mark_xueJi.png", "mark_eHuoShuLianKa.png"],
-	size: "965KB"
+	version: "1.7",
+	files: ["info.json", "README.md", "LICENSE", "package.js", "tiMo.jpg", "suoNa.jpg", "yaTuoKeSi.jpg", "mark_tiMoZhongMoGuKa.png", "mark_suoNaHeXian.png", "mark_suoNaYingYongYuYin.png", "mark_suoNaJianYiYuYin.png", "mark_suoNaXunJieYuYin.png", "mark_xueRen.png", "mark_xueJi.png", "mark_eHuoShuLianKa.png"],
+	size: "1.75MB"
 };
 
 extension["永夜残响"] = {
@@ -366,14 +366,14 @@ extension["永夜残响"] = {
 };
 
 extension["bigcowcow"] = {
-	date: "2026/08/25",
+	date: "2026/08/26",
 	intro: "添加角色优菈、赫克托、史蒂夫、桐谷和人、一姬、萧炎。",
 	author: "蒙牛",
 	netdisk: "",
 	forum: "",
 	version: "2.7",
 	files: ["info.json", "README.md", "LICENSE", "package.js", "youLa.png", "huiFengQiangShi.png", "steve.png", "tongGuHeRen.png", "yiJi.png", "xiaoYan.png", "mark_fuChou.png", "mark_qiangShi.png", "mark_lianJi.png", "mark_miaoYun.png", "mark_douQi.png", "mark_anJin.png", "mark_qingLianDiXinHuo.png", "mark_yunLuoXinYan.png", "mark_guLingLengHuo.png", "mark_anDanQingLianDiXinHuo.png", "mark_anDanYunLuoXinYan.png", "mark_anDanGuLingLengHuo.png", "mark_jieShi.png"],
-	size: "5.42MB"
+	size: "5.44MB"
 };
 
 extension["电啸龙吟"] = {
