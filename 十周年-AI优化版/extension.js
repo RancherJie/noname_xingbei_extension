@@ -889,6 +889,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     }
 
     function patchNvWuShen(helper) {
+        var order = lib.skill && lib.skill.zhiXuZhiYin;
+        if (order && markPatched(order, "overflowSafety")) {
+            order.ai = order.ai || {};
+            order.ai.order = function (item, player) {
+                return helper.wouldOverflow(player, 2, 0) ? 0 : 4;
+            };
+            order.ai.result = order.ai.result || {};
+            order.ai.result.player = function (player) {
+                if (helper.wouldOverflow(player, 2, 0)) return -100;
+                return player.isHengZhi() ? -1 : 1;
+            };
+        }
+
         var glory = lib.skill && lib.skill.junShenWeiGuang;
         if (glory && markPatched(glory, "phaseChoice")) {
             glory.content = function () {
@@ -1785,6 +1798,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     }
 
     function patchXueSeJianLing(helper) {
+        var flash = lib.skill && lib.skill.chiSeYiShan;
+        if (flash && markPatched(flash, "overflowSafety")) {
+            flash.check = function (event, player) {
+                var blood = player.countZhiShiWu("xianXue");
+                var canShield = blood >= 2;
+                var treatment = player.hasMark && player.hasMark("xueQiangWeiTingYuan") ?
+                    0 : Math.max(0, player.zhiLiao || 0);
+                var actualDamage = Math.max(0, 2 - (canShield ? 1 : 0) - treatment);
+                if (helper.wouldOverflow(player, actualDamage, 0)) return false;
+                if (helper.countUsableCards(player, "gongJi") <= 0) return false;
+                if (blood >= 2) return true;
+                return player.countCards("h", function (card) {
+                    return get.type(card) == "gongJi" && get.xiBie(card) == "an";
+                }) > 0;
+            };
+        }
+
+        var barrier = lib.skill && lib.skill.xueQiPingZhang;
+        if (barrier && markPatched(barrier, "damageAndOverflowSafety")) {
+            barrier.check = function (event, player) {
+                return !!event && event.num > 0;
+            };
+        }
+
         var rose = lib.skill && lib.skill.xueRanQiangWei;
         if (rose && rose.ai && rose.ai.result && markPatched(rose, "enemyTarget")) {
             rose.ai.result.target = function (player, target) {
@@ -1883,10 +1920,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         if (snipe && snipe.ai && snipe.ai.result && markPatched(snipe, "overflowTarget")) {
             snipe.ai.result.target = function (player, target) {
                 if (!player.canGongJi()) return 0;
-                var draw = Math.max(0, 5 - target.countCards("h"));
+                if (target.side == player.side) return -100;
+                var fillTo = 5;
+                if (lib.xingBeiNightmare &&
+                    typeof lib.xingBeiNightmare.isNightmareAi == "function" &&
+                    lib.xingBeiNightmare.isNightmareAi(player) &&
+                    player.hasSkill("nightmare_zhiMingJuJi")) {
+                    fillTo = 7;
+                }
+                var draw = Math.max(0, fillTo - target.countCards("h"));
                 if (!draw) return 0;
-                var overflow = Math.max(0, 5 - target.getHandcardLimit());
-                return overflow > 0 ? -1 - overflow * 3 : 1 + draw * 0.2;
+                var overflow = Math.max(0, fillTo - target.getHandcardLimit());
+                var pressure = Math.max(0.1, 0.5 + overflow * 3 - draw * 0.1);
+                return -pressure;
             };
         }
     }
@@ -6606,8 +6652,39 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         };
     }
 
+    function patchMandatoryAiActions() {
+        var skillName = "_shiZhouNianAiMandatoryAction";
+        if (!lib.skill[skillName]) {
+            lib.skill[skillName] = {
+                charlotte: true,
+                popup: false,
+                onChooseToUse: function (event) {
+                    if (!event || event.action !== true ||
+                        ["gongJiOrFaShu", "gongJi", "faShu"].indexOf(event.name) === -1) return;
+                    if (event.isOnline && event.isOnline()) return;
+                    if (event.isMine && event.isMine() && !_status.auto) return;
+                    if (event._shiZhouNianMandatoryAiScoring) return;
+                    event._shiZhouNianMandatoryAiScoring = true;
+
+                    function requireBestLegalChoice(check) {
+                        return function () {
+                            var score = typeof check == "function" ? check.apply(this, arguments) : 0;
+                            return (typeof score == "number" && isFinite(score) ? score : 0) + 100000;
+                        };
+                    }
+
+                    event.ai1 = requireBestLegalChoice(event.ai1);
+                    event.ai2 = requireBestLegalChoice(event.ai2);
+                }
+            };
+        }
+        if (game.addGlobalSkill) game.addGlobalSkill(skillName);
+        else if (lib.skill.global && lib.skill.global.indexOf(skillName) === -1) lib.skill.global.push(skillName);
+    }
+
     function applyShiZhouNianAiPatch() {
         if (!lib.skill) return;
+        patchMandatoryAiActions();
         var helper = getHelper();
         patchCoreActions(helper);
         patchStartupSkills(helper);
@@ -6675,7 +6752,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "1.5",
+        version: "1.6",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();
