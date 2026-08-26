@@ -2004,8 +2004,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 .yiJiHaiDiLinShiShouPai =
                                 player.countCards('h') +
                                 trigger.cards.length;
-                            player.addSkill(
-                                'yiJiHaiDiLinShiShouPai'
+                            player.addTempSkill(
+                                'yiJiHaiDiLinShiShouPai',
+                                { player: 'chengShouShangHaiAfter' }
                             );
                         },
                             },
@@ -2864,11 +2865,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         '【焚决】：选择1张黯淡的【异火】翻至明亮面'
                     ).set('ai', function(button) {
                         var fire = manager.getFireByCard(button.link);
-                        return {
-                            qingLianDiXinHuo: 3,
-                            guLingLengHuo: 2,
-                            yunLuoXinYan: 1,
-                        }[fire] || 0;
+                        return manager.aiFireKeepValue(
+                            _status.event.player,
+                            fire
+                        );
                     }).forResultLinks();
                     var fire = manager.getFireByCard(links[0]);
                     if(fire) await manager.setForm(player, fire, 'bright');
@@ -2884,7 +2884,21 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         event.target.countZhiShiWu('xiaoYanAnJin') == 0;
                 },
                         "check": function(event, player) {
-                    return !!event.target && event.target.side != player.side;
+                    if(!event.target || event.target.side == player.side) {
+                        return false;
+                    }
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var blood = player.countZhiShiWu('xiaoYanDouQi');
+                    if(blood == 3 && manager.aiYanFenPlan(
+                        player,
+                        event.target
+                    )) return false;
+                    var next = lib.skill.fenJueLianHua.nextFire(player);
+                    if(next && blood <= next.cost &&
+                        lib.skill.fenJueLianHua.aiCanRefine(player)) {
+                        return manager.aiOverflow(event.target, 1) > 0;
+                    }
+                    return true;
                 },
                         "logTarget": "target",
                         "content": async function(event, trigger, player) {
@@ -2911,9 +2925,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }) >= 2;
                 },
                         "cost": async function(event, trigger, player) {
-                    var fireCount = lib.skill.xiaoYanYiHuoManager
-                        .getRefined(player).length;
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var fireCount = manager.getRefined(player).length;
                     var damage = Math.ceil(fireCount / 2);
+                    var plan = manager.aiYanFenPlan(player, trigger.target);
                     event.result = await player.chooseTarget(
                         [2, 2],
                         '【焰分噬浪尺】：移除3【斗气】，选择攻击目标以外的两名角色，各造成' +
@@ -2924,12 +2939,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     ).set('attackTarget', trigger.target)
                         .set('damageNum', damage)
+                        .set('planTargets', plan ? plan.targets : [])
                         .set('ai', function(target) {
-                            return get.damageEffect2(
-                                target,
-                                _status.event.player,
-                                _status.event.damageNum
-                            );
+                            var planned = _status.event.planTargets || [];
+                            if(planned.includes(target)) return 20;
+                            return -20;
                         }).forResult();
                 },
                         "content": async function(event, trigger, player) {
@@ -2998,8 +3012,25 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             get.xingBei(player.side) + 1 >= game.xingBeiMax)) {
                         return false;
                     }
-                    return player.countCards('h') + info.damage <=
-                        player.getHandcardLimit();
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var actual = Math.max(
+                        0,
+                        info.damage - manager.aiTreatment(player)
+                    );
+                    if(player.countCards('h') + actual >
+                        player.getHandcardLimit()) return false;
+                    var value = {
+                        qingLianDiXinHuo: 3.4,
+                        yunLuoXinYan: 4,
+                        guLingLengHuo: 5,
+                    }[info.fire] || 2;
+                    value -= manager.aiSelfDamageRisk(player, info.damage);
+                    value -= info.cost * 0.3;
+                    value -= info.energy == 'baoShi' ? 1.4 : 0.75;
+                    if(player.countZhiShiWu('xiaoYanDouQi') >= 5) {
+                        value += 0.7;
+                    }
+                    return value > 0.45;
                 },
                         "type": "qiDong",
                         "trigger": {
@@ -3096,6 +3127,95 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "tianHuoSanXuanBian": {
+                        "aiPlan": function(player) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    if(!player || !player.canBiShaShuiJing ||
+                        !player.canBiShaShuiJing()) return null;
+                    var bright = manager.getBright(player);
+                    var max = Math.min(
+                        3,
+                        bright.length,
+                        player.countZhiShiWu('xiaoYanDouQi')
+                    );
+                    if(!max) return null;
+                    var attacks = player.getCards('h', function(card) {
+                        return get.type(card, player) == 'gongJi';
+                    });
+                    var enemies = game.filterPlayer(function(target) {
+                        return target.isIn() && target.side != player.side;
+                    });
+                    if(!attacks.length || !enemies.length) return null;
+                    var plans = [];
+                    for(var x = 1; x <= max; x++) {
+                        var best = null;
+                        attacks.forEach(function(card) {
+                            enemies.forEach(function(target) {
+                                var response = target.countCards('h', function(current) {
+                                    if(get.type(current, target) != 'gongJi') {
+                                        return false;
+                                    }
+                                    return get.xiBie(current) == 'an' ||
+                                        get.xiBie(current) == get.xiBie(card);
+                                });
+                                var shield = target.hasExpansions &&
+                                    target.hasExpansions('_shengDun');
+                                var hit = x >= 3 ? 0.98 :
+                                    response > 0 ? 0.42 : 0.9;
+                                if(x < 2 && shield) hit *= 0.25;
+                                var damage = 3;
+                                var score = manager.aiDamageScore(
+                                    target,
+                                    player,
+                                    damage,
+                                    x >= 2
+                                ) * hit;
+                                if(x >= 2) {
+                                    score += Math.min(
+                                        damage,
+                                        manager.aiTreatment(target)
+                                    ) * 0.65;
+                                    if(shield) score += 1.2;
+                                }
+                                if(x >= 3 && response > 0) {
+                                    score += Math.min(1.5, response * 0.55);
+                                }
+                                if(!best || score > best.score) {
+                                    best = {
+                                        target: target,
+                                        card: card,
+                                        score: score,
+                                    };
+                                }
+                            });
+                        });
+                        if(!best) continue;
+                        var fires = bright.slice().sort(function(a, b) {
+                            return manager.aiFireKeepValue(player, a) -
+                                manager.aiFireKeepValue(player, b);
+                        }).slice(0, x);
+                        var score = best.score - x * 0.5 - 0.8;
+                        fires.forEach(function(fire) {
+                            score -= manager.aiFireKeepValue(player, fire) * 0.25;
+                        });
+                        if(get.zhanJi(player.side).includes('shuiJing')) {
+                            score += 0.8;
+                        }
+                        plans.push({
+                            x: x,
+                            fires: fires,
+                            target: best.target,
+                            card: best.card,
+                            score: score,
+                        });
+                    }
+                    plans.sort(function(a, b) { return b.score - a.score; });
+                    var plan = plans[0] || null;
+                    var lotus = manager.aiFoNuPlan(player);
+                    if(lotus && plan && lotus.score > plan.score + 0.35) {
+                        return null;
+                    }
+                    return plan && plan.score > 0.45 ? plan : null;
+                },
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
@@ -3130,16 +3250,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var choices = fires.map(function(fire) {
                         return [fire, fireNames[fire] || get.translation(fire)];
                     });
-                    var desired = 1;
-                    if(max >= 2 && game.hasPlayer(function(target) {
-                        return target.side != player.side &&
-                            target.countZhiLiao() > 0;
-                    })) desired = 2;
-                    if(max >= 3 && game.hasPlayer(function(target) {
-                        return target.side != player.side &&
-                            (target.countCards('h') >= 3 ||
-                                get.shiQi(!player.side) <= 3);
-                    })) desired = 3;
+                    var plan = lib.skill.tianHuoSanXuanBian.aiPlan(player);
+                    var desired = plan ? plan.x : 1;
                     var links = await player.chooseButton(
                         [
                             '【天火三玄变】：选择1至' + max +
@@ -3148,17 +3260,28 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [1, max]
                     ).set('desiredCount', desired)
+                        .set('desiredFires', plan ? plan.fires : [])
                         .set('ai', function(button) {
+                        var fire = Array.isArray(button.link) ?
+                            button.link[0] : button.link;
+                        if((_status.event.desiredFires || []).includes(fire)) {
+                            return 10;
+                        }
                         return ui.selected.buttons.length <
-                            _status.event.desiredCount ? 1 : -1;
+                            _status.event.desiredCount ? 1 : -10;
                     }).forResultLinks() || [];
                     event.result = {
                         bool: links.length > 0,
-                        cost_data: links,
+                        cost_data: {
+                            fires: links,
+                            aiTarget: plan && plan.target || null,
+                            aiCard: plan && plan.card || null,
+                        },
                     };
                 },
                         "content": async function(event, trigger, player) {
-                    var fires = event.cost_data.slice();
+                    var data = event.cost_data || {};
+                    var fires = (data.fires || []).slice();
                     await player.removeBiShaShuiJing();
                     await player.removeZhiShiWu(
                         'xiaoYanDouQi',
@@ -3167,6 +3290,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     player.storage.tianHuoSanXuanBianState = {
                         fires: fires,
                         x: fires.length,
+                        aiTarget: data.aiTarget && data.aiTarget.playerid,
+                        aiCard: data.aiCard && data.aiCard.cardid,
                     };
                     player.addSkill('tianHuoSanXuanBianState');
                     player.addTempSkill(
@@ -3181,16 +3306,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             get.xingBei(player.side) + 1 >= game.xingBeiMax)) {
                         return false;
                     }
-                    if(!player.countCards('h', function(card) {
-                        return get.type(card, player) == 'gongJi';
-                    })) return false;
-                    return game.hasPlayer(function(target) {
-                        return target.side != player.side;
-                    });
+                    return !!lib.skill.tianHuoSanXuanBian.aiPlan(player);
                 },
                         "ai": {
                             "shuiJing": true,
-                            "order": 5,
+                            "order": function(item, player) {
+                        var plan = lib.skill.tianHuoSanXuanBian.aiPlan(player);
+                        return plan ? 5 + Math.min(1, plan.score * 0.1) : 0;
+                    },
                         },
                     },
                     "foNuHuoLian": {
@@ -3208,12 +3331,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         });
                 },
                         "cost": async function(event, trigger, player) {
-                    var fires = lib.skill.xiaoYanYiHuoManager
-                        .getBright(player);
-                    var desired = fires.length >= 3 &&
-                        game.countPlayer(function(target) {
-                            return target.side != player.side;
-                        }) >= 2 ? 3 : 2;
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var fires = manager.getBright(player);
+                    var plan = manager.aiFoNuPlan(player);
+                    var desired = plan ? plan.count : 2;
                     var links = await player.chooseButton(
                         [
                             '【佛怒火莲】：选择2张或3张明亮【异火】',
@@ -3222,9 +3343,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         [2, Math.min(3, fires.length)],
                         true
                     ).set('desiredCount', desired)
+                        .set('desiredFires', plan ? plan.fires : [])
                         .set('ai', function(button) {
+                        if((_status.event.desiredFires || [])
+                            .includes(button.link)) return 10;
                         return ui.selected.buttons.length <
-                            _status.event.desiredCount ? 1 : -1;
+                            _status.event.desiredCount ? 1 : -10;
                     }).forResultLinks();
                     if(links.length < 2) {
                         event.result = { bool: false };
@@ -3237,7 +3361,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return target.side != player.side;
                         }
                     ).set('ai', function(target) {
-                        return get.damageEffect(target, 3);
+                        var plan = lib.skill.xiaoYanYiHuoManager
+                            .aiFoNuPlan(_status.event.player);
+                        if(plan && plan.target == target) return 20;
+                        return lib.skill.xiaoYanYiHuoManager.aiDamageScore(
+                            target,
+                            _status.event.player,
+                            3
+                        );
                     }).forResultTargets();
                     event.result = {
                         bool: targets.length > 0,
@@ -3274,21 +3405,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "ai": {
                             "baoShi": true,
                             "order": function(item, player) {
-                        var enemies = game.countPlayer(function(target) {
-                            return target.side != player.side;
-                        });
-                        var fires = lib.skill.xiaoYanYiHuoManager
-                            .getBright(player).length;
-                        return enemies > 0 && fires >= 2 ? 6 : 0;
+                        var plan = lib.skill.xiaoYanYiHuoManager
+                            .aiFoNuPlan(player);
+                        return plan ? 6 + Math.min(1, plan.score * 0.1) : 0;
                     },
                             "result": {
                                 "player": function(player) {
-                            var enemies = game.countPlayer(function(target) {
-                                return target.side != player.side;
-                            });
-                            var fires = lib.skill.xiaoYanYiHuoManager
-                                .getBright(player).length;
-                            return fires >= 3 && enemies >= 2 ? 3 : 1;
+                            var plan = lib.skill.xiaoYanYiHuoManager
+                                .aiFoNuPlan(player);
+                            return plan ? plan.score : -10;
                         },
                             },
                         },
@@ -3309,6 +3434,194 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "yunLuoXinYan",
                             "guLingLengHuo",
                         ],
+                        "aiTreatment": function(player) {
+                    return Math.max(0, player && player.zhiLiao || 0);
+                },
+                        "aiOverflow": function(target, damage, ignoreTreatment) {
+                    if(!target || typeof target.getHandcardLimit != 'function') {
+                        return 0;
+                    }
+                    var actual = Math.max(
+                        0,
+                        (damage || 0) - (ignoreTreatment ? 0 :
+                            lib.skill.xiaoYanYiHuoManager.aiTreatment(target))
+                    );
+                    return Math.max(
+                        0,
+                        target.countCards('h') + actual -
+                            target.getHandcardLimit()
+                    );
+                },
+                        "aiDamageScore": function(
+                            target,
+                            player,
+                            damage,
+                            ignoreTreatment
+                        ) {
+                    if(!target || !player || damage <= 0) return 0;
+                    var score = get.damageEffect2(target, player, damage);
+                    var overflow = lib.skill.xiaoYanYiHuoManager
+                        .aiOverflow(target, damage, ignoreTreatment);
+                    if(target.side != player.side) {
+                        score += overflow * 3;
+                        if(overflow > 0 && overflow >= get.shiQi(target.side)) {
+                            score += 20;
+                        }
+                    } else {
+                        score -= overflow * 3;
+                        if(overflow > 0 && overflow >= get.shiQi(target.side)) {
+                            score -= 20;
+                        }
+                    }
+                    return score;
+                },
+                        "aiSelfDamageRisk": function(player, damage) {
+                    if(!player) return 99;
+                    var actual = Math.max(
+                        0,
+                        (damage || 0) -
+                            lib.skill.xiaoYanYiHuoManager.aiTreatment(player)
+                    );
+                    var overflow = lib.skill.xiaoYanYiHuoManager
+                        .aiOverflow(player, damage);
+                    var risk = actual * 0.5 + overflow * 4;
+                    if(overflow > 0 && overflow >= get.shiQi(player.side)) {
+                        risk += 30;
+                    }
+                    return risk;
+                },
+                        "aiFireKeepValue": function(player, fire) {
+                    if(fire == 'guLingLengHuo') return 2.2;
+                    if(fire == 'qingLianDiXinHuo') {
+                        return player && player.countCards('h', function(card) {
+                            return get.type(card, player) == 'gongJi';
+                        }) > 0 ? 1.8 : 1.1;
+                    }
+                    if(fire == 'yunLuoXinYan') {
+                        var need = player ? Math.max(
+                            0,
+                            3 - player.countZhiShiWu('xiaoYanDouQi')
+                        ) : 0;
+                        return 1.1 + need * 0.35;
+                    }
+                    return 1;
+                },
+                        "aiBestEnemy": function(player, damage) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var best = null;
+                    game.countPlayer(function(target) {
+                        if(!target.isIn() || target.side == player.side) return;
+                        var score = manager.aiDamageScore(
+                            target,
+                            player,
+                            damage
+                        );
+                        if(!best || score > best.score) {
+                            best = { target: target, score: score };
+                        }
+                    });
+                    return best;
+                },
+                        "aiYanFenPlan": function(player, attackTarget) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var refined = manager.getRefined(player).length;
+                    if(!refined) return null;
+                    var damage = Math.ceil(refined / 2);
+                    var cold = manager.isBright(player, 'guLingLengHuo') ? 1 : 0;
+                    var choices = [];
+                    game.countPlayer(function(target) {
+                        if(!target.isIn() || target == attackTarget ||
+                            target.side == player.side) return;
+                        choices.push({
+                            target: target,
+                            score: manager.aiDamageScore(
+                                target,
+                                player,
+                                damage
+                            ) + (cold && damage > manager.aiTreatment(target) ?
+                                manager.aiDamageScore(
+                                target,
+                                player,
+                                1
+                            ) * 0.7 : 0),
+                        });
+                    });
+                    choices.sort(function(a, b) { return b.score - a.score; });
+                    if(choices.length < 2) return null;
+                    var score = choices[0].score + choices[1].score - 1.8;
+                    if(score <= 0.5) return null;
+                    return {
+                        targets: [choices[0].target, choices[1].target],
+                        damage: damage,
+                        score: score,
+                    };
+                },
+                        "aiFoNuPlan": function(player) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    if(!player || !player.canBiShaBaoShi ||
+                        !player.canBiShaBaoShi() ||
+                        player.hasSkill && player.hasSkill(
+                            'tianHuoSanXuanBianJinZhiFoNu'
+                        )) return null;
+                    var bright = manager.getBright(player);
+                    if(bright.length < 2) return null;
+                    var enemies = game.filterPlayer(function(target) {
+                        return target.isIn() && target.side != player.side;
+                    });
+                    if(!enemies.length) return null;
+                    var cold = manager.isBright(player, 'guLingLengHuo');
+                    var plans = [];
+                    [2, 3].forEach(function(count) {
+                        if(bright.length < count) return;
+                        var targetDamage = count == 3 ? 3 : 2;
+                        var best = manager.aiBestEnemy(player, targetDamage);
+                        if(!best) return;
+                        var score = best.score;
+                        if(cold && targetDamage >
+                            manager.aiTreatment(best.target)) {
+                            score += manager.aiDamageScore(
+                            best.target,
+                            player,
+                            1
+                        ) * 0.7;
+                        }
+                        if(count == 2) {
+                            score -= manager.aiSelfDamageRisk(player, 1);
+                        } else {
+                            enemies.forEach(function(target) {
+                                if(target == best.target) return;
+                                score += manager.aiDamageScore(
+                                    target,
+                                    player,
+                                    1
+                                );
+                                if(cold && 1 > manager.aiTreatment(target)) {
+                                    score += manager.aiDamageScore(
+                                    target,
+                                    player,
+                                    1
+                                ) * 0.7;
+                                }
+                            });
+                        }
+                        var fires = bright.slice().sort(function(a, b) {
+                            return manager.aiFireKeepValue(player, a) -
+                                manager.aiFireKeepValue(player, b);
+                        }).slice(0, count);
+                        fires.forEach(function(fire) {
+                            score -= manager.aiFireKeepValue(player, fire) * 0.35;
+                        });
+                        score -= 1.4;
+                        plans.push({
+                            count: count,
+                            fires: fires,
+                            target: best.target,
+                            score: score,
+                        });
+                    });
+                    plans.sort(function(a, b) { return b.score - a.score; });
+                    return plans.length && plans[0].score > 0.6 ? plans[0] : null;
+                },
                         "dimSkills": {
                             "qingLianDiXinHuo": "anDanQingLianDiXinHuo",
                             "yunLuoXinYan": "anDanYunLuoXinYan",
@@ -3663,10 +3976,21 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         .set('prompt', '【心火重燃】：选择一项')
                         .set('ai', function() {
                             var player = _status.event.player;
-                            return player.countZhiShiWu(
+                            var manager = lib.skill.xiaoYanYiHuoManager;
+                            var blood = player.countZhiShiWu(
                                 'xiaoYanDouQi'
-                            ) < 5 ? '+1【斗气】' :
-                                '翻转黯淡异火';
+                            );
+                            var next = lib.skill.fenJueLianHua.nextFire(player);
+                            if(blood < 3 || next && blood < next.cost) {
+                                return '+1【斗气】';
+                            }
+                            var bestDim = manager.getDim(player).sort(
+                                function(a, b) {
+                                    return manager.aiFireKeepValue(player, b) -
+                                        manager.aiFireKeepValue(player, a);
+                                }
+                            )[0];
+                            return bestDim ? '翻转黯淡异火' : '+1【斗气】';
                         }).forResultControl();
                     if(control == '+1【斗气】') {
                         await player.addZhiShiWu('xiaoYanDouQi', 1);
@@ -3678,7 +4002,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             [dim, 'textbutton'],
                         ],
                         true
-                    ).forResultLinks();
+                    ).set('ai', function(button) {
+                        return lib.skill.xiaoYanYiHuoManager
+                            .aiFireKeepValue(
+                                _status.event.player,
+                                button.link
+                            );
+                    }).forResultLinks();
                     if(links.length) {
                         await lib.skill.xiaoYanYiHuoManager.setForm(
                             player,
@@ -3716,6 +4046,27 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "intro": {
                             "name": "天火三玄变",
                             "content": "本回合下一次主动攻击获得所选异火数量对应的累计强化。",
+                        },
+                        "ai": {
+                            "effect": {
+                                "player_use": function(card, player, target) {
+                            if(!card || get.type(card, player) != 'gongJi' ||
+                                !target || target.side == player.side) return;
+                            var state = player.storage
+                                .tianHuoSanXuanBianState;
+                            if(!state) return;
+                            var matchedTarget = !state.aiTarget ||
+                                target.playerid == state.aiTarget;
+                            var matchedCard = !state.aiCard ||
+                                card.cardid == state.aiCard;
+                            if(matchedTarget && matchedCard) {
+                                return [1, 0, 1, -3];
+                            }
+                            if(matchedTarget || matchedCard) {
+                                return [1, 0, 1, -1];
+                            }
+                        },
+                            },
                         },
                         "findAttack": function(event, player) {
                     var current = event;
@@ -3970,7 +4321,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "duiDuiHuMiao": "法术【对对胡喵】",
                     "duiDuiHuMiao_info": "<span class='tiaoJian'>（弃1张法术牌【展示】）</span>+1<span class='lan'>【喵运】</span>，指定一名对手并展示牌库顶牌：与<span class='lan'>【宝牌】</span>同系则对目标造成2点法术伤害③，否则你与目标各受1点法术伤害③。结算后以展示牌更换<span class='lan'>【宝牌】</span>。",
                     "haiDiLaoYueMiao": "响应【海底捞月喵】",
-                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（承受实际伤害后⑤，因该伤害摸牌时）</span>爆牌前展示最后摸到的牌：若与<span class='lan'>【宝牌】</span>同系，+1【治疗】并+1<span class='lan'>【喵运】</span>；否则可与<span class='lan'>【宝牌】</span>交换。随后正常爆牌。",
+                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（你承受实际伤害后⑤，在因该伤害摸牌时）</span>展示最后摸到的1张牌。<br>若该牌与当前<span class='lan'>【宝牌】</span>同系：+1【治疗】；+1<span class='lan'>【喵运】</span>。<br>若该牌与当前<span class='lan'>【宝牌】</span>不同系，你可以将该牌与当前<span class='lan'>【宝牌】</span>交换：将原<span class='lan'>【宝牌】</span>加入你的手牌；将展示的牌作为新的<span class='lan'>【宝牌】</span>。",
                     "yiManShiJianMiao": "启动【役满时间喵】",
                     "yiManShiJianMiao_info": "【宝石】<span class='tiaoJian'>（移除5<span class='lan'>【喵运】</span>）</span>展示并弃置牌库顶5张牌，对一名对手造成X+1点法术伤害③；X为其中与<span class='lan'>【宝牌】</span>同系的牌数。",
                     "moQiShaoNianQiong": "被动【莫欺少年穷】",
