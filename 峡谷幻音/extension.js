@@ -1,4 +1,148 @@
 game.import("extension", function(lib, game, ui, get, ai, _status) {
+    var suoNaYuYinSkills = [
+        'suoNaYingYongYuYin',
+        'suoNaJianYiYuYin',
+        'suoNaXunJieYuYin',
+    ];
+    var suoNaSongData = {
+        yingYongZanMeiShi: {
+            name: '英勇赞美诗',
+            unique: ['weiLiCiFu'],
+            echo: 'suoNaYingYongYuYin',
+        },
+        jianYiYongTanDiao: {
+            name: '坚毅咏叹调',
+            unique: ['zhiLiaoShu', 'zhiYuZhiGuang'],
+            echo: 'suoNaJianYiYuYin',
+        },
+        xunJieZouMingQu: {
+            name: '迅捷奏鸣曲',
+            unique: ['xunJieCiFu'],
+            echo: 'suoNaXunJieYuYin',
+        },
+    };
+    function suoNaHasUnique(card, ids) {
+        if(!card || typeof card.hasDuYou != 'function') return false;
+        return ids.some(function(id) { return card.hasDuYou(id); });
+    }
+    function suoNaDiscardableCount(player) {
+        return player.countCards('h', function(card) {
+            return lib.filter.cardDiscardable(card, player);
+        });
+    }
+    function suoNaWillEmpower(player, song) {
+        return player.storage.suoNaLastSong != song &&
+            player.countZhiShiWu('suoNaHeXian') >= 2;
+    }
+    async function suoNaPrepareSong(event, player, song) {
+        var parent = event.getParent();
+        var different = player.storage.suoNaLastSong != song;
+        player.storage.suoNaLastSong = song;
+        player.syncStorage('suoNaLastSong');
+        parent.suoNaSong = song;
+        parent.suoNaEmpowered = false;
+        if(different) {
+            await player.addZhiShiWu('suoNaHeXian', 1);
+            if(player.countZhiShiWu('suoNaHeXian') >= 3) {
+                await player.removeZhiShiWu(
+                    'suoNaHeXian',
+                    player.countZhiShiWu('suoNaHeXian')
+                );
+                parent.suoNaEmpowered = true;
+            }
+        }
+    }
+    function suoNaSetEcho(target, echo) {
+        suoNaYuYinSkills.forEach(function(skill) {
+            if(skill != echo && target.hasSkill(skill)) target.removeSkill(skill);
+        });
+        if(!target.hasSkill(echo)) target.addSkill(echo);
+    }
+    function suoNaShareScore(player, echo) {
+        game.filterPlayer(function(current) {
+            return current != player && current.side == player.side;
+        }).forEach(function(current) {
+            suoNaSetEcho(current, echo);
+        });
+    }
+    function suoNaShareValue(player, echo) {
+        var allies = game.filterPlayer(function(current) {
+            return current != player && current.side == player.side;
+        });
+        if(echo == 'suoNaYingYongYuYin') {
+            return allies.some(function(current) {
+                return current.countCards('h', function(card) {
+                    return get.type(card, current) == 'gongJi';
+                }) > 0;
+            });
+        }
+        if(echo == 'suoNaJianYiYuYin') {
+            return allies.some(function(current) {
+                return current.countCards('h') >= current.getHandcardLimit() - 1 ||
+                    current.zhiLiao <= 1;
+            });
+        }
+        return allies.some(function(current) {
+            return current.countCards('h') >= 3;
+        });
+    }
+    async function suoNaChooseShare(player, song) {
+        var data = suoNaSongData[song];
+        var uniqueCards = player.getCards('h', function(card) {
+            return lib.filter.cardDiscardable(card, player) &&
+                suoNaHasUnique(card, data.unique);
+        });
+        var canImprovise = player.hasSkill('jiXingBianZou') &&
+            player.canBiShaShuiJing() && suoNaDiscardableCount(player) >= 2;
+        if(!uniqueCards.length && !canImprovise) return false;
+        var controls = ['不追加'];
+        if(uniqueCards.length) controls.push('弃置指定独有技牌');
+        if(canImprovise) controls.push('发动【即兴变奏】');
+        var result = await player.chooseControl(controls)
+            .set('prompt', data.name + '：是否为队友附加对应余音？')
+            .set('ai', function() {
+                var player = _status.event.player;
+                var controls = _status.event.controls;
+                if(!suoNaShareValue(player, _status.event.echo)) return '不追加';
+                if(controls.includes('弃置指定独有技牌')) return '弃置指定独有技牌';
+                return controls.includes('发动【即兴变奏】') ?
+                    '发动【即兴变奏】' : '不追加';
+            }).set('echo', data.echo).forResult();
+        if(!result || result.control == '不追加') return false;
+        if(result.control == '弃置指定独有技牌') {
+            var cards = await player.chooseToDiscard(
+                'h', 1, true, data.name + '：弃置指定独有技牌',
+                function(card) {
+                    return lib.filter.cardDiscardable(card, _status.event.player) &&
+                        suoNaHasUnique(card, _status.event.uniqueIds);
+                }
+            ).set('uniqueIds', data.unique).set('visible', true)
+                .set('ai', function(card) { return 8 - get.value(card); })
+                .forResultCards() || [];
+            if(!cards.length) return false;
+        } else {
+            var substitute = await player.chooseToDiscard(
+                'h', 2, true, '即兴变奏：弃置两张手牌',
+                function(card) {
+                    return lib.filter.cardDiscardable(card, _status.event.player);
+                }
+            ).set('ai', function(card) {
+                return 8 - get.value(card);
+            }).forResultCards() || [];
+            if(substitute.length < 2) return false;
+            await player.removeBiShaShuiJing();
+            player.logSkill('jiXingBianZou');
+        }
+        suoNaShareScore(player, data.echo);
+        return true;
+    }
+    async function suoNaFinishSong(event, player, song) {
+        var parent = event.getParent();
+        suoNaSetEcho(player, suoNaSongData[song].echo);
+        if(parent.suoNaEmpowered === true) player.addGongJi();
+        delete parent.suoNaSong;
+        delete parent.suoNaEmpowered;
+    }
     return {
         "name": "峡谷幻音",
         "arenaReady": function(){
@@ -41,6 +185,25 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "ext:峡谷幻音/tiMo.jpg",
                         ],
                     ],
+                    "suoNa": [
+                        null,
+                        "yongGroup",
+                        4,
+                        [
+                            "qinYinGongMing",
+                            "yingYongZanMeiShi",
+                            "jianYiYongTanDiao",
+                            "xunJieZouMingQu",
+                            "liLiangHeXian",
+                            "jiXingBianZou",
+                            "kuangWuZhongLeZhang",
+                            "suoNaHeXian",
+                        ],
+                        [
+                            "des:以琴音连接队友心灵的琴瑟仙女。娑娜轮换演奏三种乐章积累和弦，并将对应余音分享给队友。",
+                            "ext:峡谷幻音/suoNa.jpg",
+                        ],
+                    ],
                     "yaTuoKeSi": [
                         null,
                         "xueGroup",
@@ -66,6 +229,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "无名拓展": "无名拓展",
                     "峡谷幻音": "峡谷幻音",
                     "tiMo": "提莫",
+                    "suoNa": "娑娜",
                     "yaTuoKeSi": "亚托克斯",
                 },
             },
@@ -76,6 +240,238 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             },
             "skill": {
                 "skill": {
+                    "qinYinGongMing": {
+                        "locked": true,
+                        "onremove": function(player) {
+                            delete player.storage.suoNaLastSong;
+                        },
+                    },
+                    "yingYongZanMeiShi": {
+                        "type": "faShu",
+                        "enable": "faShu",
+                        "selectTarget": function() {
+                            var player = _status.event.player;
+                            return suoNaWillEmpower(player, 'yingYongZanMeiShi') ?
+                                [1, 2] : 1;
+                        },
+                        "filterTarget": function(card, player, target) {
+                            return target.side != player.side;
+                        },
+                        "contentBefore": async function(event, trigger, player) {
+                            await suoNaPrepareSong(event, player, 'yingYongZanMeiShi');
+                            await suoNaChooseShare(player, 'yingYongZanMeiShi');
+                        },
+                        "content": async function(event, trigger, player) {
+                            if(event.target && event.target.isIn()) {
+                                await event.target.faShuDamage(1, player, 'nocard');
+                            }
+                        },
+                        "contentAfter": async function(event, trigger, player) {
+                            await suoNaFinishSong(event, player, 'yingYongZanMeiShi');
+                        },
+                        "ai": {
+                            "order": function(item, player) {
+                                return suoNaWillEmpower(player, 'yingYongZanMeiShi') ?
+                                    6.2 : 4.2;
+                            },
+                            "result": {
+                                "target": function(player, target) {
+                                    return get.damageEffect2(target, player, 1);
+                                },
+                            },
+                        },
+                    },
+                    "jianYiYongTanDiao": {
+                        "type": "faShu",
+                        "enable": "faShu",
+                        "selectTarget": 1,
+                        "filterTarget": function(card, player, target) {
+                            return target.side == player.side;
+                        },
+                        "contentBefore": async function(event, trigger, player) {
+                            await suoNaPrepareSong(event, player, 'jianYiYongTanDiao');
+                            await suoNaChooseShare(player, 'jianYiYongTanDiao');
+                        },
+                        "content": async function(event, trigger, player) {
+                            var parent = event.getParent();
+                            var amount = parent.suoNaEmpowered === true ? 2 : 1;
+                            await event.target.changeZhiLiao(amount, player);
+                        },
+                        "contentAfter": async function(event, trigger, player) {
+                            await suoNaFinishSong(event, player, 'jianYiYongTanDiao');
+                        },
+                        "ai": {
+                            "order": function(item, player) {
+                                return suoNaWillEmpower(player, 'jianYiYongTanDiao') ?
+                                    7 : 5;
+                            },
+                            "result": {
+                                "target": function(player, target) {
+                                    var missing = Math.max(0, 2 - target.zhiLiao);
+                                    if(!missing) return 0;
+                                    return target.side == player.side ? 1 + missing : -1;
+                                },
+                            },
+                        },
+                    },
+                    "xunJieZouMingQu": {
+                        "type": "faShu",
+                        "enable": "faShu",
+                        "selectTarget": 1,
+                        "filterTarget": function(card, player, target) {
+                            var count = suoNaWillEmpower(player, 'xunJieZouMingQu') ?
+                                2 : 1;
+                            return target.side == player.side &&
+                                suoNaDiscardableCount(target) >= count;
+                        },
+                        "contentBefore": async function(event, trigger, player) {
+                            await suoNaPrepareSong(event, player, 'xunJieZouMingQu');
+                            await suoNaChooseShare(player, 'xunJieZouMingQu');
+                        },
+                        "content": async function(event, trigger, player) {
+                            var parent = event.getParent();
+                            var empowered = parent.suoNaEmpowered === true;
+                            var amount = empowered ? 2 : 1;
+                            await event.target.chooseToDiscard(
+                                'h', amount, true,
+                                '迅捷奏鸣曲：弃置' + amount + '张手牌',
+                                function(card) {
+                                    return lib.filter.cardDiscardable(
+                                        card, _status.event.player
+                                    );
+                                }
+                            ).set('ai', function(card) {
+                                return 8 - get.value(card);
+                            });
+                            if(empowered && event.target.isIn()) {
+                                await event.target.draw(1);
+                            }
+                        },
+                        "contentAfter": async function(event, trigger, player) {
+                            await suoNaFinishSong(event, player, 'xunJieZouMingQu');
+                        },
+                        "ai": {
+                            "order": function(item, player) {
+                                return suoNaWillEmpower(player, 'xunJieZouMingQu') ?
+                                    6.5 : 4.5;
+                            },
+                            "result": {
+                                "target": function(player, target) {
+                                    if(target.side != player.side) return -1;
+                                    var excess = target.countCards('h') -
+                                        target.getHandcardLimit();
+                                    return 0.5 + Math.max(0, excess) +
+                                        target.countCards('h') * 0.08;
+                                },
+                            },
+                        },
+                    },
+                    "liLiangHeXian": {
+                        "locked": true,
+                    },
+                    "jiXingBianZou": {
+                        "locked": true,
+                        "ai": { "shuiJing": true },
+                    },
+                    "suoNaYingYongYuYin": {
+                        "charlotte": true,
+                        "mark": true,
+                        "markimage": "extension/峡谷幻音/mark_suoNaYingYongYuYin.png",
+                        "marktext": "勇",
+                        "intro": { "content": "攻击命中时，本次攻击伤害额外+1，随后移除。" },
+                        "trigger": { "source": "gongJiMingZhong" },
+                        "forced": true,
+                        "content": function(event, trigger, player) {
+                            trigger.changeDamageNum(1);
+                            player.removeSkill('suoNaYingYongYuYin');
+                        },
+                    },
+                    "suoNaJianYiYuYin": {
+                        "charlotte": true,
+                        "mark": true,
+                        "markimage": "extension/峡谷幻音/mark_suoNaJianYiYuYin.png",
+                        "marktext": "毅",
+                        "intro": { "content": "承受其他角色造成的伤害时，该伤害-1，随后移除。" },
+                        "trigger": { "player": "chengShouShangHaiBefore" },
+                        "forced": true,
+                        "filter": function(event, player) {
+                            return event && event.num > 0 && event.source &&
+                                event.source != player;
+                        },
+                        "content": function(event, trigger, player) {
+                            trigger.changeDamageNum(-1);
+                            player.removeSkill('suoNaJianYiYuYin');
+                        },
+                    },
+                    "suoNaXunJieYuYin": {
+                        "charlotte": true,
+                        "mark": true,
+                        "markimage": "extension/峡谷幻音/mark_suoNaXunJieYuYin.png",
+                        "marktext": "迅",
+                        "intro": { "content": "下一次执行特殊行动后，强制弃置1张牌。" },
+                        "trigger": { "player": "teShuEnd" },
+                        "forced": true,
+                        "content": async function(event, trigger, player) {
+                            var amount = Math.min(1, suoNaDiscardableCount(player));
+                            if(amount > 0) {
+                                await player.chooseToDiscard(
+                                    'h', amount, true,
+                                    '迅捷余音：弃置' + amount + '张手牌',
+                                    function(card) {
+                                        return lib.filter.cardDiscardable(
+                                            card, _status.event.player
+                                        );
+                                    }
+                                ).set('ai', function(card) {
+                                    return 8 - get.value(card);
+                                });
+                            }
+                            player.removeSkill('suoNaXunJieYuYin');
+                        },
+                    },
+                    "suoNaHeXian": {
+                        "charlotte": true,
+                        "intro": { "content": "当前有#点【和弦】。", "max": 3 },
+                        "markimage": "extension/峡谷幻音/mark_suoNaHeXian.png",
+                    },
+                    "kuangWuZhongLeZhang": {
+                        "type": "faShu",
+                        "enable": "faShu",
+                        "filter": function(event, player) {
+                            return player.countNengLiang('baoShi') >= 2 &&
+                                game.hasPlayer(function(current) {
+                                    return current.side != player.side;
+                                });
+                        },
+                        "selectTarget": [1, 2],
+                        "filterTarget": function(card, player, target) {
+                            return target.side != player.side;
+                        },
+                        "contentBefore": async function(event, trigger, player) {
+                            await player.removeNengLiang('baoShi', 2);
+                        },
+                        "content": async function(event, trigger, player) {
+                            var target = event.target;
+                            if(!target || !target.isIn()) return;
+                            await target.faShuDamage(1, player, 'nocard');
+                            if(target.isIn()) {
+                                await player.useCard(
+                                    game.createCard2('xuRuo'), target, false
+                                );
+                            }
+                        },
+                        "ai": {
+                            "baoShi": true,
+                            "order": 7.5,
+                            "result": {
+                                "target": function(player, target) {
+                                    var score = get.damageEffect2(target, player, 1);
+                                    if(!target.hasJiChuXiaoGuo('_xuRuo')) score += 1.5;
+                                    return score;
+                                },
+                            },
+                        },
+                    },
                     "yinXingDeChiBang": {
                         "group": [
                             "yinXingDeChiBang_teShu",
@@ -899,11 +1295,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "enable": "faShu",
                         "usable": 1,
                         "isSafeForAi": function(player) {
-                    return player.countCards('h') + 2 <=
+                    return player.countCards('h') + 1 <=
                         player.getHandcardLimit();
                 },
                         "filter": function(event, player) {
-                    return !game.hasPlayer(function(current) {
+                    return player.countCards('h', function(card) {
+                        return get.type(card, player) == 'faShu';
+                    }) > 0 && !game.hasPlayer(function(current) {
                         return current.countZhiShiWu(
                             'eHuoShuLianKa'
                         ) > 0;
@@ -911,6 +1309,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         return current.side != player.side;
                     });
                 },
+                        "filterCard": function(card, player) {
+                    return get.type(card, player) == 'faShu';
+                },
+                        "check": function(card) {
+                    return 8 - get.value(card);
+                },
+                        "position": "h",
+                        "selectCard": 1,
+                        "discard": true,
                         "content": async function(event, trigger, player) {
                     await player.draw(2);
                     var targets = await player.chooseTarget(
@@ -1275,6 +1682,28 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     },
                 },
                 "translate": {
+                    "qinYinGongMing": "被动【琴音共鸣】",
+                    "qinYinGongMing_info": "<span class='tiaoJian'>（你演奏一种乐章时）</span>若与上一次演奏的乐章不同，+1<span class='lan'>【和弦】</span>。若因此达到3，移除全部<span class='lan'>【和弦】</span>，强化本次乐章，并在结算后+1【攻击行动】。",
+                    "yingYongZanMeiShi": "法术【英勇赞美诗】",
+                    "yingYongZanMeiShi_info": "对目标对手造成1点法术伤害③；可以额外弃置一张【威力赐福】，为其他所有我方角色附加【英勇余音】。<span class='tiaoJian'>（受到【琴音共鸣】强化时）</span>改为指定至多两名对手并依次对其各造成1点法术伤害③。",
+                    "jianYiYongTanDiao": "法术【坚毅咏叹调】",
+                    "jianYiYongTanDiao_info": "目标我方角色+1【治疗】；可以额外弃置一张【治疗术】或【治愈之光】，为其他所有我方角色附加【坚毅余音】。<span class='tiaoJian'>（受到【琴音共鸣】强化时）</span>改为目标+2【治疗】。",
+                    "xunJieZouMingQu": "法术【迅捷奏鸣曲】",
+                    "xunJieZouMingQu_info": "目标我方角色弃置1张手牌【强制】；可以额外弃置一张【迅捷赐福】，为其他所有我方角色附加【迅捷余音】。<span class='tiaoJian'>（受到【琴音共鸣】强化时）</span>改为弃置2张手牌【强制】，然后摸1张牌。",
+                    "liLiangHeXian": "被动【力量和弦】",
+                    "liLiangHeXian_info": "娑娜的三种乐章结算后，根据此次乐章获得对应余音。余音只能存在一种，释放其他乐章时会被替换。<br>【英勇余音】：<span class='tiaoJian'>（攻击命中时）</span>本次攻击伤害额外+1，随后移除。<br>【坚毅余音】：<span class='tiaoJian'>（承受其他角色造成的伤害时）</span>该伤害-1⑤，随后移除。<br>【迅捷余音】：<span class='tiaoJian'>（下一次执行【特殊行动】后）</span>弃1张牌【强制】，随后移除。",
+                    "jiXingBianZou": "响应【即兴变奏】",
+                    "jiXingBianZou_info": "演奏乐章需要额外弃置指定独有技牌时，可以支付【水晶】×1并弃置两张手牌，代替此次需要弃置的独有技牌。每次演奏至多发动一次。",
+                    "suoNaYingYongYuYin": "英勇余音",
+                    "suoNaYingYongYuYin_info": "<span class='tiaoJian'>（攻击命中时）</span>本次攻击伤害额外+1，随后移除。",
+                    "suoNaJianYiYuYin": "坚毅余音",
+                    "suoNaJianYiYuYin_info": "<span class='tiaoJian'>（承受其他角色造成的伤害时）</span>该伤害-1⑤，随后移除。",
+                    "suoNaXunJieYuYin": "迅捷余音",
+                    "suoNaXunJieYuYin_info": "<span class='tiaoJian'>（下一次执行【特殊行动】后）</span>弃1张牌【强制】，随后移除。",
+                    "suoNaHeXian": "和弦",
+                    "suoNaHeXian_info": "娑娜的专属指示物，上限为3。",
+                    "kuangWuZhongLeZhang": "法术【狂舞终乐章】",
+                    "kuangWuZhongLeZhang_info": "【宝石】×2，指定一至两名对手，依次对其各造成1点法术伤害③，并为其使用一张【虚弱】。",
                     "yinXingDeChiBang": "被动【隐形的翅膀】",
                     "yinXingDeChiBang_info": "<span class='tiaoJian'>（【特殊行动】结束后）</span>【横置】；直到你的下个回合结束，你不能成为主动攻击的目标。<span class='tiaoJian'>（你的回合开始时，若你【横置】）</span>【重置】，本回合额外+1【攻击行动】。<span class='tiaoJian'>（你在【横置】时受到伤害后）</span>【重置】。",
                     "tiMoYinXing": "隐形",
@@ -1312,7 +1741,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "anYiLiRenZhuiJi": "暗裔利刃·断空",
                     "anYiLiRenZhuiJi_info": "下一次额外【攻击行动】只能主动攻击本次【暗裔利刃·断空】命中的【恶火束链】拥有者；目标或束链失效时取消该行动。",
                     "eHuoShuLian": "法术【恶火束链】",
-                    "eHuoShuLian_info": "【回合限定】<span class='tiaoJian'>（场上没有【恶火束链】时）</span>摸2张牌【强制】，对目标对手造成1点法术伤害③并施加【恶火束链】，然后额外+1【攻击行动】。",
+                    "eHuoShuLian_info": "【回合限定】<span class='tiaoJian'>（场上没有【恶火束链】，弃置1张法术牌）</span>摸2张牌【强制】，指定一名对手，对其造成1点法术伤害③，并将【恶火束链】放置于其面前，然后额外+1【攻击行动】。",
                     "eHuoShuLianKa": "(专)【恶火束链】",
                     "eHuoShuLianKa_info": "全场上限为1。持有者应战攻击伤害-1；<span class='tiaoJian'>（其回合结束时）</span>移除。",
                     "anYingChongJue": "响应【暗影冲决】",
@@ -1321,20 +1750,25 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "daMie_info": "【宝石】<span class='tiaoJian'>（【普通形态】下，<span class='hong'>【血祭】</span>＞0）</span>对自己造成2点法术伤害③，然后【横置】并进入【灭绝形态】。",
                 },
             },
-            "intro": "添加角色提莫、亚托克斯。",
+            "intro": "添加角色提莫、娑娜、亚托克斯。",
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.5",
+            "version": "1.6",
         },
         "files": {
             "character": [
                 "tiMo.jpg",
+                "suoNa.jpg",
                 "yaTuoKeSi.jpg",
             ],
             "card": [],
             "skill": [
                 "mark_tiMoZhongMoGuKa.png",
+                "mark_suoNaHeXian.png",
+                "mark_suoNaYingYongYuYin.png",
+                "mark_suoNaJianYiYuYin.png",
+                "mark_suoNaXunJieYuYin.png",
                 "mark_xueRen.png",
                 "mark_xueJi.png",
                 "mark_eHuoShuLianKa.png",

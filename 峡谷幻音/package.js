@@ -1,9 +1,9 @@
 extension["峡谷幻音"]={
-    intro:"添加角色提莫、亚托克斯。",
+    intro:"添加角色提莫、娑娜、亚托克斯。",
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"1.5",
+    version:"1.7",
     files:[
     "info.json",
     "README.md",
@@ -11,11 +11,16 @@ extension["峡谷幻音"]={
     "package.js",
     "extension.js",
     "tiMo.jpg",
+    "suoNa.jpg",
     "yaTuoKeSi.jpg",
     "mark_tiMoZhongMoGuKa.png",
+    "mark_suoNaHeXian.png",
+    "mark_suoNaYingYongYuYin.png",
+    "mark_suoNaJianYiYuYin.png",
+    "mark_suoNaXunJieYuYin.png",
     "mark_xueRen.png",
     "mark_xueJi.png",
     "mark_eHuoShuLianKa.png"
 ],
-    size:"2.13MB"
+    size:"1.67MB"
 };
