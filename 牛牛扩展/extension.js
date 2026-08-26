@@ -33,7 +33,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [
                             "des:生于旧日宗室，身负罪恶血脉之人，的确需要独特的处世技巧，才能在偏见的高墙下安然行走。当然，这并不妨碍她与家族决裂，作为卓越的“浪花骑士”，在外游猎蒙德的敌人，完成她那意义独特的“复仇”。",
-                            "ext:bigcowcow/youLa.jpg",
+                            "ext:bigcowcow/youLa.png",
                             "die:ext:bigcowcow/audio/die/youLa.mp3",
                         ],
                     ],
@@ -50,7 +50,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [
                             "des:赫克托曾是帝国边境军的枪术教官。比起追逐速度，他更擅长等待破绽，借敌我攻势以长枪反制。",
-                            "ext:bigcowcow/huiFengQiangShi.jpg",
+                            "ext:bigcowcow/huiFengQiangShi.png",
                         ],
                     ],
                     "shiDiFu": [
@@ -73,7 +73,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [
                             "des:来自方块世界的冒险家。史蒂夫能在战斗中采集素材、锻造武器，并通过附魔赋予攻击不同效果。",
-                            "ext:bigcowcow/steve.jpg",
+                            "ext:bigcowcow/steve.png",
                         ],
                     ],
                     "tongGuHeRen": [
@@ -90,7 +90,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [
                             "des:以连续主动攻击积累连击的黑衣剑士。桐谷和人会在连击达到上限后进入二刀流，并以星爆气流斩终结本回合的追加攻势。",
-                            "ext:bigcowcow/tongGuHeRen.jpg",
+                            "ext:bigcowcow/tongGuHeRen.png",
                         ],
                     ],
                     "zhaoFuQueJi": [
@@ -109,7 +109,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [
                             "des:以公开宝牌引导牌势的招福雀姬。一姬会积累喵运，在断幺九、立直与役满之间不断更换宝牌并放大同系牌的收益。",
-                            "ext:bigcowcow/yiJi.jpg",
+                            "ext:bigcowcow/yiJi.png",
                         ],
                     ],
                     "xiaoYan": [
@@ -120,6 +120,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "moQiShaoNianQiong",
                             "fenJue",
                             "baJiBeng",
+                            "yanFenShiLangChi",
                             "fenJueLianHua",
                             "tianHuoSanXuanBian",
                             "foNuHuoLian",
@@ -128,7 +129,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [
                             "des:以斗气炼化三种异火的炎帝。萧炎会在逆境中积蓄斗气，以暗劲延后爆发伤害，并通过天火三玄变与佛怒火莲释放异火的组合力量。",
-                            "ext:bigcowcow/xiaoYan.jpg",
+                            "ext:bigcowcow/xiaoYan.png",
                         ],
                     ],
                 },
@@ -185,15 +186,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                 "translate": {
                     "xiaoYanQingLianDiXinHuoKa": "(专)【青莲地心火】",
-                    "xiaoYanQingLianDiXinHuoKa_info": "明亮面拥有响应【地火焚身】：你对目标造成攻击伤害后⑤，对该目标额外造成1点法术伤害③。",
+                    "xiaoYanQingLianDiXinHuoKa_info": "明亮面拥有响应【地火焚身】：<span class='tiaoJian'>（你对目标造成攻击伤害后⑤）</span>对该目标额外造成1点法术伤害③。",
                     "xiaoYanAnDanQingLianDiXinHuoKa": "(专)【黯淡的青莲地心火】",
                     "xiaoYanAnDanQingLianDiXinHuoKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
                     "xiaoYanYunLuoXinYanKa": "(专)【陨落心炎】",
-                    "xiaoYanYunLuoXinYanKa_info": "明亮面拥有响应【心火重燃】：你执行【特殊行动】后，必须选择一项：+1【斗气】；或将另一张处于黯淡面的【异火】翻至明亮面。",
+                    "xiaoYanYunLuoXinYanKa_info": "<span class='tiaoJian'>（明亮面拥有响应【心火重燃】：你执行【特殊行动】后）</span>必须选择一项：+1【斗气】；或将另一张处于黯淡面的【异火】翻至明亮面。",
                     "xiaoYanAnDanYunLuoXinYanKa": "(专)【黯淡的陨落心炎】",
                     "xiaoYanAnDanYunLuoXinYanKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
                     "xiaoYanGuLingLengHuoKa": "(专)【骨灵冷火】",
-                    "xiaoYanGuLingLengHuoKa_info": "明亮面拥有响应【冷火灼魂】：你对另一名目标造成正数实际法术伤害后⑤，对该目标额外造成1点法术伤害③。你对自己造成的法术伤害不能触发此技能。",
+                    "xiaoYanGuLingLengHuoKa_info": "明亮面拥有响应【冷火灼魂】：<span class='tiaoJian'>（你对另一名目标造成正数实际法术伤害后⑤）</span>对该目标额外造成1点法术伤害③。你对自己造成的法术伤害不能触发此技能。",
                     "xiaoYanAnDanGuLingLengHuoKa": "(专)【黯淡的骨灵冷火】",
                     "xiaoYanAnDanGuLingLengHuoKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
                 },
@@ -489,9 +490,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "intro": {
                             "content": function(storage, player) {
                         var num = player.storage.jieShiWeiMingZhong || 0;
-                        return '本回合内攻击已未命中' + num + '次，后续攻击伤害+' + num;
+                        return '攻击已累计未命中' + num + '次，后续攻击伤害+' + num +
+                            '；你的回合结束时清零';
+                    },
+                            "markcount": function(storage, player) {
+                        return player.storage.jieShiWeiMingZhong || 0;
                     },
                         },
+                        "markimage": "extension/bigcowcow/mark_jieShi.png",
                         "onremove": function(player) {
                     delete player.storage.jieShiWeiMingZhong;
                 },
@@ -557,10 +563,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             },
                             "qingLing": {
                                 "trigger": {
-                                    "global": [
-                                        "phaseAfter",
-                                        "phaseBeforeStart",
-                                    ],
+                                    "player": "phaseEnd",
                                 },
                                 "forced": true,
                                 "popup": false,
@@ -611,21 +614,24 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     event = event || _status.event;
                     if(!event || event.canYingZhan == false || !event.card) return false;
                     if(player.countZhiShiWu('qiangShi') < 1) return false;
-                    var xiBie = get.xiBie(event.card);
                     return player.hasCard(function(card) {
                         return get.type(card) == 'gongJi' &&
-                            (get.name(card) != 'anMie' || event.canAnMie == false) &&
-                            get.xiBie(card) != xiBie;
+                            (get.name(card) != 'anMie' || event.canAnMie != false);
                     }, 'h');
                 },
                         "filterCard": function(card, player, event) {
                     event = event || _status.event;
                     if(!event || !event.card) return false;
                     return get.type(card) == 'gongJi' &&
-                        (get.name(card) != 'anMie' || event.canAnMie == false) &&
-                        get.xiBie(card) != get.xiBie(event.card);
+                        (get.name(card) != 'anMie' || event.canAnMie != false);
                 },
                         "position": "h",
+                        "check": function(card) {
+                    var event = _status.event;
+                    if(event && event.card &&
+                        get.xiBie(card) == get.xiBie(event.card)) return 0;
+                    return 6 - get.value(card, event && event.player);
+                },
                         "filterTarget": function(card, player, target) {
                     var yingZhanEvent = _status.event.getParent('_yingZhan');
                     if(!yingZhanEvent || !yingZhanEvent.source) return false;
@@ -1039,34 +1045,41 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "filter": function(event, player) {
                     if(!event || !event.target ||
                         !lib.skill.shiDiFuJian.getSword(player)) return false;
-                    var sword = lib.skill.shiDiFuJian.getSword(player);
-                    var num = ['jinJian', 'xiaJieHeJinJian'].includes(sword) ? 2 : 1;
-                    return player.getGaiPai('shiDiFuSuCai').filter(function(card) {
-                        return get.type(card) == 'faShu';
-                    }).length >= num;
+                    return player.countGaiPai('shiDiFuSuCai') >= 1;
                 },
                         "cost": async function(event, trigger, player) {
                     var sword = lib.skill.shiDiFuJian.getSword(player);
-                    var num = ['jinJian', 'xiaJieHeJinJian'].includes(sword) ? 2 : 1;
-                    var spellMaterials = player.getGaiPai('shiDiFuSuCai').filter(function(card) {
-                        return get.type(card) == 'faShu';
-                    });
+                    var max = ['jinJian', 'xiaJieHeJinJian'].includes(sword) ? 2 : 1;
+                    max = Math.min(max, player.countGaiPai('shiDiFuSuCai'));
+                    var materials = player.getGaiPai('shiDiFuSuCai');
                     var result = await player.chooseCardButton(
-                        spellMaterials,
-                        num,
-                        '战斗附魔：是否弃置' + num + '张法术【素材】？'
+                        materials,
+                        [1, max],
+                        '战斗附魔：选择弃置1' + (max > 1 ? '至2' : '') +
+                            '张【素材】'
                     ).set('ai', function(button) {
                         var player = _status.event.player;
                         var target = _status.event.attackTarget;
-                        if(get.xiBie(button.link) == 'feng' &&
-                            target &&
-                            target.side != player.side) {
-                            return 0;
+                        var xiBie = get.xiBie(button.link);
+                        if(xiBie == 'an') return 9;
+                        if(xiBie == 'lei' || xiBie == 'huo') return 8;
+                        if(xiBie == 'feng' && target &&
+                            target.side != player.side &&
+                            target.countCards('h') > 0) {
+                            return 7.5;
+                        }
+                        if(xiBie == 'guang') {
+                            var sword = lib.skill.shiDiFuJian.getSword(player);
+                            if(lib.skill.shiDiFuJian.getDurability(player) <
+                                lib.skill.shiDiFuJian.getMaxDurability(player, sword)) {
+                                return 7;
+                            }
                         }
                         return 6 - get.value(button.link);
                     }).set('attackTarget', trigger.target).forResult();
                     event.result = {
-                        bool: result.bool && result.links && result.links.length == num,
+                        bool: result.bool && result.links &&
+                            result.links.length >= 1 && result.links.length <= max,
                         cards: result.links || [],
                     };
                 },
@@ -1085,6 +1098,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         shui: 0,
                         feng: 0,
                         guang: 0,
+                        an: 0,
                     };
                     event.cards.forEach(function(card) {
                         var xiBie = get.xiBie(card);
@@ -1132,7 +1146,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     }
                     if(counts.shui > 0) {
-                        for(var i = 0; i < counts.shui; i++) {
+                        for(var i = 0; i < counts.shui + 1; i++) {
                             if(player.countGaiPai('shiDiFuSuCai') >= 5) break;
                             await lib.skill.caiJi.collect(player);
                         }
@@ -1153,7 +1167,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                     if(counts.guang > 0 &&
                         lib.skill.shiDiFuJian.getSword(player)) {
-                        lib.skill.shiDiFuJian.changeDurability(player, counts.guang);
+                        lib.skill.shiDiFuJian.changeDurability(
+                            player,
+                            counts.guang + 1
+                        );
+                    }
+                    if(counts.an > 0) {
+                        await player.addNengLiang('shuiJing', counts.an + 1);
                     }
                 },
                     },
@@ -1165,15 +1185,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var sword = lib.skill.shiDiFuJian.getSword(player);
                     if(!event || !event.target || !sword) return false;
                     return player.canBiShaShuiJing() &&
-                        player.countCards('h') > 0 &&
+                        player.countCards('h') >= 2 &&
                         lib.skill.shiDiFuJian.getDurability(player) <
                             lib.skill.shiDiFuJian.getMaxDurability(player, sword);
                 },
                         "cost": async function(event, trigger, player) {
                     event.result = await player.chooseCard(
                         'h',
-                        1,
-                        '经验修补：是否弃置1张牌并移除1【水晶】，令当前剑+2【耐久】？'
+                        2,
+                        '经验修补：是否弃置2张手牌并移除1【水晶】，令当前剑+2【耐久】？'
                     ).set('ai', function(card) {
                         return 6 - get.value(card);
                     }).forResult();
@@ -1984,8 +2004,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 .yiJiHaiDiLinShiShouPai =
                                 player.countCards('h') +
                                 trigger.cards.length;
-                            player.addSkill(
-                                'yiJiHaiDiLinShiShouPai'
+                            player.addTempSkill(
+                                'yiJiHaiDiLinShiShouPai',
+                                { player: 'chengShouShangHaiAfter' }
                             );
                         },
                             },
@@ -2774,6 +2795,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         await player.addNengLiang('shuiJing', 1);
                     } else {
                         await player.addZhiShiWu('xiaoYanDouQi', 1);
+                        await player.changeZhiLiao(1, player);
                     }
                 },
                         "group": [
@@ -2843,11 +2865,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         '【焚决】：选择1张黯淡的【异火】翻至明亮面'
                     ).set('ai', function(button) {
                         var fire = manager.getFireByCard(button.link);
-                        return {
-                            qingLianDiXinHuo: 3,
-                            guLingLengHuo: 2,
-                            yunLuoXinYan: 1,
-                        }[fire] || 0;
+                        return manager.aiFireKeepValue(
+                            _status.event.player,
+                            fire
+                        );
                     }).forResultLinks();
                     var fire = manager.getFireByCard(links[0]);
                     if(fire) await manager.setForm(player, fire, 'bright');
@@ -2855,16 +2876,29 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     },
                     "baJiBeng": {
                         "trigger": {
-                            "source": "gongJiMingZhong",
+                            "source": "gongJiMingZhongAfter",
                         },
                         "filter": function(event, player) {
-                    return event.yingZhan != true &&
-                        player.countZhiShiWu('xiaoYanDouQi') > 0 &&
+                    return player.countZhiShiWu('xiaoYanDouQi') > 0 &&
                         event.target &&
                         event.target.countZhiShiWu('xiaoYanAnJin') == 0;
                 },
                         "check": function(event, player) {
-                    return !!event.target && event.target.side != player.side;
+                    if(!event.target || event.target.side == player.side) {
+                        return false;
+                    }
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var blood = player.countZhiShiWu('xiaoYanDouQi');
+                    if(blood == 3 && manager.aiYanFenPlan(
+                        player,
+                        event.target
+                    )) return false;
+                    var next = lib.skill.fenJueLianHua.nextFire(player);
+                    if(next && blood <= next.cost &&
+                        lib.skill.fenJueLianHua.aiCanRefine(player)) {
+                        return manager.aiOverflow(event.target, 1) > 0;
+                    }
+                    return true;
                 },
                         "logTarget": "target",
                         "content": async function(event, trigger, player) {
@@ -2879,6 +2913,53 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     );
                 },
                     },
+                    "yanFenShiLangChi": {
+                        "trigger": {"source": "gongJiMingZhongAfter"},
+                        "priority": 5,
+                        "filter": function(event, player) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    return player.countZhiShiWu('xiaoYanDouQi') >= 3 &&
+                        manager.getRefined(player).length > 0 &&
+                        game.countPlayer(function(target) {
+                            return target.isIn() && target != event.target;
+                        }) >= 2;
+                },
+                        "cost": async function(event, trigger, player) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var fireCount = manager.getRefined(player).length;
+                    var damage = Math.ceil(fireCount / 2);
+                    var plan = manager.aiYanFenPlan(player, trigger.target);
+                    event.result = await player.chooseTarget(
+                        [2, 2],
+                        '【焰分噬浪尺】：移除3【斗气】，选择攻击目标以外的两名角色，各造成' +
+                            damage + '点法术伤害',
+                        function(card, player, target) {
+                            return target.isIn() &&
+                                target != _status.event.attackTarget;
+                        }
+                    ).set('attackTarget', trigger.target)
+                        .set('damageNum', damage)
+                        .set('planTargets', plan ? plan.targets : [])
+                        .set('ai', function(target) {
+                            var planned = _status.event.planTargets || [];
+                            if(planned.includes(target)) return 20;
+                            return -20;
+                        }).forResult();
+                },
+                        "content": async function(event, trigger, player) {
+                    var targets = event.targets || [];
+                    if(targets.length != 2) return;
+                    await player.removeZhiShiWu('xiaoYanDouQi', 3);
+                    var fireCount = lib.skill.xiaoYanYiHuoManager
+                        .getRefined(player).length;
+                    var damage = Math.ceil(fireCount / 2);
+                    for(var target of targets.sortBySeat(player)) {
+                        if(target.isIn()) {
+                            await target.faShuDamage(damage, player, 'nocard');
+                        }
+                    }
+                },
+                    },
                     "fenJueLianHua": {
                         "nextFire": function(player) {
                     var manager = lib.skill.xiaoYanYiHuoManager;
@@ -2887,13 +2968,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             fire: 'qingLianDiXinHuo',
                             energy: 'shuiJing',
                             cost: 2,
-                            damage: 3,
+                            damage: 2,
                         };
                     }
                     if(!manager.isRefined(player, 'yunLuoXinYan')) {
                         return {
                             fire: 'yunLuoXinYan',
-                            energy: 'baoShi',
+                            energy: 'shuiJing',
                             cost: 3,
                             damage: 3,
                         };
@@ -2931,8 +3012,25 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             get.xingBei(player.side) + 1 >= game.xingBeiMax)) {
                         return false;
                     }
-                    return player.countCards('h') + info.damage <=
-                        player.getHandcardLimit();
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var actual = Math.max(
+                        0,
+                        info.damage - manager.aiTreatment(player)
+                    );
+                    if(player.countCards('h') + actual >
+                        player.getHandcardLimit()) return false;
+                    var value = {
+                        qingLianDiXinHuo: 3.4,
+                        yunLuoXinYan: 4,
+                        guLingLengHuo: 5,
+                    }[info.fire] || 2;
+                    value -= manager.aiSelfDamageRisk(player, info.damage);
+                    value -= info.cost * 0.3;
+                    value -= info.energy == 'baoShi' ? 1.4 : 0.75;
+                    if(player.countZhiShiWu('xiaoYanDouQi') >= 5) {
+                        value += 0.7;
+                    }
+                    return value > 0.45;
                 },
                         "type": "qiDong",
                         "trigger": {
@@ -3029,6 +3127,95 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "tianHuoSanXuanBian": {
+                        "aiPlan": function(player) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    if(!player || !player.canBiShaShuiJing ||
+                        !player.canBiShaShuiJing()) return null;
+                    var bright = manager.getBright(player);
+                    var max = Math.min(
+                        3,
+                        bright.length,
+                        player.countZhiShiWu('xiaoYanDouQi')
+                    );
+                    if(!max) return null;
+                    var attacks = player.getCards('h', function(card) {
+                        return get.type(card, player) == 'gongJi';
+                    });
+                    var enemies = game.filterPlayer(function(target) {
+                        return target.isIn() && target.side != player.side;
+                    });
+                    if(!attacks.length || !enemies.length) return null;
+                    var plans = [];
+                    for(var x = 1; x <= max; x++) {
+                        var best = null;
+                        attacks.forEach(function(card) {
+                            enemies.forEach(function(target) {
+                                var response = target.countCards('h', function(current) {
+                                    if(get.type(current, target) != 'gongJi') {
+                                        return false;
+                                    }
+                                    return get.xiBie(current) == 'an' ||
+                                        get.xiBie(current) == get.xiBie(card);
+                                });
+                                var shield = target.hasExpansions &&
+                                    target.hasExpansions('_shengDun');
+                                var hit = x >= 3 ? 0.98 :
+                                    response > 0 ? 0.42 : 0.9;
+                                if(x < 2 && shield) hit *= 0.25;
+                                var damage = 3;
+                                var score = manager.aiDamageScore(
+                                    target,
+                                    player,
+                                    damage,
+                                    x >= 2
+                                ) * hit;
+                                if(x >= 2) {
+                                    score += Math.min(
+                                        damage,
+                                        manager.aiTreatment(target)
+                                    ) * 0.65;
+                                    if(shield) score += 1.2;
+                                }
+                                if(x >= 3 && response > 0) {
+                                    score += Math.min(1.5, response * 0.55);
+                                }
+                                if(!best || score > best.score) {
+                                    best = {
+                                        target: target,
+                                        card: card,
+                                        score: score,
+                                    };
+                                }
+                            });
+                        });
+                        if(!best) continue;
+                        var fires = bright.slice().sort(function(a, b) {
+                            return manager.aiFireKeepValue(player, a) -
+                                manager.aiFireKeepValue(player, b);
+                        }).slice(0, x);
+                        var score = best.score - x * 0.5 - 0.8;
+                        fires.forEach(function(fire) {
+                            score -= manager.aiFireKeepValue(player, fire) * 0.25;
+                        });
+                        if(get.zhanJi(player.side).includes('shuiJing')) {
+                            score += 0.8;
+                        }
+                        plans.push({
+                            x: x,
+                            fires: fires,
+                            target: best.target,
+                            card: best.card,
+                            score: score,
+                        });
+                    }
+                    plans.sort(function(a, b) { return b.score - a.score; });
+                    var plan = plans[0] || null;
+                    var lotus = manager.aiFoNuPlan(player);
+                    if(lotus && plan && lotus.score > plan.score + 0.35) {
+                        return null;
+                    }
+                    return plan && plan.score > 0.45 ? plan : null;
+                },
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
@@ -3063,16 +3250,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var choices = fires.map(function(fire) {
                         return [fire, fireNames[fire] || get.translation(fire)];
                     });
-                    var desired = 1;
-                    if(max >= 2 && game.hasPlayer(function(target) {
-                        return target.side != player.side &&
-                            target.countZhiLiao() > 0;
-                    })) desired = 2;
-                    if(max >= 3 && game.hasPlayer(function(target) {
-                        return target.side != player.side &&
-                            (target.countCards('h') >= 3 ||
-                                get.shiQi(!player.side) <= 3);
-                    })) desired = 3;
+                    var plan = lib.skill.tianHuoSanXuanBian.aiPlan(player);
+                    var desired = plan ? plan.x : 1;
                     var links = await player.chooseButton(
                         [
                             '【天火三玄变】：选择1至' + max +
@@ -3081,17 +3260,28 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         [1, max]
                     ).set('desiredCount', desired)
+                        .set('desiredFires', plan ? plan.fires : [])
                         .set('ai', function(button) {
+                        var fire = Array.isArray(button.link) ?
+                            button.link[0] : button.link;
+                        if((_status.event.desiredFires || []).includes(fire)) {
+                            return 10;
+                        }
                         return ui.selected.buttons.length <
-                            _status.event.desiredCount ? 1 : -1;
+                            _status.event.desiredCount ? 1 : -10;
                     }).forResultLinks() || [];
                     event.result = {
                         bool: links.length > 0,
-                        cost_data: links,
+                        cost_data: {
+                            fires: links,
+                            aiTarget: plan && plan.target || null,
+                            aiCard: plan && plan.card || null,
+                        },
                     };
                 },
                         "content": async function(event, trigger, player) {
-                    var fires = event.cost_data.slice();
+                    var data = event.cost_data || {};
+                    var fires = (data.fires || []).slice();
                     await player.removeBiShaShuiJing();
                     await player.removeZhiShiWu(
                         'xiaoYanDouQi',
@@ -3100,6 +3290,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     player.storage.tianHuoSanXuanBianState = {
                         fires: fires,
                         x: fires.length,
+                        aiTarget: data.aiTarget && data.aiTarget.playerid,
+                        aiCard: data.aiCard && data.aiCard.cardid,
                     };
                     player.addSkill('tianHuoSanXuanBianState');
                     player.addTempSkill(
@@ -3114,16 +3306,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             get.xingBei(player.side) + 1 >= game.xingBeiMax)) {
                         return false;
                     }
-                    if(!player.countCards('h', function(card) {
-                        return get.type(card, player) == 'gongJi';
-                    })) return false;
-                    return game.hasPlayer(function(target) {
-                        return target.side != player.side;
-                    });
+                    return !!lib.skill.tianHuoSanXuanBian.aiPlan(player);
                 },
                         "ai": {
                             "shuiJing": true,
-                            "order": 5,
+                            "order": function(item, player) {
+                        var plan = lib.skill.tianHuoSanXuanBian.aiPlan(player);
+                        return plan ? 5 + Math.min(1, plan.score * 0.1) : 0;
+                    },
                         },
                     },
                     "foNuHuoLian": {
@@ -3141,12 +3331,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         });
                 },
                         "cost": async function(event, trigger, player) {
-                    var fires = lib.skill.xiaoYanYiHuoManager
-                        .getBright(player);
-                    var desired = fires.length >= 3 &&
-                        game.countPlayer(function(target) {
-                            return target.side != player.side;
-                        }) >= 2 ? 3 : 2;
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var fires = manager.getBright(player);
+                    var plan = manager.aiFoNuPlan(player);
+                    var desired = plan ? plan.count : 2;
                     var links = await player.chooseButton(
                         [
                             '【佛怒火莲】：选择2张或3张明亮【异火】',
@@ -3155,9 +3343,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         [2, Math.min(3, fires.length)],
                         true
                     ).set('desiredCount', desired)
+                        .set('desiredFires', plan ? plan.fires : [])
                         .set('ai', function(button) {
+                        if((_status.event.desiredFires || [])
+                            .includes(button.link)) return 10;
                         return ui.selected.buttons.length <
-                            _status.event.desiredCount ? 1 : -1;
+                            _status.event.desiredCount ? 1 : -10;
                     }).forResultLinks();
                     if(links.length < 2) {
                         event.result = { bool: false };
@@ -3170,7 +3361,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return target.side != player.side;
                         }
                     ).set('ai', function(target) {
-                        return get.damageEffect(target, 3);
+                        var plan = lib.skill.xiaoYanYiHuoManager
+                            .aiFoNuPlan(_status.event.player);
+                        if(plan && plan.target == target) return 20;
+                        return lib.skill.xiaoYanYiHuoManager.aiDamageScore(
+                            target,
+                            _status.event.player,
+                            3
+                        );
                     }).forResultTargets();
                     event.result = {
                         bool: targets.length > 0,
@@ -3207,21 +3405,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "ai": {
                             "baoShi": true,
                             "order": function(item, player) {
-                        var enemies = game.countPlayer(function(target) {
-                            return target.side != player.side;
-                        });
-                        var fires = lib.skill.xiaoYanYiHuoManager
-                            .getBright(player).length;
-                        return enemies > 0 && fires >= 2 ? 6 : 0;
+                        var plan = lib.skill.xiaoYanYiHuoManager
+                            .aiFoNuPlan(player);
+                        return plan ? 6 + Math.min(1, plan.score * 0.1) : 0;
                     },
                             "result": {
                                 "player": function(player) {
-                            var enemies = game.countPlayer(function(target) {
-                                return target.side != player.side;
-                            });
-                            var fires = lib.skill.xiaoYanYiHuoManager
-                                .getBright(player).length;
-                            return fires >= 3 && enemies >= 2 ? 3 : 1;
+                            var plan = lib.skill.xiaoYanYiHuoManager
+                                .aiFoNuPlan(player);
+                            return plan ? plan.score : -10;
                         },
                             },
                         },
@@ -3230,7 +3422,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "intro": {
                             "name": "斗气",
                             "content": "mark",
-                            "max": 4,
+                            "max": 5,
                         },
                         "onremove": "storage",
                         "markimage": "extension/bigcowcow/mark_douQi.png",
@@ -3242,6 +3434,194 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "yunLuoXinYan",
                             "guLingLengHuo",
                         ],
+                        "aiTreatment": function(player) {
+                    return Math.max(0, player && player.zhiLiao || 0);
+                },
+                        "aiOverflow": function(target, damage, ignoreTreatment) {
+                    if(!target || typeof target.getHandcardLimit != 'function') {
+                        return 0;
+                    }
+                    var actual = Math.max(
+                        0,
+                        (damage || 0) - (ignoreTreatment ? 0 :
+                            lib.skill.xiaoYanYiHuoManager.aiTreatment(target))
+                    );
+                    return Math.max(
+                        0,
+                        target.countCards('h') + actual -
+                            target.getHandcardLimit()
+                    );
+                },
+                        "aiDamageScore": function(
+                            target,
+                            player,
+                            damage,
+                            ignoreTreatment
+                        ) {
+                    if(!target || !player || damage <= 0) return 0;
+                    var score = get.damageEffect2(target, player, damage);
+                    var overflow = lib.skill.xiaoYanYiHuoManager
+                        .aiOverflow(target, damage, ignoreTreatment);
+                    if(target.side != player.side) {
+                        score += overflow * 3;
+                        if(overflow > 0 && overflow >= get.shiQi(target.side)) {
+                            score += 20;
+                        }
+                    } else {
+                        score -= overflow * 3;
+                        if(overflow > 0 && overflow >= get.shiQi(target.side)) {
+                            score -= 20;
+                        }
+                    }
+                    return score;
+                },
+                        "aiSelfDamageRisk": function(player, damage) {
+                    if(!player) return 99;
+                    var actual = Math.max(
+                        0,
+                        (damage || 0) -
+                            lib.skill.xiaoYanYiHuoManager.aiTreatment(player)
+                    );
+                    var overflow = lib.skill.xiaoYanYiHuoManager
+                        .aiOverflow(player, damage);
+                    var risk = actual * 0.5 + overflow * 4;
+                    if(overflow > 0 && overflow >= get.shiQi(player.side)) {
+                        risk += 30;
+                    }
+                    return risk;
+                },
+                        "aiFireKeepValue": function(player, fire) {
+                    if(fire == 'guLingLengHuo') return 2.2;
+                    if(fire == 'qingLianDiXinHuo') {
+                        return player && player.countCards('h', function(card) {
+                            return get.type(card, player) == 'gongJi';
+                        }) > 0 ? 1.8 : 1.1;
+                    }
+                    if(fire == 'yunLuoXinYan') {
+                        var need = player ? Math.max(
+                            0,
+                            3 - player.countZhiShiWu('xiaoYanDouQi')
+                        ) : 0;
+                        return 1.1 + need * 0.35;
+                    }
+                    return 1;
+                },
+                        "aiBestEnemy": function(player, damage) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var best = null;
+                    game.countPlayer(function(target) {
+                        if(!target.isIn() || target.side == player.side) return;
+                        var score = manager.aiDamageScore(
+                            target,
+                            player,
+                            damage
+                        );
+                        if(!best || score > best.score) {
+                            best = { target: target, score: score };
+                        }
+                    });
+                    return best;
+                },
+                        "aiYanFenPlan": function(player, attackTarget) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    var refined = manager.getRefined(player).length;
+                    if(!refined) return null;
+                    var damage = Math.ceil(refined / 2);
+                    var cold = manager.isBright(player, 'guLingLengHuo') ? 1 : 0;
+                    var choices = [];
+                    game.countPlayer(function(target) {
+                        if(!target.isIn() || target == attackTarget ||
+                            target.side == player.side) return;
+                        choices.push({
+                            target: target,
+                            score: manager.aiDamageScore(
+                                target,
+                                player,
+                                damage
+                            ) + (cold && damage > manager.aiTreatment(target) ?
+                                manager.aiDamageScore(
+                                target,
+                                player,
+                                1
+                            ) * 0.7 : 0),
+                        });
+                    });
+                    choices.sort(function(a, b) { return b.score - a.score; });
+                    if(choices.length < 2) return null;
+                    var score = choices[0].score + choices[1].score - 1.8;
+                    if(score <= 0.5) return null;
+                    return {
+                        targets: [choices[0].target, choices[1].target],
+                        damage: damage,
+                        score: score,
+                    };
+                },
+                        "aiFoNuPlan": function(player) {
+                    var manager = lib.skill.xiaoYanYiHuoManager;
+                    if(!player || !player.canBiShaBaoShi ||
+                        !player.canBiShaBaoShi() ||
+                        player.hasSkill && player.hasSkill(
+                            'tianHuoSanXuanBianJinZhiFoNu'
+                        )) return null;
+                    var bright = manager.getBright(player);
+                    if(bright.length < 2) return null;
+                    var enemies = game.filterPlayer(function(target) {
+                        return target.isIn() && target.side != player.side;
+                    });
+                    if(!enemies.length) return null;
+                    var cold = manager.isBright(player, 'guLingLengHuo');
+                    var plans = [];
+                    [2, 3].forEach(function(count) {
+                        if(bright.length < count) return;
+                        var targetDamage = count == 3 ? 3 : 2;
+                        var best = manager.aiBestEnemy(player, targetDamage);
+                        if(!best) return;
+                        var score = best.score;
+                        if(cold && targetDamage >
+                            manager.aiTreatment(best.target)) {
+                            score += manager.aiDamageScore(
+                            best.target,
+                            player,
+                            1
+                        ) * 0.7;
+                        }
+                        if(count == 2) {
+                            score -= manager.aiSelfDamageRisk(player, 1);
+                        } else {
+                            enemies.forEach(function(target) {
+                                if(target == best.target) return;
+                                score += manager.aiDamageScore(
+                                    target,
+                                    player,
+                                    1
+                                );
+                                if(cold && 1 > manager.aiTreatment(target)) {
+                                    score += manager.aiDamageScore(
+                                    target,
+                                    player,
+                                    1
+                                ) * 0.7;
+                                }
+                            });
+                        }
+                        var fires = bright.slice().sort(function(a, b) {
+                            return manager.aiFireKeepValue(player, a) -
+                                manager.aiFireKeepValue(player, b);
+                        }).slice(0, count);
+                        fires.forEach(function(fire) {
+                            score -= manager.aiFireKeepValue(player, fire) * 0.35;
+                        });
+                        score -= 1.4;
+                        plans.push({
+                            count: count,
+                            fires: fires,
+                            target: best.target,
+                            score: score,
+                        });
+                    });
+                    plans.sort(function(a, b) { return b.score - a.score; });
+                    return plans.length && plans[0].score > 0.6 ? plans[0] : null;
+                },
                         "dimSkills": {
                             "qingLianDiXinHuo": "anDanQingLianDiXinHuo",
                             "yunLuoXinYan": "anDanYunLuoXinYan",
@@ -3294,6 +3674,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         .filter(function(fire) {
                             return lib.skill.xiaoYanYiHuoManager
                                 .isBright(player, fire);
+                        });
+                },
+                        "getRefined": function(player) {
+                    return lib.skill.xiaoYanYiHuoManager.fires
+                        .filter(function(fire) {
+                            return lib.skill.xiaoYanYiHuoManager
+                                .isRefined(player, fire);
                         });
                 },
                         "getDim": function(player) {
@@ -3589,10 +3976,21 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         .set('prompt', '【心火重燃】：选择一项')
                         .set('ai', function() {
                             var player = _status.event.player;
-                            return player.countZhiShiWu(
+                            var manager = lib.skill.xiaoYanYiHuoManager;
+                            var blood = player.countZhiShiWu(
                                 'xiaoYanDouQi'
-                            ) < 4 ? '+1【斗气】' :
-                                '翻转黯淡异火';
+                            );
+                            var next = lib.skill.fenJueLianHua.nextFire(player);
+                            if(blood < 3 || next && blood < next.cost) {
+                                return '+1【斗气】';
+                            }
+                            var bestDim = manager.getDim(player).sort(
+                                function(a, b) {
+                                    return manager.aiFireKeepValue(player, b) -
+                                        manager.aiFireKeepValue(player, a);
+                                }
+                            )[0];
+                            return bestDim ? '翻转黯淡异火' : '+1【斗气】';
                         }).forResultControl();
                     if(control == '+1【斗气】') {
                         await player.addZhiShiWu('xiaoYanDouQi', 1);
@@ -3604,7 +4002,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             [dim, 'textbutton'],
                         ],
                         true
-                    ).forResultLinks();
+                    ).set('ai', function(button) {
+                        return lib.skill.xiaoYanYiHuoManager
+                            .aiFireKeepValue(
+                                _status.event.player,
+                                button.link
+                            );
+                    }).forResultLinks();
                     if(links.length) {
                         await lib.skill.xiaoYanYiHuoManager.setForm(
                             player,
@@ -3642,6 +4046,27 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "intro": {
                             "name": "天火三玄变",
                             "content": "本回合下一次主动攻击获得所选异火数量对应的累计强化。",
+                        },
+                        "ai": {
+                            "effect": {
+                                "player_use": function(card, player, target) {
+                            if(!card || get.type(card, player) != 'gongJi' ||
+                                !target || target.side == player.side) return;
+                            var state = player.storage
+                                .tianHuoSanXuanBianState;
+                            if(!state) return;
+                            var matchedTarget = !state.aiTarget ||
+                                target.playerid == state.aiTarget;
+                            var matchedCard = !state.aiCard ||
+                                card.cardid == state.aiCard;
+                            if(matchedTarget && matchedCard) {
+                                return [1, 0, 1, -3];
+                            }
+                            if(matchedTarget || matchedCard) {
+                                return [1, 0, 1, -1];
+                            }
+                        },
+                            },
                         },
                         "findAttack": function(event, player) {
                     var current = event;
@@ -3798,51 +4223,51 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "ningLangZhiGuangJian": "被动【凝浪之光剑】",
                     "ningLangZhiGuangJian_info": "<span class='tiaoJian'>（攻击命中时②）</span>你+1<span class='hong'>【复仇】</span>。",
                     "guangJiangZhiJian": "响应【光降之剑】",
-                    "guangJiangZhiJian_info": "<span class='tiaoJian'>（主动攻击命中时②，移除2点<span class='hong'>【复仇】</span>，弃1张牌【展示】）</span> <br>·<span class='tiaoJian'>（若弃牌为火系）</span>本次攻击伤害额外+1； <br>·<span class='tiaoJian'>（若弃牌为地系）</span>对除攻击目标外的对手各造成（x-1）点法术伤害③，x为此次主动攻击伤害； <br>·<span class='tiaoJian'>（若弃牌为风系）</span>你弃1张牌，视为本次攻击伤害-1。本次【攻击行动】结束后，对该角色进行一次暗系的主动攻击。",
+                    "guangJiangZhiJian_info": "<span class='tiaoJian'>（主动攻击命中时②，移除2<span class='hong'>【复仇】</span>并弃1张牌【展示】）</span>按弃牌系别结算：<br>火：本次伤害+1。<br>地：对其他对手各造成X-1点法术伤害③，X为本次攻击伤害。<br>风：再弃1张牌，本次伤害-1；行动结束后对该目标进行一次暗系主动攻击。",
                     "guangJiangZhiJian_feng": "响应【光降之剑-风】",
                     "guangJiangZhiJian_di": "响应【光降之剑-地】",
                     "chaoJuanBingXiao": "响应【潮卷冰削】",
-                    "chaoJuanBingXiao_info": "【回合限定】<span class='tiaoJian'>（本回合若你已经对一名角色进行主动攻击，移除1点<span class='hong'>【复仇】</span>）</span>你可以对该角色再进行一次【攻击行动】。本次攻击伤害额外+1。不能和【凝浪之光剑】同时发动。",
+                    "chaoJuanBingXiao_info": "【回合限定】<span class='tiaoJian'>（本回合已主动攻击过一名角色，移除1<span class='hong'>【复仇】</span>）</span>对其再执行一次【攻击行动】，伤害+1；不能与【凝浪之光剑】同时发动。",
                     "bingChaoDeWoXuan": "响应【冰潮的涡旋】",
-                    "bingChaoDeWoXuan_info": "【水晶】x1 （主动攻击前发动）你手牌直接补至上限【强制】，+1<span class='hong'>【复仇】</span>，本次攻击无法应战。",
+                    "bingChaoDeWoXuan_info": "【水晶】<span class='tiaoJian'>（主动攻击前①）</span>将手牌补至上限【强制】，+1<span class='hong'>【复仇】</span>；本次攻击无法应战。",
                     "fuChou": "复仇",
                     "fuChou_info": "<span class='hong'>【复仇】</span>为浪花骑士（优菈）专属指示物，上限为4。",
                     "jieShi": "被动【借势】",
-                    "jieShi_info": "你的攻击无视【圣盾】；主动攻击未命中或应战攻击命中时，+1<span class='hong'>【枪势】</span>；本回合内你的攻击每有一次未命中，后续攻击造成的伤害累计+1。",
+                    "jieShi_info": "你的攻击无视【圣盾】。<span class='tiaoJian'>（主动攻击未命中或应战攻击命中时）</span>+1<span class='hong'>【枪势】</span>；你的攻击每有一次未命中，后续攻击伤害累计+1；你的回合结束时将累计值置为0。",
                     "lianHuanTuCi": "响应【连环突刺】",
                     "lianHuanTuCi_info": "【回合限定】<span class='tiaoJian'>（主动攻击未命中时，移除1<span class='hong'>【枪势】</span>）</span>+1【攻击行动】。",
                     "hengQiangJiaShi": "响应【横枪架势】",
-                    "hengQiangJiaShi_info": "【回合限定】<span class='tiaoJian'>（应战时，移除1<span class='hong'>【枪势】</span>）</span>可以将1张任意系攻击牌视为与当前攻击同系的攻击牌使用，本次应战攻击伤害-1。该虚拟攻击在本次攻击结算期间保持视为后的系别，后续角色按该系别应战，但不会改写实体牌、独有技或下一名角色打出的攻击牌。",
+                    "hengQiangJiaShi_info": "【回合限定】<span class='tiaoJian'>（应战时，移除1<span class='hong'>【枪势】</span>）</span>将任意系攻击牌视为与当前攻击同系使用，应战伤害-1；不改变原攻击牌系别。",
                     "poZhenHuiQiang": "响应【破阵回枪】",
-                    "poZhenHuiQiang_info": "【回合限定】【水晶】×1。<span class='tiaoJian'>（主动攻击前，移除1<span class='hong'>【枪势】</span>）</span>本次攻击伤害+1；若本次攻击未命中，+1【攻击行动】。",
+                    "poZhenHuiQiang_info": "【回合限定】【水晶】<span class='tiaoJian'>（主动攻击前，移除1<span class='hong'>【枪势】</span>）</span>本次攻击伤害+1；若本次攻击未命中，+1【攻击行动】。",
                     "qiangShi": "枪势",
                     "qiangShi_info": "<span class='hong'>【枪势】</span>为赫克托专属指示物，上限为2。",
                     "shengCunQiDian": "被动【生存起点】",
-                    "shengCunQiDian_info": "游戏开始时，将【木剑】放置于你的面前，并在其上放置2【耐久】；其余剑专属卡置于游戏外。剑的【耐久】不能超过其上限；回合结束时，若当前剑的【耐久】为0，将其移除。",
+                    "shengCunQiDian_info": "<span class='tiaoJian'>（游戏开始时）</span>将具有2【耐久】的【木剑】置于面前，其余剑置于场外。剑的【耐久】不超过上限；回合结束时移除0【耐久】的当前剑。",
                     "caiJi": "响应【采集】",
                     "caiJi_info": "<span class='tiaoJian'>（你因发动剑的专属技能而移除【耐久】后）</span>若<span class='lan'>【素材】</span>未达到上限，将牌堆顶1张牌面朝下置于角色旁作为<span class='lan'>【素材】</span>。",
                     "gongZuoTai": "启动【工作台】",
-                    "gongZuoTai_info": "展示并弃置符合制作配方的<span class='lan'>【素材】</span>，选择满足锻造条件的剑专属卡；将面前的当前剑置于游戏外，再将所选剑放置于面前，并在其上放置等同于耐久上限的【耐久】。",
+                    "gongZuoTai_info": "<span class='tiaoJian'>（展示并弃置配方所需<span class='lan'>【素材】</span>）</span>制作1把可锻造的剑；将当前剑置于场外，新剑以满【耐久】置于面前。",
                     "zhanDouFuMo": "响应【战斗附魔】",
-                    "zhanDouFuMo_info": "<span class='tiaoJian'>（拥有任意剑且攻击命中后）</span>弃置X张法术<span class='lan'>【素材】</span>；当前剑为【金剑】或【下界合金剑】时X=2，否则X=1。素材可以是不同系别，按雷、火、地、水、风、光依次结算：雷系令本次攻击伤害+Y；火系对攻击目标造成Y点法术伤害；地系对另外Y名目标造成等同本次攻击伤害的法术伤害；水系发动Y次【采集】；风系令目标弃置Y张手牌；光系令当前剑+Y【耐久】。",
+                    "zhanDouFuMo_info": "<span class='tiaoJian'>（持剑攻击命中后②，弃置X张<span class='lan'>【素材】</span>；【金剑】或【下界合金剑】X可为1或2，否则X=1）</span>每系数量为Y：<br>雷：伤害+Y。　火：对目标造成Y点法术伤害③。<br>地：对另外Y名角色各造成等额法术伤害③。　水：发动Y+1次【采集】。<br>风：目标弃Y张手牌。　光：当前剑+（Y+1）【耐久】。<br>暗：你+（Y+1）【水晶】。",
                     "jingYanXiuBu": "响应【经验修补】",
-                    "jingYanXiuBu_info": "【水晶】×1。<span class='tiaoJian'>（攻击命中后，弃置1张牌）</span>令面前的当前剑+2【耐久】，最多增加至其耐久上限。",
+                    "jingYanXiuBu_info": "【水晶】<span class='tiaoJian'>（攻击命中后②，弃2张手牌）</span>当前剑+2【耐久】，不超过上限。",
                     "shiDiFuSuCai": "素材",
                     "shiDiFuSuCai_info": "<span class='lan'>【素材】</span>为史蒂夫专属盖牌，上限为5。",
                     "shiDiFuJian": "史蒂夫剑专属卡管理",
-                    "shiDiFuJian_info": "史蒂夫面前同一时间最多存在1把剑专属卡；【耐久】记录在当前剑上，不占用或改变角色自身的【治疗】，且不能超过该剑的耐久上限。",
+                    "shiDiFuJian_info": "面前至多有1把剑；【耐久】记录于当前剑且不超过上限，与角色【治疗】无关。",
                     "muJian": "(专)[响应]木剑",
-                    "muJian_info": "【耐久上限：2】制作配方为任意1张【素材】。<br><span class='tiaoJian'>（攻击时移除1【耐久】）</span>发动【简易工具】；若本次攻击未命中，结算结束后将本次使用的攻击牌作为<span class='lan'>【素材】</span>盖放于角色旁。",
+                    "muJian_info": "【耐久2｜配方：任意1<span class='lan'>【素材】</span>】<br>【简易工具】：攻击时移除1【耐久】；若未命中，结算后将攻击牌盖为<span class='lan'>【素材】</span>。",
                     "jinJian": "(专)[响应]金剑",
-                    "jinJian_info": "【耐久上限：1】制作配方为1张光系【素材】。<br>【回合限定】<span class='tiaoJian'>（【攻击行动】结束时移除1【耐久】）</span>发动【急速挥砍】，+1【攻击行动】或【法术行动】。<br><span class='tiaoJian'>（发动【采集】时）</span>被动【矿物勘探】：改为查看牌库顶4张牌，选择1张作为<span class='lan'>【素材】</span>，弃置其余牌。",
+                    "jinJian_info": "【耐久1｜配方：1光系<span class='lan'>【素材】</span>】<br>【急速挥砍】【回合限定】：<span class='tiaoJian'>（攻击行动结束时，移除1【耐久】）</span>+1【攻击行动】或【法术行动】。<br>【矿物勘探】：【采集】改为四选一，其余牌弃置。",
                     "shiJian": "(专)[响应]石剑",
-                    "shiJian_info": "【耐久上限：2】制作配方为1张地系【素材】。<br><span class='tiaoJian'>（应战攻击时移除1【耐久】）</span>发动【沉重格挡】，可以将任意1张攻击牌视为与当前攻击同系的攻击牌应战；若本次应战攻击命中，额外发动一次【采集】。<br><span class='tiaoJian'>（发动【采集】时）</span>被动【粗糙采掘】：改为查看牌库顶2张牌，选择1张作为<span class='lan'>【素材】</span>，弃置另一张。",
+                    "shiJian_info": "【耐久2｜配方：1地系<span class='lan'>【素材】</span>】<br>【沉重格挡】：应战时移除1【耐久】，将任意攻击牌视为当前攻击同系；若命中，额外发动1次【采集】。<br>【粗糙采掘】：【采集】改为二选一，另一张弃置。",
                     "tieJian": "(专)[响应]铁剑",
-                    "tieJian_info": "【耐久上限：3】制作配方为2张系别相同的【素材】。<br><span class='tiaoJian'>（攻击时移除1【耐久】）</span>发动【稳定锋刃】，本次攻击伤害+1。<br><span class='tiaoJian'>（发动【采集】时）</span>被动【矿脉精炼】：改为查看牌库顶3张牌，选择1张作为<span class='lan'>【素材】</span>，弃置其余牌。",
+                    "tieJian_info": "【耐久3｜配方：2张同系<span class='lan'>【素材】</span>】<br>【稳定锋刃】：攻击时移除1【耐久】，伤害+1。<br>【矿脉精炼】：【采集】改为三选一，其余牌弃置。",
                     "zuanShiJian": "(专)[响应]钻石剑",
-                    "zuanShiJian_info": "【耐久上限：4】制作配方为3张水系【素材】。<br><span class='tiaoJian'>（攻击时移除1【耐久】）</span>发动【钻石破甲】，本次攻击伤害+1；若为主动攻击，则无法被应战。<br><span class='tiaoJian'>（发动【采集】时）</span>可以发动【精准开采】，改为令任意一名有可弃置牌的角色弃置1张牌作为<span class='lan'>【素材】</span>。",
+                    "zuanShiJian_info": "【耐久4｜配方：3水系<span class='lan'>【素材】</span>】<br>【钻石破甲】：攻击时移除1【耐久】，伤害+1；主动攻击无法应战。<br>【精准开采】：【采集】可改为令任意角色弃1张牌作为<span class='lan'>【素材】</span>。",
                     "xiaJieHeJinJian": "(专)[响应]下界合金剑",
-                    "xiaJieHeJinJian_info": "【耐久上限：5】当前剑为【钻石剑】时，展示并弃置1张火系和1张暗系【素材】制作。<br><span class='tiaoJian'>（攻击时移除1【耐久】）</span>发动【不毁之锋】，本次攻击伤害+1且无法被应战。<br><span class='tiaoJian'>（攻击结算结束时，若【耐久】为0）</span>被动【下界锻造】：展示并弃置所有<span class='lan'>【素材】</span>，以其中火系或暗系<span class='lan'>【素材】</span>恢复【耐久】。",
+                    "xiaJieHeJinJian_info": "【耐久5｜配方：持有【钻石剑】，1火系+1暗系<span class='lan'>【素材】</span>】<br>【不毁之锋】：攻击时移除1【耐久】，伤害+1且无法应战。<br>【下界锻造】：攻击结算后若耐久为0，弃置全部<span class='lan'>【素材】</span>；每张火系或暗系素材恢复1【耐久】。",
                     "jianYiGongJu": "响应【简易工具】",
                     "jianYiGongJu_info": "<span class='tiaoJian'>（当前剑为【木剑】，攻击时移除1【耐久】）</span>若本次攻击未命中，结算结束后将本次使用的攻击牌作为<span class='lan'>【素材】</span>盖放于角色旁。",
                     "jiSuHuiKan": "响应【急速挥砍】",
@@ -3866,63 +4291,65 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "xiaJieDuanZao": "被动【下界锻造】",
                     "xiaJieDuanZao_info": "<span class='tiaoJian'>（当前攻击结算结束时，若【下界合金剑】的【耐久】为0）</span>展示并弃置所有<span class='lan'>【素材】</span>；其中每有1张火系或暗系<span class='lan'>【素材】</span>，令【下界合金剑】+1【耐久】。",
                     "lianJi": "连击",
-                    "lianJi_info": "<span class='lan'>【连击】</span>为桐谷和人的专属指示物，上限为3；普通状态下跨回合保留。",
+                    "lianJi_info": "<span class='lan'>【连击】</span>为桐谷和人专属指示物，上限为3；<span class='tiaoJian'>（【普通形态】下）</span>跨回合保留。",
                     "fengBiZhe": "被动【封弊者】",
-                    "fengBiZhe_info": "普通状态下，你的主动【攻击行动】结束后+1<span class='lan'>【连击】</span>。统计本回合所有来源的主动攻击；从第四次主动攻击开始，你的主动攻击无法被应战。",
+                    "fengBiZhe_info": "<span class='tiaoJian'>（【普通形态】下）</span>主动【攻击行动】结束后+1<span class='lan'>【连击】</span>；本回合第4次及之后的主动攻击无法应战。",
                     "erDaoLiu": "被动【二刀流】",
-                    "erDaoLiu_info": "<span class='tiaoJian'>（主动【攻击行动】结束后，若<span class='lan'>【连击】</span>达到上限且处于普通状态）</span>【横置】进入【二刀流】，记录本次攻击系别并额外+1【攻击行动】。进入后的第一刀若与入形攻击异系，伤害额外+1；无论是否同系均只检查第一刀。回合结束时移除全部<span class='lan'>【连击】</span>并【重置】。",
-                    "erDaoLiuZhuangTai": "二刀流",
-                    "erDaoLiuZhuangTai_info": "进入后的第一次主动攻击若与入形攻击异系，伤害额外+1；回合结束时移除全部<span class='lan'>【连击】</span>并【重置】。",
+                    "erDaoLiu_info": "<span class='tiaoJian'>（【普通形态】下，主动攻击行动结束后，<span class='lan'>【连击】</span>已满）</span>【横置】进入【二刀流形态】并+1【攻击行动】。入形后的第一次主动攻击若与入形攻击异系，伤害+1。回合结束时清空<span class='lan'>【连击】</span>并【重置】。",
+                    "erDaoLiuZhuangTai": "二刀流形态",
+                    "erDaoLiuZhuangTai_info": "<span class='tiaoJian'>（【二刀流形态】下）</span>入形后的第一次主动攻击若与入形攻击异系，伤害+1；回合结束时清空<span class='lan'>【连击】</span>并【重置】。",
                     "yinSuChongJi": "响应【音速冲击】",
-                    "yinSuChongJi_info": "【回合限定】仅普通状态下，<span class='tiaoJian'>（主动攻击前①）</span>摸1张牌【强制】。若命中，本次攻击伤害额外+1；若未命中，本次【攻击行动】结束后额外+1【攻击行动】。",
+                    "yinSuChongJi_info": "【回合限定】<span class='tiaoJian'>（【普通形态】下，主动攻击前①）</span>摸1张牌【强制】；命中则伤害+1，未命中则行动结束后+1【攻击行动】。",
                     "siFangZhan": "响应【四方斩】",
-                    "siFangZhan_info": "仅【二刀流】状态下，<span class='tiaoJian'>（主动攻击前①，移除1<span class='lan'>【连击】</span>）</span>选择一项：本次攻击伤害额外+1；或本次攻击伤害-1，行动结束后额外+1【攻击行动】。",
+                    "siFangZhan_info": "<span class='tiaoJian'>（【二刀流形态】下，主动攻击前①，移除1<span class='lan'>【连击】</span>）</span>选择：伤害+1；或伤害-1，行动结束后+1【攻击行动】。",
                     "xingBaoQiLiuZhan": "响应【星爆气流斩】",
-                    "xingBaoQiLiuZhan_info": "【宝石】×1。仅【二刀流】状态下，<span class='tiaoJian'>（主动攻击命中后②）</span>移除全部<span class='lan'>【连击】</span>，可以展示并弃置至多X张攻击牌，X不超过移除数且最大为3；这些牌与本次攻击牌及彼此之间均须异系。本次攻击伤害额外+Y+1，Y为弃牌数。0连击或0弃牌时仍可发动。行动结束后【重置】，清除并封锁本回合全部额外【攻击行动】。",
+                    "xingBaoQiLiuZhan_info": "【宝石】<span class='tiaoJian'>（【二刀流形态】下，主动攻击命中后②，清空<span class='lan'>【连击】</span>）</span>可弃至多X张攻击牌，X不超过移除数且至多为3；弃牌须与本次攻击及彼此异系。伤害+Y+1，Y为弃牌数。行动结束后【重置】，本回合不能再获得或执行额外【攻击行动】。",
                     "xingBaoQiLiuZhanFengSuo": "星爆气流斩",
-                    "xingBaoQiLiuZhanFengSuo_info": "本回合不能再获得或执行额外【攻击行动】；“攻击或法术行动”不能选择攻击，直接创建的追加攻击也会被取消。",
+                    "xingBaoQiLiuZhanFengSuo_info": "本回合不能再获得或执行额外【攻击行动】。",
                     "miaoYun": "喵运",
                     "miaoYun_info": "<span class='lan'>【喵运】</span>为一姬的专属指示物，上限为5。",
                     "yiJiBaoPai": "宝牌",
-                    "yiJiBaoPai_info": "<span class='lan'>【宝牌】</span>为一姬的正面朝上专属盖牌，上限为1，牌面与系别对所有角色公开。替换时原【宝牌】公开进入弃牌堆，新展示的牌库顶实体牌成为【宝牌】。",
+                    "yiJiBaoPai_info": "<span class='lan'>【宝牌】</span>为全场公开的专属牌，上限为1；替换时弃置原牌，新展示牌成为<span class='lan'>【宝牌】</span>。",
                     "baoPaiZhiShi": "被动【宝牌指示】",
-                    "baoPaiZhiShi_info": "游戏开始时，展示牌库顶1张牌并将其正面朝上作为<span class='lan'>【宝牌】</span>。你每次使用或打出与当前<span class='lan'>【宝牌】</span>最终同系的牌后，+1<span class='lan'>【喵运】</span>。",
+                    "baoPaiZhiShi_info": "<span class='tiaoJian'>（游戏开始时）</span>展示牌库顶1张牌作为<span class='lan'>【宝牌】</span>。使用或打出与<span class='lan'>【宝牌】</span>最终同系的牌后，+1<span class='lan'>【喵运】</span>。",
                     "duanYaoJiuZhuangTai": "断幺九",
                     "duanYaoJiuZhuangTai_info": "手牌数不少于3，且没有【圣光】【暗灭】【圣盾】【虚弱】【中毒】。",
                     "duanYaoJiuMiao": "响应【断幺九喵】",
-                    "duanYaoJiuMiao_info": "<span class='tiaoJian'>（【特殊行动】结束后，若手牌数不少于3且没有【圣光】【暗灭】【圣盾】【虚弱】【中毒】）</span>可以展示并弃置全部手牌。令Y为弃牌数，X为其中与<span class='lan'>【宝牌】</span>同系的牌数：+X+1<span class='lan'>【喵运】</span>；摸Y-X张牌【强制】；公开弃置原<span class='lan'>【宝牌】</span>并展示牌库顶1张牌作为新<span class='lan'>【宝牌】</span>。",
+                    "duanYaoJiuMiao_info": "<span class='tiaoJian'>（特殊行动结束后，手牌≥3且没有【圣光】【暗灭】【圣盾】【虚弱】【中毒】）</span>可以展示并弃置全部手牌。Y为弃牌数，X为其中与<span class='lan'>【宝牌】</span>同系数：+X+1<span class='lan'>【喵运】</span>，摸Y-X张牌【强制】，再更换<span class='lan'>【宝牌】</span>。",
                     "liZhiMiao": "响应【立直喵】",
-                    "liZhiMiao_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①，若本次攻击牌与当前<span class='lan'>【宝牌】</span>同系）</span>本次攻击伤害额外+1；若命中，额外+1【法术行动】。",
+                    "liZhiMiao_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①，攻击牌与<span class='lan'>【宝牌】</span>同系）</span>伤害+1；若命中，+1【法术行动】。",
                     "duiDuiHuMiao": "法术【对对胡喵】",
-                    "duiDuiHuMiao_info": "弃置1张法术牌【展示】，+1<span class='lan'>【喵运】</span>，指定一名对手并展示牌库顶1张牌：若与当前<span class='lan'>【宝牌】</span>同系，对目标造成2点法术伤害③；否则对你和目标各造成1点法术伤害③。结算后公开弃置原<span class='lan'>【宝牌】</span>，将展示牌作为新<span class='lan'>【宝牌】</span>。",
+                    "duiDuiHuMiao_info": "<span class='tiaoJian'>（弃1张法术牌【展示】）</span>+1<span class='lan'>【喵运】</span>，指定一名对手并展示牌库顶牌：与<span class='lan'>【宝牌】</span>同系则对目标造成2点法术伤害③，否则你与目标各受1点法术伤害③。结算后以展示牌更换<span class='lan'>【宝牌】</span>。",
                     "haiDiLaoYueMiao": "响应【海底捞月喵】",
-                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（承受实际伤害后⑤，在因该伤害摸牌时）</span>于标准爆牌前展示最后摸到的1张牌。若与当前<span class='lan'>【宝牌】</span>同系，+1【治疗】并+1<span class='lan'>【喵运】</span>；若不同系，可以将该牌与<span class='lan'>【宝牌】</span>交换。交换后正常检查手牌上限与爆牌。",
+                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（你承受实际伤害后⑤，在因该伤害摸牌时）</span>展示最后摸到的1张牌。<br>若该牌与当前<span class='lan'>【宝牌】</span>同系：+1【治疗】；+1<span class='lan'>【喵运】</span>。<br>若该牌与当前<span class='lan'>【宝牌】</span>不同系，你可以将该牌与当前<span class='lan'>【宝牌】</span>交换：将原<span class='lan'>【宝牌】</span>加入你的手牌；将展示的牌作为新的<span class='lan'>【宝牌】</span>。",
                     "yiManShiJianMiao": "启动【役满时间喵】",
-                    "yiManShiJianMiao_info": "【宝石】×1，移除5<span class='lan'>【喵运】</span>。向全场展示牌库顶5张牌并将其全部弃置，指定一名对手，对其造成X+1点法术伤害③，X为其中与当前<span class='lan'>【宝牌】</span>同系的牌数。",
+                    "yiManShiJianMiao_info": "【宝石】<span class='tiaoJian'>（移除5<span class='lan'>【喵运】</span>）</span>展示并弃置牌库顶5张牌，对一名对手造成X+1点法术伤害③；X为其中与<span class='lan'>【宝牌】</span>同系的牌数。",
                     "moQiShaoNianQiong": "被动【莫欺少年穷】",
-                    "moQiShaoNianQiong_info": "<span class='tiaoJian'>（你的回合结束时，若本回合未执行【特殊行动】，且没有因攻击、法术、技能摸牌爆牌或其他任何由你产生的效果使对方士气下降）</span>你+1<span class='lan'>【斗气】</span>；若此时己方士气低于对方，改为+2<span class='lan'>【斗气】</span>，并令自己+1【水晶】。即使<span class='lan'>【斗气】</span>已经达到上限，仍正常获得【水晶】。",
+                    "moQiShaoNianQiong_info": "<span class='tiaoJian'>（回合结束时，本回合未执行【特殊行动】且未因你的效果令对方士气下降）</span>+1<span class='lan'>【斗气】</span>、+1【治疗】；若己方士气较低，改为+2<span class='lan'>【斗气】</span>并+1【水晶】。【斗气】已满仍获得【水晶】。",
                     "fenJue": "被动【焚决】",
-                    "fenJue_info": "游戏开始时你没有任何【异火】。<span class='tiaoJian'>（你的回合开始时）</span>若你拥有黯淡的【异火】，选择其中1张强制翻至明亮面。",
+                    "fenJue_info": "游戏开始时没有【异火】。<span class='tiaoJian'>（回合开始时）</span>若有黯淡【异火】，将其中1张翻亮【强制】。",
                     "baJiBeng": "响应【八极崩】",
-                    "baJiBeng_info": "<span class='tiaoJian'>（你的主动攻击命中后②，移除1<span class='lan'>【斗气】</span>，且目标没有【暗劲】）</span>将【暗劲】正面朝上放置于攻击目标面前。",
+                    "baJiBeng_info": "<span class='tiaoJian'>（攻击命中后③，目标没有【暗劲】，移除1<span class='lan'>【斗气】</span>）</span>将专属卡【暗劲】置于攻击目标面前。",
+                    "yanFenShiLangChi": "响应【焰分噬浪尺】",
+                    "yanFenShiLangChi_info": "<span class='tiaoJian'>（已炼化至少1张【异火】，攻击命中后③，移除3<span class='lan'>【斗气】</span>）</span>选择攻击目标以外的另外两名角色，对其各造成X点法术伤害；X为已炼化【异火】数量÷2，向上取整。",
                     "fenJueLianHua": "启动【焚诀·炼化】",
-                    "fenJueLianHua_info": "按【青莲地心火】→【陨落心炎】→【骨灵冷火】的顺序炼化下一张异火。青莲支付【水晶】×1与2<span class='lan'>【斗气】</span>并自伤3；陨落支付【宝石】×1与3<span class='lan'>【斗气】</span>并自伤3；骨灵支付【宝石】×1与3<span class='lan'>【斗气】</span>并自伤4。若该次自伤及其爆牌未令己方士气下降，炼化成功；否则失败并返还1<span class='lan'>【斗气】</span>。",
+                    "fenJueLianHua_info": "依次炼化【青莲地心火】→【陨落心炎】→【骨灵冷火】：<br>青莲：【水晶】、2<span class='lan'>【斗气】</span>，自伤2。<br>陨落：【水晶】、3<span class='lan'>【斗气】</span>，自伤3。<br>骨灵：【宝石】、3<span class='lan'>【斗气】</span>，自伤4。<br>若自伤及爆牌令己方士气下降，炼化失败并返还1<span class='lan'>【斗气】</span>；否则放置对应【异火】，骨灵成功后失去此技能。",
                     "tianHuoSanXuanBian": "启动【天火三玄变】",
-                    "tianHuoSanXuanBian_info": "【回合限定】【水晶】×1。移除X<span class='lan'>【斗气】</span>并选择X张明亮【异火】，X为1至3；本回合不能发动【佛怒火莲】。下一次主动攻击累计获得：X≥1伤害+1；X≥2不能以【治疗】抵伤且无视【圣盾】；X=3无法被应战。命中时可将己方战绩区1【水晶】转为1【宝石】。该攻击结束后，或本回合未攻击时于回合结束，将所选异火翻暗。",
+                    "tianHuoSanXuanBian_info": "【回合限定】【水晶】<span class='tiaoJian'>（移除X<span class='lan'>【斗气】</span>，选择X张明亮【异火】，1≤X≤3）</span>本回合不能发动【佛怒火莲】。下一次主动攻击：<br>X≥1：伤害+1。　X≥2：无视【圣盾】且不能以【治疗】抵伤。　X=3：无法应战。<br>命中时可将己方1【水晶】转为1【宝石】；攻击结束后将所选异火翻暗，未攻击则于回合结束翻暗。",
                     "foNuHuoLian": "法术【佛怒火莲】",
-                    "foNuHuoLian_info": "【宝石】×1，选择2张或3张明亮【异火】，结算后翻暗。融合两种：对一名目标对手造成2点法术伤害③，再对自己造成1点法术伤害③。融合三种：对一名目标对手造成3点法术伤害③，对其他所有对手各造成1点法术伤害③。",
+                    "foNuHuoLian_info": "【宝石】<span class='tiaoJian'>（选择2或3张明亮【异火】）</span>结算后翻暗：<br>2张：对一名对手造成2点法术伤害③，再对自己造成1点法术伤害③。<br>3张：对一名对手造成3点法术伤害③，对其他对手各造成1点法术伤害③。",
                     "xiaoYanDouQi": "斗气",
-                    "xiaoYanDouQi_info": "<span class='lan'>【斗气】</span>为萧炎专属指示物，上限为4。",
+                    "xiaoYanDouQi_info": "<span class='lan'>【斗气】</span>为萧炎专属指示物，上限为5。",
                     "xiaoYanYiHuoManager": "异火管理",
-                    "xiaoYanYiHuoManager_info": "三张【异火】炼化前位于场外；炼化成功后以明亮面放置于萧炎角色旁，翻至黯淡面时失去对应的明亮面技能，重新翻亮后恢复。",
+                    "xiaoYanYiHuoManager_info": "【异火】炼化前位于场外；炼化后以明亮面放置。翻暗时失去对应技能，翻亮后恢复。",
                     "xiaoYanAnJin": "(专)【暗劲】",
-                    "xiaoYanAnJin_info": "拥有者回合开始时，先移除【暗劲】，再由萧炎对其造成1点法术伤害③；若因此造成对方士气下降，萧炎令己方战绩区+1【水晶】。每名角色上限为1。",
+                    "xiaoYanAnJin_info": "<span class='tiaoJian'>（拥有者回合开始时）</span>移除【暗劲】，萧炎对其造成1点法术伤害③；若因此令对方士气下降，己方+1【水晶】。每名角色上限为1。",
                     "qingLianDiXinHuo": "(专)【青莲地心火】",
-                    "qingLianDiXinHuo_info": "专属【青莲地心火】。响应【地火焚身】：<span class='tiaoJian'>（你对目标造成攻击伤害后⑤）</span>对该目标额外造成1点法术伤害③。翻面后为【黯淡的青莲地心火】。",
+                    "qingLianDiXinHuo_info": "【地火焚身】：<span class='tiaoJian'>（对目标造成实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。翻面后变为黯淡。",
                     "yunLuoXinYan": "(专)【陨落心炎】",
-                    "yunLuoXinYan_info": "专属【陨落心炎】。响应【心火重燃】：<span class='tiaoJian'>（你执行【特殊行动】后）</span>必须选择一项：+1<span class='lan'>【斗气】</span>；或将另一张处于黯淡面的【异火】翻至明亮面。翻面后为【黯淡的陨落心炎】。",
+                    "yunLuoXinYan_info": "【心火重燃】：<span class='tiaoJian'>（特殊行动后）</span>必须选择：+1<span class='lan'>【斗气】</span>；或将另一张黯淡【异火】翻亮。翻面后变为黯淡。",
                     "guLingLengHuo": "(专)【骨灵冷火】",
-                    "guLingLengHuo_info": "专属【骨灵冷火】。响应【冷火灼魂】：<span class='tiaoJian'>（你对另一名目标造成正数实际法术伤害后⑤）</span>对该目标额外造成1点法术伤害③。你对自己造成的法术伤害不能触发此技能。翻面后为【黯淡的骨灵冷火】。",
+                    "guLingLengHuo_info": "【冷火灼魂】：<span class='tiaoJian'>（对另一名角色造成实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；对自己的伤害不能触发。翻面后变为黯淡。",
                     "anDanQingLianDiXinHuo": "(专)【黯淡的青莲地心火】",
                     "anDanQingLianDiXinHuo_info": "黯淡的【青莲地心火】，通过【焚决】可重新翻至明亮面。",
                     "anDanYunLuoXinYan": "(专)【黯淡的陨落心炎】",
@@ -3930,11 +4357,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "anDanGuLingLengHuo": "(专)【黯淡的骨灵冷火】",
                     "anDanGuLingLengHuo_info": "黯淡的【骨灵冷火】，通过【焚决】可重新翻至明亮面。",
                     "diHuoFenShen": "响应【地火焚身】",
-                    "diHuoFenShen_info": "<span class='tiaoJian'>（你对目标造成正数实际攻击伤害后⑤）</span>对该目标额外造成1点法术伤害③；每个原始伤害事件最多追加一次。",
+                    "diHuoFenShen_info": "<span class='tiaoJian'>（对目标造成实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
                     "xinHuoChongRan": "响应【心火重燃】",
-                    "xinHuoChongRan_info": "<span class='tiaoJian'>（你执行【特殊行动】后）</span>必须选择一项：+1<span class='lan'>【斗气】</span>；或将另一张黯淡【异火】翻至明亮面。",
+                    "xinHuoChongRan_info": "<span class='tiaoJian'>（特殊行动后）</span>必须选择：+1<span class='lan'>【斗气】</span>；或将另一张黯淡【异火】翻亮。",
                     "lengHuoZhuoHun": "响应【冷火灼魂】",
-                    "lengHuoZhuoHun_info": "<span class='tiaoJian'>（你对另一名目标造成正数实际法术伤害后⑤）</span>对该目标额外造成1点法术伤害③。不能响应你对自己的法术伤害或本技能追加的伤害；每个原始伤害事件最多追加一次。",
+                    "lengHuoZhuoHun_info": "<span class='tiaoJian'>（对另一名角色造成实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；对自己的伤害不能触发。",
                     "tianHuoSanXuanBianState": "天火三玄变",
                     "tianHuoSanXuanBianJinZhiFoNu": "天火三玄变",
                 },
@@ -3943,16 +4370,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.2",
+            "version": "2.7",
         },
         "files": {
             "character": [
-                "youLa.jpg",
-                "huiFengQiangShi.jpg",
-                "steve.jpg",
-                "tongGuHeRen.jpg",
-                "yiJi.jpg",
-                "xiaoYan.jpg",
+                "youLa.png",
+                "huiFengQiangShi.png",
+                "steve.png",
+                "tongGuHeRen.png",
+                "yiJi.png",
+                "xiaoYan.png",
             ],
             "card": [
                 "mark_qingLianDiXinHuo.png",
@@ -3965,6 +4392,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "skill": [
                 "mark_fuChou.png",
                 "mark_qiangShi.png",
+                "mark_jieShi.png",
                 "mark_lianJi.png",
                 "mark_miaoYun.png",
                 "mark_douQi.png",
