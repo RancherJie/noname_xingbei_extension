@@ -365,6 +365,49 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         ui.create.characterDialog = wrappedCharacterDialog;
     }
 
+    function patchCharacterButtonPortraitRefresh() {
+        if (!ui.create || !ui.create.buttonPresets ||
+            typeof ui.create.buttonPresets.character != "function") return;
+        var oldCharacterButton = ui.create.buttonPresets.character;
+        if (oldCharacterButton._xingBeiNightmarePortraitRefresh) return;
+
+        var applyPortrait = function (node) {
+            if (!node) return;
+            var mode = nightmareConfig("portraitMode", "chibi");
+            if (mode == "original") return;
+            var characterId = node.link || node._link;
+            var imageId = nightmareCharacterImageId(characterId);
+            if (!imageId || typeof node.setBackgroundImage != "function") return;
+            var folder = mode == "chibi" ? "chibi/default" : "default";
+            node.setBackgroundImage(
+                "extension/" + extensionName + "/image/character/" +
+                folder + "/" + imageId + ".png"
+            );
+        };
+
+        var wrappedCharacterButton = function () {
+            // 联机选将使用characterx按钮直接生成候选，不一定创建characterDialog；
+            // 按钮完成原始初始化后再覆盖本地头像，避免客机因角色包载入时序显示原图。
+            var node = oldCharacterButton.apply(this, arguments);
+            applyPortrait(node);
+            if (node && typeof node.refresh == "function" &&
+                !node.refresh._xingBeiNightmarePortraitRefresh) {
+                var oldRefresh = node.refresh;
+                var wrappedRefresh = function () {
+                    var result = oldRefresh.apply(this, arguments);
+                    applyPortrait(arguments[0] || this);
+                    return result;
+                };
+                wrappedRefresh._xingBeiNightmarePortraitRefresh = true;
+                node.refresh = wrappedRefresh;
+            }
+            return node;
+        };
+        wrappedCharacterButton._xingBeiNightmarePortraitRefresh = true;
+        wrappedCharacterButton._xingBeiNightmarePortraitRefreshOriginal = oldCharacterButton;
+        ui.create.buttonPresets.character = wrappedCharacterButton;
+    }
+
     function syncNightmareCharacterImage(player) {
         if (!player || !player.node) return;
         var nightmare = isNightmareAi(player);
@@ -1021,7 +1064,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var originalTianQiangFilter = lib.skill.tianQiang.filter;
             lib.skill.tianQiang.filter = function (event, player) {
                 if (lib.xingBeiNightmare.isNightmareAi(player) && player.hasSkill("nightmare_shenShengWuZhuang")) {
-                    var action = getParentEvent(event, "xingDong");
+                    var action = event && typeof event.getParent == "function" ? event.getParent("xingDong") : null;
                     if (action && action.tianQiang === false) return false;
                     return event.yingZhan != true && player.zhiLiao >= 1;
                 }
@@ -2100,6 +2143,48 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
         }
 
+        // 全局提炼 AI：提炼必须能够完整处理2个星石。
+        // 若战绩区不足2个星石，或自身能量区不足2个空位，则禁止AI硬提炼。
+        var refine = lib.skill && lib.skill._tiLian;
+        if (refine && markPatched(refine, "requireTwoResources")) {
+            function canFullRefine(player) {
+                if (!player) return false;
+                var records = typeof get.zhanJi == "function" ? (get.zhanJi(player.side) || []) : [];
+                var room = typeof player.countEmptyNengLiang == "function" ? player.countEmptyNengLiang() : 0;
+                return records.length >= 2 && room >= 2;
+            }
+            var oldRefineFilter = refine.filter;
+            refine.filter = function (event, player) {
+                if (!canFullRefine(player)) return false;
+                return typeof oldRefineFilter == "function" ? oldRefineFilter.apply(this, arguments) : true;
+            };
+            refine.ai = refine.ai || {};
+            var oldRefineOrder = refine.ai.order;
+            refine.ai.order = function (item, player) {
+                if (!canFullRefine(player)) return 0;
+                return typeof oldRefineOrder == "function" ? oldRefineOrder.apply(this, arguments) : (typeof oldRefineOrder == "number" ? oldRefineOrder : 2);
+            };
+            refine.ai.result = refine.ai.result || {};
+            var oldRefineResultPlayer = refine.ai.result.player;
+            refine.ai.result.player = function (player) {
+                if (!canFullRefine(player)) return -100;
+                return typeof oldRefineResultPlayer == "function" ? oldRefineResultPlayer.apply(this, arguments) : (typeof oldRefineResultPlayer == "number" ? oldRefineResultPlayer : 1);
+            };
+        }
+
+        // 某些版本把提炼的执行阶段拆到 _tiLian_backup；同步加硬门槛，
+        // 防止主技能AI被其它全局逻辑绕过后仍选择不完整提炼。
+        var refineBackup = lib.skill && lib.skill._tiLian_backup;
+        if (refineBackup && markPatched(refineBackup, "requireTwoResources")) {
+            var oldRefineBackupFilter = refineBackup.filter;
+            refineBackup.filter = function (event, player) {
+                var records = typeof get.zhanJi == "function" ? (get.zhanJi(player.side) || []) : [];
+                var room = typeof player.countEmptyNengLiang == "function" ? player.countEmptyNengLiang() : 0;
+                if (records.length < 2 || room < 2) return false;
+                return typeof oldRefineBackupFilter == "function" ? oldRefineBackupFilter.apply(this, arguments) : true;
+            };
+        }
+
         var shield = lib.card && lib.card.shengDun;
         if (shield && markPatched(shield, "proactiveDefenseValue")) {
             shield.ai = shield.ai || {};
@@ -2319,8 +2404,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     function patchDiQiang(helper) {
         var skill = lib.skill && lib.skill.diQiang;
         if (!skill || !markPatched(skill, "healSpend")) return;
+
+        function diQiangDiscount(player) {
+            return lib.xingBeiNightmare &&
+                typeof lib.xingBeiNightmare.isNightmareAi == "function" &&
+                lib.xingBeiNightmare.isNightmareAi(player) &&
+                player.hasSkill("nightmare_shenShengWuZhuang") ? 1 : 0;
+        }
+
         skill.cost = async function (event, trigger, player) {
-            var max = Math.min(4, player.zhiLiao || 0);
+            var treatment = player.zhiLiao || 0;
+            var discount = diQiangDiscount(player);
+            // 【神圣武装】令实际移除治疗数-1，因此噩梦圣枪在至少有1治疗时
+            // 可以声明比当前治疗多1点的地枪（最高仍为X=4）。
+            var max = treatment > 0 ? Math.min(4, treatment + discount) : 0;
             var list = [];
             for (var i = 1; i <= max; i++) list.push(i);
             list.push("cancel2");
@@ -2332,16 +2429,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     var player = _status.event.player;
                     var target = _status.event.target;
                     if (!target || target.side == player.side) return "cancel2";
-                    var max = Math.min(4, player.zhiLiao || 0);
+                    var treatment = player.zhiLiao || 0;
+                    var discount = diQiangDiscount(player);
+                    var max = treatment > 0 ? Math.min(4, treatment + discount) : 0;
                     var base = _status.event.baseDamage || 2;
                     var best = "cancel2";
                     var bestScore = 0;
                     for (var amount = 1; amount <= max; amount++) {
+                        var actualCost = Math.max(0, amount - discount);
                         var before = helper.overflowAfterDamage(target, base);
                         var after = helper.overflowAfterDamage(target, base + amount);
                         var score = (after - before) * 4 + amount * 0.35;
                         if (get.shiQi(!player.side) <= after) score += 20;
-                        if (player.zhiLiao - amount <= 0) score -= 1.1;
+                        if (treatment - actualCost <= 0) score -= 1.1;
                         if (score > bestScore) {
                             best = amount;
                             bestScore = score;
@@ -2349,9 +2449,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     }
                     return best;
                 }).forResult();
+            var control = result && result.control;
+            var amount = parseInt(control, 10);
             event.result = {
-                bool: result.control != "cancel2" && typeof result.control == "number",
-                cost_data: result.control
+                // chooseControl 在不同版本中可能返回数字或数字字符串，统一转为整数。
+                bool: control != "cancel2" && !isNaN(amount) && amount >= 1 && amount <= max,
+                cost_data: amount
             };
         };
     }
@@ -2394,24 +2497,33 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             return { drained: drained, actual: actual, overflow: overflow, score: score };
         }
 
+        function diQiangDiscount(player) {
+            return lib.xingBeiNightmare &&
+                typeof lib.xingBeiNightmare.isNightmareAi == "function" &&
+                lib.xingBeiNightmare.isNightmareAi(player) &&
+                player.hasSkill("nightmare_shenShengWuZhuang") ? 1 : 0;
+        }
+
         function bestDiSpend(player, target, baseDamage, availableTreatment, targetTreatment) {
             availableTreatment = Math.max(0, availableTreatment == null ? player.zhiLiao || 0 : availableTreatment);
-            var max = Math.min(4, availableTreatment);
+            var discount = diQiangDiscount(player);
+            var max = availableTreatment > 0 ? Math.min(4, availableTreatment + discount) : 0;
             var before = attackOutcome(target, baseDamage, targetTreatment);
             var best = { amount: 0, score: 0 };
-            // 只要把当前可支付的【治疗】全部投入能够令目标爆牌，
-            // 地枪直接取最大值，不再为后续天枪保留治疗。
+            // 【神圣武装】只减少实际移除的治疗，不减少【地枪】声明的X与伤害加成。
+            // 因此爆牌判断看 amount，资源保留判断看 actualCost。
             if (max > 0) {
                 var maximum = attackOutcome(target, baseDamage + max, targetTreatment);
                 if (maximum.overflow > 0) return { amount: max, score: 100 + maximum.overflow };
             }
             var futureAttack = helper.countUsableCards(player, "gongJi") > 0;
             for (var amount = 1; amount <= max; amount++) {
+                var actualCost = Math.max(0, amount - discount);
                 var after = attackOutcome(target, baseDamage + amount, targetTreatment);
-                // 地枪的治疗就是进攻资源。旧模型几乎只认可新增爆牌，
-                // 导致普通命中后连1点有效增伤也不愿支付。
-                var score = after.score - before.score + amount * 0.65 - amount * 0.32 - 0.1;
-                if (futureAttack && availableTreatment - amount < 2) score -= 0.2;
+                // 地枪的治疗就是进攻资源。伤害收益按声明X计算，
+                // 消耗惩罚则按【神圣武装】结算后的实际治疗消耗计算。
+                var score = after.score - before.score + amount * 0.65 - actualCost * 0.32 - 0.1;
+                if (futureAttack && availableTreatment - actualCost < 2) score -= 0.2;
                 if (after.overflow > before.overflow) score += 0.45;
                 if (after.overflow >= get.shiQi(!player.side) && after.overflow > 0) score += 8;
                 if (score > best.score + 0.05) best = { amount: amount, score: score };
@@ -2464,29 +2576,40 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             return best;
         }
 
+        // 【辉耀】的治疗判定固定按上限3，不读取角色动态治疗上限。
+        // 必须先产生真实治疗收益，才允许把后续攻击价值作为附加收益；
+        // 若所有我方角色都已达到3治疗，则AI绝不为了“未来攻击”空开辉耀。
         function groupHealingValue(player) {
             var score = 0;
+            var totalGain = 0;
             game.countPlayer(function (target) {
-                var gain = Math.min(1, Math.max(0, treatmentLimit(target) - (target.zhiLiao || 0)));
+                if (target.side != player.side) return;
+                var gain = Math.min(1, Math.max(0, 3 - (target.zhiLiao || 0)));
                 if (!gain) return;
-                score += target.side == player.side ? 0.68 : -0.72;
-                if (target == player && player.zhiLiao < 2) score += 0.3;
+                totalGain += gain;
+                score += 0.85;
+                if (target == player && (player.zhiLiao || 0) < 2) score += 0.35;
             });
-            return score;
+            return { score: score, gain: totalGain };
         }
 
         function radiancePlan(player, costCard) {
-            var ownTreatment = Math.min(treatmentLimit(player), (player.zhiLiao || 0) + 1);
+            var healing = groupHealingValue(player);
+            if (healing.gain <= 0) return { attack: null, score: -100, healingGain: 0 };
+
+            var ownTreatment = Math.min(3, (player.zhiLiao || 0) + 1);
             var attack = bestAttackPlan(player, costCard, {
                 treatment: ownTreatment,
                 targetTreatment: function (target) {
-                    return Math.min(treatmentLimit(target), (target.zhiLiao || 0) + 1);
+                    // 辉耀只按治疗上限3模拟；敌方不会从我方辉耀获得治疗。
+                    if (target.side != player.side) return target.zhiLiao || 0;
+                    return Math.min(3, (target.zhiLiao || 0) + 1);
                 }
             });
-            var score = groupHealingValue(player) + (attack ? attack.score : 0);
+            // 后续攻击只能作为较小的附加价值，不能反过来让“0治疗收益”的辉耀成立。
+            var score = healing.score + (attack ? Math.min(1.2, Math.max(0, attack.score) * 0.2) : 0);
             if (costCard) score -= Math.max(0.15, get.value(costCard, player) * 0.1);
-            if (!attack && score < 1.25) score -= 2;
-            return { attack: attack, score: score };
+            return { attack: attack, score: score, healingGain: healing.gain };
         }
 
         function bestRadiancePlan(player) {
@@ -2543,12 +2666,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         }
 
         function prayerPlan(player) {
-            var treatment = Math.min(5, (player.zhiLiao || 0) + 2);
-            var gain = treatment - (player.zhiLiao || 0);
+            // 【圣光祈愈】固定按治疗上限5判断。已达5治疗时无条件不发动，
+            // 不允许用任何“未来攻击/地枪收益”把空治疗行为抬成正收益。
+            var current = player.zhiLiao || 0;
+            if (current >= 5) return { score: -100, gain: 0, attack: null };
+            var treatment = Math.min(5, current + 2);
+            var gain = treatment - current;
+            if (gain <= 0) return { score: -100, gain: 0, attack: null };
             var attack = bestAttackPlan(player, null, { treatment: treatment, disableTian: true });
-            if (!attack) return { score: -10, gain: gain, attack: null };
-            var score = attack.score + gain * 0.62 - 1.45;
-            if (gain <= 0 && (!attack.di || attack.di.score < 1.2)) score -= 1;
+            var score = gain * 0.95 - 0.55;
+            if (attack) score += Math.min(1.0, Math.max(0, attack.score) * 0.18);
             return { score: score, gain: gain, attack: attack };
         }
 
@@ -2608,19 +2735,77 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
         var earthly = lib.skill && lib.skill.diQiang;
         if (earthly && markPatched(earthly, "fullActionChain")) {
+            // 噩梦圣枪：地枪必须以“当前这次主动攻击”作为真实触发依据。
+            // 不再依赖原版 filter/check 的保守逻辑，否则即使当前一枪能直接造成大量爆牌，
+            // AI 也可能在进入 cost 之前就把技能否决掉。
+            var oldEarthlyFilter = earthly.filter;
+            earthly.filter = function (event, player) {
+                var nightmare = lib.xingBeiNightmare &&
+                    typeof lib.xingBeiNightmare.isNightmareAi == "function" &&
+                    lib.xingBeiNightmare.isNightmareAi(player) &&
+                    player.hasSkill("nightmare_shenShengWuZhuang");
+                if (nightmare) {
+                    var target = event && (event.target || event.targets && event.targets[0]);
+                    if (!target || target.side == player.side) return false;
+                    if (event.yingZhan == true) return false;
+                    if (event.card && get.type(event.card) != "gongJi") return false;
+                    var action = event && typeof event.getParent == "function" ? event.getParent("xingDong") : null;
+                    if (action && action.diQiang === false) return false;
+                    // 神圣武装减免1点实际治疗消耗；但至少仍需有1治疗才能声明地枪。
+                    return (player.zhiLiao || 0) >= 1;
+                }
+                return typeof oldEarthlyFilter == "function" ? oldEarthlyFilter.apply(this, arguments) : true;
+            };
+            earthly.check = function (event, player) {
+                var target = event && (event.target || event.targets && event.targets[0]);
+                if (!target || target.side == player.side) return false;
+                var plan = bestDiSpend(player, target, event.damageNum || 2, player.zhiLiao || 0, target.zhiLiao || 0);
+                // 只要当前这次攻击配合地枪能够增加爆牌，就无条件发动；
+                // 否则才使用普通收益阈值。
+                var before = attackOutcome(target, event.damageNum || 2, target.zhiLiao || 0);
+                var after = plan.amount ? attackOutcome(target, (event.damageNum || 2) + plan.amount, target.zhiLiao || 0) : before;
+                if (after.overflow > before.overflow) return true;
+                return !!(plan.amount && plan.score >= 0.1);
+            };
             earthly.cost = async function (event, trigger, player) {
-                var max = Math.min(4, player.zhiLiao || 0);
+                var treatment = player.zhiLiao || 0;
+                var discount = diQiangDiscount(player);
+                var max = treatment > 0 ? Math.min(4, treatment + discount) : 0;
+                var target = trigger && (trigger.target || trigger.targets && trigger.targets[0]);
+                if (!target || max <= 0) {
+                    event.result = { bool: false };
+                    return;
+                }
+                var plan = bestDiSpend(player, target, trigger.damageNum || 2, treatment, target.zhiLiao || 0);
+
+                // 噩梦AI不再经过chooseControl：当前这一击只要地枪能增加爆牌，
+                // 或bestDiSpend明确给出正收益方案，就直接写入发动结果。
+                // 这样绕开无名杀1.6.7中chooseControl AI返回值/choice兼容差异。
+                var nightmareAi = lib.xingBeiNightmare &&
+                    typeof lib.xingBeiNightmare.isNightmareAi == "function" &&
+                    lib.xingBeiNightmare.isNightmareAi(player) &&
+                    player.hasSkill("nightmare_shenShengWuZhuang");
+                if (nightmareAi && plan.amount > 0) {
+                    var before = attackOutcome(target, trigger.damageNum || 2, target.zhiLiao || 0);
+                    var after = attackOutcome(target, (trigger.damageNum || 2) + plan.amount, target.zhiLiao || 0);
+                    if (after.overflow > before.overflow || plan.score >= 0.1) {
+                        event.result = { bool: true, cost_data: plan.amount };
+                        return;
+                    }
+                }
+
                 var list = [];
                 for (var i = 1; i <= max; i++) list.push(i);
                 list.push("cancel2");
-                var plan = bestDiSpend(player, trigger.target, trigger.damageNum || 2, player.zhiLiao || 0, trigger.target.zhiLiao || 0);
                 var result = await player.chooseControl(list)
                     .set("prompt", "是否发动【地枪】<br>" + lib.translate.diQiang_info)
                     .set("choice", plan.amount && plan.score >= 0.1 ? plan.amount : "cancel2")
                     .set("ai", function () { return _status.event.choice; }).forResult();
+                var control = result && result.control;
+                var amount = parseInt(control, 10);
                 event.result = {
-                    bool: result.control != "cancel2" && typeof result.control == "number",
-                    cost_data: result.control
+                    bool: control != "cancel2" && !isNaN(amount) && amount >= 1 && amount <= max,
+                    cost_data: amount
                 };
             };
         }
@@ -9569,9 +9754,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 charlotte: true,
                 popup: false,
                 onChooseToUse: function (event) {
+                    // 联机角色包可能晚于扩展初始化载入；在实际行动选择时补装
+                    // 【秘境万象】估值，避免初始化阶段因技能尚未注册而漏补丁。
+                    patchMiJingWanXiangAlwaysUse();
                     if (!event || event.action !== true ||
                         ["gongJiOrFaShu", "gongJi", "faShu"].indexOf(event.name) === -1) return;
-                    if (event.isOnline && event.isOnline()) return;
+                    // 联机行动事件不一定来自真人：房主控制的电脑角色也会进入
+                    // online chooseToUse 流程。仅跳过远端真人；联机电脑仍需应用
+                    // 强制评分，否则【秘境万象】等固定优先行动会退回原版估值。
+                    if (event.isOnline && event.isOnline()) {
+                        var actingPlayer = event.player;
+                        if (!actingPlayer ||
+                            (typeof actingPlayer.isOnline == "function" && actingPlayer.isOnline())) return;
+                    }
                     if (event.isMine && event.isMine() && !_status.auto) return;
                     if (event._shiZhouNianMandatoryAiScoring) return;
                     event._shiZhouNianMandatoryAiScoring = true;
@@ -9597,6 +9792,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         patchMandatoryAiActions();
         installDefaultCharacterImages();
         patchCharacterDialogPortraitRefresh();
+        patchCharacterButtonPortraitRefresh();
         defineNightmareSkills();
         defineSecondBatchNightmareSkills();
         patchSecondBatchNightmareAi();

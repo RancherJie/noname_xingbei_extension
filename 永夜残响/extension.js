@@ -11,7 +11,144 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
 
 },
         "precontent": function(){
-
+            var siMiNaiAudio = {
+                bingJieTuXi: "bingJieTuXi.mp3",
+                bingZhiShouHu: "bingZhiShouHu.mp3",
+                siMiNaiDeEZuoJu: "siMiNaiDeEZuoJu.mp3",
+                bingZhiQiYuan: "bingZhiQiYuan.mp3",
+                bingJieKuiLeiSaDan: "bingJieKuiLeiSaDan.mp3",
+            };
+            Object.keys(siMiNaiAudio).forEach(function(skill) {
+                if(!lib.skill[skill]) return;
+                lib.skill[skill].audio = "ext:永夜残响/audio/skill/siMiNai/" +
+                    siMiNaiAudio[skill];
+            });
+            var shiQiKuangSanAudio = {
+                keKeDi: "keKeDi.mp3",
+                baZhiDan: "baZhiDan.mp3",
+                yiZhiDan: "yiZhiDan.mp3",
+                erZhiDan: "erZhiDan.mp3",
+                siZhiDan: "siZhiDan.mp3",
+                qiZhiDan: "qiZhiDan.mp3",
+                shiShiZhiCheng: "shiShiZhiCheng.mp3",
+            };
+            Object.keys(shiQiKuangSanAudio).forEach(function(skill) {
+                if(!lib.skill[skill]) return;
+                lib.skill[skill].audio =
+                    "ext:永夜残响/audio/skill/shiQiKuangSan/" +
+                    shiQiKuangSanAudio[skill];
+            });
+            var wuHeQinLiAudio = {
+                qinLiYanLing: "qinLiYanLing.mp3",
+                lingLiShiKong: "lingLiShiKong.mp3",
+                yanMoXianXian: "yanMoXianXian.mp3",
+                meiMeiXingTai: "meiMeiXingTai.mp3",
+                siLingXingTai: "siLingXingTai.mp3",
+                siLingDiaoDu: "siLingDiaoDu.mp3",
+            };
+            Object.keys(wuHeQinLiAudio).forEach(function(skill) {
+                if(!lib.skill[skill]) return;
+                lib.skill[skill].audio =
+                    "ext:永夜残响/audio/skill/wuHeQinLi/" +
+                    wuHeQinLiAudio[skill];
+            });
+            var yeDaoShenShiXiangAudio = {
+                shenWeiLingZhuangShiFan: "shenWeiLingZhuangShiFan.mp3",
+                wangZuoXianXian: "wangZuoXianXian.mp3",
+                lingZhuangHuBi: "lingZhuangHuBi.mp3",
+                gongZhuJiangLin: "gongZhuJiangLin.mp3",
+                aoShaGong: "aoShaGong.mp3",
+                huangDouFenMianBao: "huangDouFenMianBao.mp3",
+                aoShaGongZuiHouZhiJian: "aoShaGongZuiHouZhiJian.mp3",
+                jueWangFanZhuan: "jueWangFanZhuan.mp3",
+            };
+            Object.keys(yeDaoShenShiXiangAudio).forEach(function(skill) {
+                if(!lib.skill[skill]) return;
+                lib.skill[skill].audio =
+                    "ext:永夜残响/audio/skill/yeDaoShenShiXiang/" +
+                    yeDaoShenShiXiangAudio[skill];
+            });
+            var fanZhuanShiXiangAudio = {
+                huiMieChongDong: "huiMieChongDong.mp3",
+                baoNueGong: "baoNueGong.mp3",
+                baoNueGongZhongYanZhiJian:
+                    "baoNueGongZhongYanZhiJian.mp3",
+                yiShiHuiGui: "yiShiHuiGui.mp3",
+            };
+            Object.keys(fanZhuanShiXiangAudio).forEach(function(skill) {
+                if(!lib.skill[skill]) return;
+                lib.skill[skill].audio =
+                    "ext:永夜残响/audio/skill/fanZhuanShiXiang/" +
+                    fanZhuanShiXiangAudio[skill];
+            });
+            var actionAudioSkill = "yongYeCanXiang_actionAudio";
+            if(!lib.skill[actionAudioSkill]) {
+                lib.skill[actionAudioSkill] = {
+                    trigger: { player: ["gouMai", "heCheng", "tiLian"] },
+                    forced: true,
+                    popup: false,
+                    charlotte: true,
+                    firstDo: true,
+                    filter: function(event, player) {
+                        return player.name == "siMiNai" ||
+                            player.name1 == "siMiNai" ||
+                            player.name2 == "siMiNai" ||
+                            player.name == "shiQiKuangSan" ||
+                            player.name1 == "shiQiKuangSan" ||
+                            player.name2 == "shiQiKuangSan" ||
+                            player.name == "wuHeQinLi" ||
+                            player.name1 == "wuHeQinLi" ||
+                            player.name2 == "wuHeQinLi" ||
+                            player.name == "yeDaoShenShiXiang" ||
+                            player.name1 == "yeDaoShenShiXiang" ||
+                            player.name2 == "yeDaoShenShiXiang" ||
+                            player.name == "fanZhuanShiXiang" ||
+                            player.name1 == "fanZhuanShiXiang" ||
+                            player.name2 == "fanZhuanShiXiang";
+                    },
+                    content: function(event, trigger, player) {
+                        var files = {
+                            gouMai: "gouMai.mp3",
+                            heCheng: "heCheng.mp3",
+                            tiLian: "tiLian.mp3",
+                        };
+                        var action = event.triggername || trigger.name;
+                        var file = files[action];
+                        if(!file || !lib.config.background_audio) return;
+                        var character = player.name == "shiQiKuangSan" ||
+                            player.name1 == "shiQiKuangSan" ||
+                            player.name2 == "shiQiKuangSan" ?
+                            "shiQiKuangSan" : "siMiNai";
+                        if(player.name == "wuHeQinLi" ||
+                            player.name1 == "wuHeQinLi" ||
+                            player.name2 == "wuHeQinLi") {
+                            character = "wuHeQinLi";
+                        }
+                        if(player.name == "yeDaoShenShiXiang" ||
+                            player.name1 == "yeDaoShenShiXiang" ||
+                            player.name2 == "yeDaoShenShiXiang") {
+                            character = "yeDaoShenShiXiang";
+                        }
+                        if(player.name == "fanZhuanShiXiang" ||
+                            player.name1 == "fanZhuanShiXiang" ||
+                            player.name2 == "fanZhuanShiXiang") {
+                            character = "fanZhuanShiXiang";
+                        }
+                        var audioPath = "ext:永夜残响/audio/action/" +
+                            character + "/" + file;
+                        game.broadcastAll(function(path, speaker) {
+                            if(!lib.config.background_audio) return;
+                            game.playAudio({
+                                path: path,
+                                spatialPlayer: speaker,
+                                addVideo: false,
+                                onError: function() {},
+                            });
+                        }, audioPath, player);
+                    },
+                };
+            }
+            game.addGlobalSkill(actionAudioSkill);
 },
         "help": {},
         "config": {},
@@ -42,6 +179,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         4,
                         [
                             "shenWeiLingZhuangShiFan",
+                            "jueWangFanZhuan",
                             "wangZuoXianXian",
                             "lingZhuangHuBi",
                             "gongZhuJiangLin",
@@ -49,10 +187,30 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "huangDouFenMianBao",
                             "aoShaGongZuiHouZhiJian",
                             "shiXiangLingLi",
+                            "fanZhuanLingLi",
                         ],
                         [
                             "des:持有鏖杀公的公主。夜刀神十香在王座与剑刃形态之间切换，以灵力强化守御、斩击与最后之剑。",
                             "ext:永夜残响/shiXiang.jpg",
+                        ],
+                    ],
+                    "fanZhuanShiXiang": [
+                        null,
+                        "jiGroup",
+                        4,
+                        [
+                            "fanLingZhuangShiFan",
+                            "huiMieChongDong",
+                            "baoNueGong",
+                            "baoNueGongZhongYanZhiJian",
+                            "yiShiHuiGui",
+                            "shiXiangLingLi",
+                        ],
+                        [
+                            "des:灵力彻底反转后的夜刀神十香。反灵装令她在伤害与自伤之间不断追击，直至意识回归。",
+                            "ext:永夜残响/fanZhuanShiXiang.png",
+                            "unseen",
+                            "forbidai",
                         ],
                     ],
                     "siMiNai": [
@@ -101,6 +259,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "永夜残响": "永夜残响",
                     "wuHeQinLi": "五河琴里",
                     "yeDaoShenShiXiang": "夜刀神十香",
+                    "fanZhuanShiXiang": "反转·十香",
                     "siMiNai": "四糸乃",
                     "shiQiKuangSan": "时崎狂三",
                 },
@@ -128,6 +287,19 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         'heiSeFaDai' : 'baiSeFaDai';
                     if(player.hasSkill(other)) player.removeSkill(other);
                     if(!player.hasSkill(form)) player.addSkill(form);
+                    var audioPath = 'ext:永夜残响/audio/skill/wuHeQinLi/' +
+                        (form == 'baiSeFaDai' ?
+                            'shuangSeFaDaiBai.mp3' :
+                            'shuangSeFaDaiHei.mp3');
+                    game.broadcastAll(function(path, speaker) {
+                        if(!lib.config.background_audio) return;
+                        game.playAudio({
+                            path: path,
+                            spatialPlayer: speaker,
+                            addVideo: false,
+                            onError: function() {},
+                        });
+                    }, audioPath, player);
                     game.log(
                         player,
                         '将【双色发带】翻至',
@@ -190,12 +362,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "qinLiYanLing": {
+                        "audio": "ext:永夜残响/audio/skill/wuHeQinLi/qinLiYanLing.mp3",
                         "group": [
                             "qinLiYanLing_zaoCheng",
                             "qinLiYanLing_chengShou",
                         ],
                         "subSkill": {
                             "zaoCheng": {
+                                "audio": "ext:永夜残响/audio/skill/wuHeQinLi/qinLiYanLing.mp3",
                                 "trigger": {
                                     "source": "chengShouShangHaiAfter",
                                 },
@@ -211,6 +385,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                             },
                             "chengShou": {
+                                "audio": "ext:永夜残响/audio/skill/wuHeQinLi/qinLiYanLing.mp3",
                                 "trigger": {
                                     "player": "chengShouShangHaiAfter",
                                 },
@@ -229,6 +404,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "lingLiShiKong": {
+                        "audio": "ext:永夜残响/audio/skill/wuHeQinLi/lingLiShiKong.mp3",
                         "trigger": {
                             "player": "changeZhiShiWuAfter",
                         },
@@ -372,6 +548,20 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         await player.removeZhiShiWu('qinLiLingLi', 1);
                     }
                     var data = event.cost_data || {};
+                    var audioPath =
+                        'ext:永夜残响/audio/skill/wuHeQinLi/' +
+                        (data.cannon ?
+                            'zhuoLanJianGuiPao.mp3' :
+                            'zhuoLanJianGuiFu.mp3');
+                    game.broadcastAll(function(path, speaker) {
+                        if(!lib.config.background_audio) return;
+                        game.playAudio({
+                            path: path,
+                            spatialPlayer: speaker,
+                            addVideo: false,
+                            onError: function() {},
+                        });
+                    }, audioPath, player);
                     if(data.axe) trigger.changeDamageNum(1);
                     if(data.cannon && event.targets && event.targets[0]) {
                         trigger.customArgs = trigger.customArgs || {};
@@ -405,6 +595,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "yanMoXianXian": {
+                        "audio": "ext:永夜残响/audio/skill/wuHeQinLi/yanMoXianXian.mp3",
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
@@ -449,6 +640,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "markimage": "extension/永夜残响/mark_qinLiLingLi.png",
                     },
                     "shenWeiLingZhuangShiFan": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/shenWeiLingZhuangShiFan.mp3",
                         "getForm": function(player) {
                     if(player.hasSkill('aoShaGongJianRen')) {
                         return 'aoShaGongJianRen';
@@ -484,6 +676,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 "forced": true,
                                 "firstDo": true,
                                 "content": async function(event, trigger, player) {
+                            game.trySkillAudio(
+                                'shenWeiLingZhuangShiFan', player, true
+                            );
                             lib.skill.shenWeiLingZhuangShiFan.setForm(
                                 player,
                                 'aoShaGongWangZuo'
@@ -523,6 +718,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "wangZuoXianXian": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/wangZuoXianXian.mp3",
                         "trigger": {
                             "player": "gongJiSheZhi",
                         },
@@ -576,6 +772,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "lingZhuangHuBi": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/lingZhuangHuBi.mp3",
                         "trigger": {
                             "player": "chengShouShangHaiBefore",
                         },
@@ -634,6 +831,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "gongZhuJiangLin": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/gongZhuJiangLin.mp3",
                         "type": "faShu",
                         "enable": "faShu",
                         "filter": function(event, player) {
@@ -663,6 +861,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "aoShaGong": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/aoShaGong.mp3",
                         "trigger": {
                             "player": "gongJiSheZhi",
                         },
@@ -747,6 +946,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "huangDouFenMianBao": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/huangDouFenMianBao.mp3",
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
@@ -783,6 +983,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                 },
                         "check": function(event, player) {
+                    // AI必须保留至少1张手牌，避免启动后0牌直接判负。
+                    if(player.countCards('h') <= 1) return false;
                     if(lib.skill._heCheng &&
                         lib.skill._heCheng.filter(event, player) &&
                         (get.shiQi(!player.side) <= 1 ||
@@ -797,6 +999,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "aoShaGongZuiHouZhiJian": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/aoShaGongZuiHouZhiJian.mp3",
                         "trigger": {
                             "player": "gongJiEnd",
                         },
@@ -918,6 +1121,371 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "baoShi": true,
                         },
                     },
+                    "jueWangFanZhuan": {
+                        "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/jueWangFanZhuan.mp3",
+                        "group": [
+                            "jueWangFanZhuan_jiLu",
+                            "jueWangFanZhuan_bianShen",
+                        ],
+                        "subSkill": {
+                            "jiLu": {
+                                "trigger": {
+                                    "player": "changeZhiShiWuEnd",
+                                },
+                                "forced": true,
+                                "popup": false,
+                                "filter": function(event, player) {
+                                    return !!event &&
+                                        event.zhiShiWu == 'shiXiangLingLi' &&
+                                        event.num < 0;
+                                },
+                                "content": async function(event, trigger, player) {
+                                    await player.addZhiShiWu(
+                                        'fanZhuanLingLi',
+                                        -trigger.num
+                                    );
+                                },
+                            },
+                            "bianShen": {
+                                "trigger": {
+                                    "player": "changeShiQiEnd",
+                                },
+                                "forced": true,
+                                "filter": function(event, player) {
+                                    return !!event &&
+                                        event.player == player &&
+                                        event.side == player.side &&
+                                        event.num < 0 &&
+                                        event.cause == 'damage' &&
+                                        player.countZhiShiWu(
+                                            'fanZhuanLingLi'
+                                        ) >= 5;
+                                },
+                                "content": async function(event, trigger, player) {
+                                    game.trySkillAudio(
+                                        'jueWangFanZhuan', player, true
+                                    );
+                                    if(player.zhiLiao > 0) {
+                                        await player.changeZhiLiao(
+                                            -player.zhiLiao,
+                                            player
+                                        );
+                                    }
+                                    var reverse = player.countZhiShiWu(
+                                        'fanZhuanLingLi'
+                                    );
+                                    if(reverse > 0) {
+                                        await player.removeZhiShiWu(
+                                            'fanZhuanLingLi', reverse
+                                        );
+                                    }
+                                    await player.reinitCharacter(
+                                        'yeDaoShenShiXiang',
+                                        'fanZhuanShiXiang'
+                                    );
+                                    await player.setZhiShiWu(
+                                        'shiXiangLingLi', 5
+                                    );
+                                },
+                            },
+                        },
+                    },
+                    "fanZhuanLingLi": {
+                        "intro": {
+                            "name": "反转灵力",
+                            "content": "mark",
+                            "max": 5,
+                        },
+                        "onremove": "storage",
+                        "markimage": "extension/永夜残响/mark_fanZhuanLingLi.png",
+                    },
+                    "fanLingZhuangShiFan": {
+                        "group": [
+                            "fanLingZhuangShiFan_zaoCheng",
+                            "fanLingZhuangShiFan_chengShou",
+                        ],
+                        "mod": {
+                            "maxZhiLiao": function(player, num) {
+                                return Math.max(0, num - 2);
+                            },
+                        },
+                        "subSkill": {
+                            "zaoCheng": {
+                                "trigger": {
+                                    "source": "zaoChengShangHai",
+                                },
+                                "forced": true,
+                                "firstDo": true,
+                                "content": function(event, trigger, player) {
+                                    trigger.changeDamageNum(1);
+                                },
+                            },
+                            "chengShou": {
+                                "trigger": {
+                                    "player": "chengShouShangHaiBefore",
+                                },
+                                "forced": true,
+                                "firstDo": true,
+                                "content": function(event, trigger, player) {
+                                    trigger.changeDamageNum(1);
+                                },
+                            },
+                        },
+                    },
+                    "huiMieChongDong": {
+                        "audio": "ext:永夜残响/audio/skill/fanZhuanShiXiang/huiMieChongDong.mp3",
+                        "trigger": {
+                            "global": "chengShouShangHaiAfter",
+                        },
+                        "forced": true,
+                        "usable": 1,
+                        "filter": function(event, player) {
+                            return !!event && event.num > 0 &&
+                                event.source == player &&
+                                event.faShu !== true &&
+                                !!event.card &&
+                                get.type(event.card) == 'gongJi';
+                        },
+                        "content": async function(event, trigger, player) {
+                            await player.addZhiShiWu('shiXiangLingLi', 1);
+                            player.addGongJi();
+                        },
+                    },
+                    "baoNueGong": {
+                        "audio": "ext:永夜残响/audio/skill/fanZhuanShiXiang/baoNueGong.mp3",
+                        "firstDo": true,
+                        "priority": 100,
+                        "trigger": {
+                            "player": "gongJiSheZhi",
+                        },
+                        "filter": function(event, player) {
+                            return !!event && event.yingZhan != true &&
+                                event.baoNueGongZhongYan !== true &&
+                                (!event.customArgs ||
+                                    event.customArgs
+                                        .shiXiangInverseAttackChoice ===
+                                            undefined) &&
+                                player.countZhiShiWu('shiXiangLingLi') > 0;
+                        },
+                        "cost": async function(event, trigger, player) {
+                            if(trigger.baoNueGongZhongYan === true ||
+                                trigger.customArgs &&
+                                trigger.customArgs
+                                    .shiXiangInverseAttackChoice !==
+                                        undefined) {
+                                event.result = { bool: false };
+                                return;
+                            }
+                            var max = Math.min(
+                                2,
+                                player.countZhiShiWu('shiXiangLingLi')
+                            );
+                            var controls = [];
+                            for(var i = 1; i <= max; i++) {
+                                controls.push('X=' + i);
+                            }
+                            controls.push('cancel2');
+                            var control = await player.chooseControl(controls)
+                                .set('prompt', '是否发动【暴虐公】？')
+                                .set('ai', function() {
+                                    return 'X=' + Math.min(
+                                        2,
+                                        _status.event.player.countZhiShiWu(
+                                            'shiXiangLingLi'
+                                        )
+                                    );
+                                })
+                                .forResultControl();
+                            var x = control && control.startsWith('X=') ?
+                                parseInt(control.slice(2)) : 0;
+                            event.result = {
+                                bool: x > 0,
+                                cost_data: x,
+                            };
+                        },
+                        "content": async function(event, trigger, player) {
+                            trigger.customArgs = trigger.customArgs || {};
+                            if(trigger.customArgs
+                                .shiXiangInverseAttackChoice !== undefined) {
+                                return;
+                            }
+                            trigger.customArgs.shiXiangInverseAttackChoice =
+                                'baoNueGong';
+                            var x = event.cost_data || 0;
+                            await player.removeZhiShiWu(
+                                'shiXiangLingLi', x
+                            );
+                            trigger.changeDamageNum(x);
+                            trigger.customArgs.baoNueGong = true;
+                        },
+                        "group": "baoNueGong_jieShu",
+                        "subSkill": {
+                            "jieShu": {
+                                "trigger": {
+                                    "player": "gongJiEnd",
+                                },
+                                "forced": true,
+                                "popup": false,
+                                "filter": function(event, player) {
+                                    return !!event && !!event.customArgs &&
+                                        event.customArgs.baoNueGong === true;
+                                },
+                                "content": async function(event, trigger, player) {
+                                    await player.faShuDamage(1, player);
+                                },
+                            },
+                        },
+                    },
+                    "baoNueGongZhongYanZhiJian": {
+                        "audio": "ext:永夜残响/audio/skill/fanZhuanShiXiang/baoNueGongZhongYanZhiJian.mp3",
+                        "trigger": {
+                            "player": "gongJiSheZhi",
+                        },
+                        "filter": function(event, player) {
+                            return !!event && event.yingZhan != true &&
+                                (!event.customArgs ||
+                                    event.customArgs
+                                        .shiXiangInverseAttackChoice ===
+                                            undefined) &&
+                                player.countZhiShiWu('shiXiangLingLi') >= 3 &&
+                                player.canBiShaBaoShi();
+                        },
+                        "cost": async function(event, trigger, player) {
+                            if(trigger.customArgs &&
+                                trigger.customArgs
+                                    .shiXiangInverseAttackChoice !==
+                                        undefined) {
+                                event.result = { bool: false };
+                                return;
+                            }
+                            event.result = await player.chooseBool(
+                                '是否发动【暴虐公·终焉之剑】？'
+                            ).set('ai', function() {
+                                var trigger = _status.event.getTrigger();
+                                return !!trigger.target &&
+                                    trigger.target.side !=
+                                        _status.event.player.side;
+                            }).forResult();
+                        },
+                        "content": async function(event, trigger, player) {
+                            trigger.customArgs = trigger.customArgs || {};
+                            if(trigger.customArgs
+                                .shiXiangInverseAttackChoice !== undefined) {
+                                return;
+                            }
+                            trigger.customArgs.shiXiangInverseAttackChoice =
+                                'baoNueGongZhongYanZhiJian';
+                            await player.removeBiShaBaoShi();
+                            player.storage.shiXiangZhongYanPaying = true;
+                            await player.removeZhiShiWu(
+                                'shiXiangLingLi', 3
+                            );
+                            delete player.storage.shiXiangZhongYanPaying;
+                            trigger.changeDamageNum(2);
+                            trigger.wuFaYingZhan();
+                            trigger.wuFaShengDun();
+                            trigger.baoNueGongZhongYan = true;
+                            trigger.customArgs.baoNueGongZhongYan = true;
+                        },
+                        "group": [
+                            "baoNueGongZhongYanZhiJian_mingZhong",
+                            "baoNueGongZhongYanZhiJian_jieShu",
+                        ],
+                        "subSkill": {
+                            "mingZhong": {
+                                "trigger": {
+                                    "source": "gongJiMingZhongAfter",
+                                },
+                                "forced": true,
+                                "popup": false,
+                                "filter": function(event, player) {
+                                    return !!event && !!event.customArgs &&
+                                        event.customArgs
+                                            .baoNueGongZhongYan === true;
+                                },
+                                "content": function(event, trigger, player) {
+                                    trigger.customArgs
+                                        .baoNueGongZhongYanMingZhong = true;
+                                },
+                            },
+                            "jieShu": {
+                                "trigger": {
+                                    "player": "gongJiEnd",
+                                },
+                                "forced": true,
+                                "popup": false,
+                                "filter": function(event, player) {
+                                    return !!event && !!event.customArgs &&
+                                        event.customArgs
+                                            .baoNueGongZhongYan === true;
+                                },
+                                "content": async function(event, trigger, player) {
+                                    if(trigger.target &&
+                                        trigger.customArgs
+                                            .baoNueGongZhongYanMingZhong ===
+                                                true) {
+                                        var targets = game.filterPlayer(
+                                            function(current) {
+                                                return current.side !=
+                                                        player.side &&
+                                                    current != trigger.target;
+                                            }
+                                        ).sortBySeat(player);
+                                        for(var target of targets) {
+                                            await target.faShuDamage(1, player);
+                                        }
+                                    }
+                                    await player.faShuDamage(2, player);
+                                    if(player.name == 'fanZhuanShiXiang' ||
+                                        player.name1 == 'fanZhuanShiXiang' ||
+                                        player.name2 == 'fanZhuanShiXiang') {
+                                        await lib.skill.yiShiHuiGui
+                                            .returnToPrincess(player, true);
+                                    }
+                                },
+                            },
+                        },
+                        "ai": {
+                            "baoShi": true,
+                        },
+                    },
+                    "yiShiHuiGui": {
+                        "audio": "ext:永夜残响/audio/skill/fanZhuanShiXiang/yiShiHuiGui.mp3",
+                        "returnToPrincess": async function(player, playAudio) {
+                            if(playAudio) {
+                                game.trySkillAudio(
+                                    'yiShiHuiGui', player, true
+                                );
+                            }
+                            delete player.storage.shiXiangZhongYanPaying;
+                            await player.reinitCharacter(
+                                'fanZhuanShiXiang',
+                                'yeDaoShenShiXiang'
+                            );
+                            await player.setZhiShiWu(
+                                'shiXiangLingLi', 0
+                            );
+                            lib.skill.shenWeiLingZhuangShiFan.setForm(
+                                player,
+                                'aoShaGongWangZuo'
+                            );
+                        },
+                        "trigger": {
+                            "player": "changeZhiShiWuEnd",
+                        },
+                        "forced": true,
+                        "filter": function(event, player) {
+                            return !!event &&
+                                event.zhiShiWu == 'shiXiangLingLi' &&
+                                event.num < 0 &&
+                                !player.storage.shiXiangZhongYanPaying &&
+                                player.countZhiShiWu('shiXiangLingLi') == 0;
+                        },
+                        "content": async function(event, trigger, player) {
+                            await lib.skill.yiShiHuiGui
+                                .returnToPrincess(player);
+                        },
+                    },
                     "shiXiangLingLi": {
                         "intro": {
                             "name": "灵力",
@@ -928,6 +1496,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "markimage": "extension/永夜残响/mark_shiXiangLingLi.png",
                     },
                     "shenWeiLingZhuangSiFan": {
+                        "audio": false,
                         "trigger": {
                             "global": "gameStart",
                             "player": "teShuEnd",
@@ -938,13 +1507,23 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         return !player.isZhiShiWuMax('siMiNaiBingJing');
                     }
                     return !player.isZhiShiWuMax('siMiNaiBingJing');
-                },
+                        },
                         "content": async function(event, trigger, player) {
-                    var num = event.triggername == 'gameStart' ? 2 : 1;
+                    var isGameStart = event.triggername == 'gameStart';
+                    if(isGameStart) {
+                        game.trySkillAudio(
+                            'shenWeiLingZhuangSiFanVoice', player, true
+                        );
+                    }
+                    var num = isGameStart ? 2 : 1;
                     await player.addZhiShiWu('siMiNaiBingJing', num);
                 },
                     },
+                    "shenWeiLingZhuangSiFanVoice": {
+                        "audio": "ext:永夜残响/audio/skill/siMiNai/shenWeiLingZhuangSiFan.mp3",
+                    },
                     "bingJieTuXi": {
+                        "audio": "ext:永夜残响/audio/skill/siMiNai/bingJieTuXi.mp3",
                         "type": "faShu",
                         "enable": "faShu",
                         "position": "h",
@@ -985,6 +1564,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "bingZhiShouHu": {
+                        "audio": "ext:永夜残响/audio/skill/siMiNai/bingZhiShouHu.mp3",
                         "trigger": {
                             "global": "chengShouShangHaiBefore",
                         },
@@ -1016,6 +1596,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "siMiNaiDeEZuoJu": {
+                        "audio": "ext:永夜残响/audio/skill/siMiNai/siMiNaiDeEZuoJu.mp3",
                         "trigger": {
                             "global": "shouDaoGongJiBefore",
                         },
@@ -1076,6 +1657,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "bingZhiQiYuan": {
+                        "audio": "ext:永夜残响/audio/skill/siMiNai/bingZhiQiYuan.mp3",
                         "type": "faShu",
                         "enable": "faShu",
                         "position": "h",
@@ -1144,6 +1726,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "bingJieKuiLeiSaDan": {
+                        "audio": "ext:永夜残响/audio/skill/siMiNai/bingJieKuiLeiSaDan.mp3",
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
@@ -1365,6 +1948,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "keKeDi": {
+                        "audio": "ext:永夜残响/audio/skill/shiQiKuangSan/keKeDi.mp3",
                         "trigger": {
                             "source": "chengShouShangHaiAfter",
                         },
@@ -1381,6 +1965,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "baZhiDan": {
+                        "audio": "ext:永夜残响/audio/skill/shiQiKuangSan/baZhiDan.mp3",
                         "trigger": {
                             "player": "chengShouShangHaiBefore",
                         },
@@ -1397,6 +1982,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "yiZhiDan": {
+                        "audio": "ext:永夜残响/audio/skill/shiQiKuangSan/yiZhiDan.mp3",
                         "trigger": {
                             "global": "shouDaoGongJiBefore",
                         },
@@ -1450,6 +2036,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "erZhiDan": {
+                        "audio": "ext:永夜残响/audio/skill/shiQiKuangSan/erZhiDan.mp3",
                         "trigger": {
                             "source": "gongJiMingZhongAfter",
                         },
@@ -1510,6 +2097,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "siZhiDan": {
+                        "audio": "ext:永夜残响/audio/skill/shiQiKuangSan/siZhiDan.mp3",
                         "type": "faShu",
                         "enable": "faShu",
                         "filter": function(event, player) {
@@ -1548,6 +2136,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "qiZhiDan": {
+                        "audio": "ext:永夜残响/audio/skill/shiQiKuangSan/qiZhiDan.mp3",
                         "trigger": {
                             "source": "gongJiMingZhongAfter",
                         },
@@ -1601,6 +2190,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "shiShiZhiCheng": {
+                        "audio": "ext:永夜残响/audio/skill/shiQiKuangSan/shiShiZhiCheng.mp3",
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
@@ -1710,6 +2300,26 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 "content": async function(event, trigger, player) {
                             var count = player.countZhiShiWu('shiJianJingZhi');
                             await player.removeZhiShiWu('shiJianJingZhi', count);
+                            var kuangSan = game.filterPlayer(function(current) {
+                                return current.name == 'shiQiKuangSan' ||
+                                    current.name1 == 'shiQiKuangSan' ||
+                                    current.name2 == 'shiQiKuangSan';
+                            })[0];
+                            if(kuangSan) {
+                                var audioPath =
+                                    'ext:永夜残响/audio/skill/' +
+                                    'shiQiKuangSan/' +
+                                    'shiJianJingZhiJieChu.mp3';
+                                game.broadcastAll(function(path, speaker) {
+                                    if(!lib.config.background_audio) return;
+                                    game.playAudio({
+                                        path: path,
+                                        spatialPlayer: speaker,
+                                        addVideo: false,
+                                        onError: function() {},
+                                    });
+                                }, audioPath, kuangSan);
+                            }
                             await player.addZhiShiWu('shiCha', 1, true);
                             if(player.countZhiShiWu('shiCha') < 5) {
                                 trigger.shiJianJingZhiSkipShiCha = true;
@@ -1945,6 +2555,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "meiMeiXingTai": {
+                        "audio": "ext:永夜残响/audio/skill/wuHeQinLi/meiMeiXingTai.mp3",
                         "trigger": {
                             "player": "chengShouShangHaiAfter",
                         },
@@ -1988,6 +2599,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "siLingXingTai": {
+                        "audio": "ext:永夜残响/audio/skill/wuHeQinLi/siLingXingTai.mp3",
                         "trigger": {
                             "global": [
                                 "gongJiEnd",
@@ -2046,6 +2658,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "siLingDiaoDu": {
+                        "audio": "ext:永夜残响/audio/skill/wuHeQinLi/siLingDiaoDu.mp3",
                         "trigger": {
                             "global": "drawAfter",
                         },
@@ -2157,7 +2770,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "siLingDiaoDu": "响应【司令调度】",
                     "siLingDiaoDu_info": "【回合限定】<span class='tiaoJian'>（处于【黑色发带】，一名有可弃置牌的队友摸牌后）</span>可以弃置1张牌，令其弃置1张牌，然后重新摸1张牌。",
                     "shiXiangLingLi": "灵力",
-                    "shiXiangLingLi_info": "夜刀神十香的专属指示物，上限为5；游戏开始时获得2点。",
+                    "shiXiangLingLi_info": "夜刀神十香与反转·十香的专属指示物，上限为5。",
+                    "fanZhuanLingLi": "反转灵力",
+                    "fanZhuanLingLi_info": "夜刀神十香的专属指示物，上限为5；每当消耗【灵力】时，获得等量【反转灵力】。",
                     "shenWeiLingZhuangShiFan": "被动【神威灵装·十番】",
                     "shenWeiLingZhuangShiFan_info": "<span class='tiaoJian'>（游戏开始时）</span>将【鏖杀公】以【王座形态】放置，并+2<span class='lan'>【灵力】</span>。<br>·【王座形态】：承受实际伤害后⑤，+1<span class='lan'>【灵力】</span>；<br>·【剑刃形态】：攻击命中后②，+1<span class='lan'>【灵力】</span>。",
                     "aoShaGongWangZuo": "(专)【鏖杀公·王座形态】",
@@ -2176,6 +2791,18 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "huangDouFenMianBao_info": "【水晶】<span class='tiaoJian'>（弃置1张牌）</span>选择+1【治疗】或+2<span class='lan'>【灵力】</span>；达到对应上限时仍可选择。",
                     "aoShaGongZuiHouZhiJian": "响应【鏖杀公·最后之剑】",
                     "aoShaGongZuiHouZhiJian_info": "【宝石】<span class='tiaoJian'>（【剑刃形态】下，【攻击行动】结束后，移除3<span class='lan'>【灵力】</span>）</span>从【剑锋】【斩空】【剑压】中选择两项，然后额外+1【攻击行动】：<br>·【剑锋】：主动攻击伤害额外+1；<br>·【斩空】：主动攻击无法被应战；<br>·【剑压】：<span class='tiaoJian'>（主动攻击命中并结算后）</span>对攻击目标以外的所有对手各造成2点法术伤害③。<br>该额外行动不能发动【鏖杀公】或再次发动本技能；行动结束后翻至【王座形态】并清除上述效果。",
+                    "jueWangFanZhuan": "响应【绝望反转】",
+                    "jueWangFanZhuan_info": "每当消耗<span class='lan'>【灵力】</span>时，获得等量<span class='hong'>【反转灵力】</span>。<span class='tiaoJian'>（反转灵力达到上限，且你承受实际伤害导致己方士气下降后⑤）</span>移除你全部【治疗】与<span class='hong'>【反转灵力】</span>，将<span class='lan'>【灵力】</span>调整至5，然后变为【反转·十香】。",
+                    "fanLingZhuangShiFan": "被动【反灵装·十番】",
+                    "fanLingZhuangShiFan_info": "你的【治疗】上限-2；你造成与承受的所有伤害额外+1。",
+                    "huiMieChongDong": "被动【毁灭冲动】",
+                    "huiMieChongDong_info": "【回合限定】<span class='tiaoJian'>（你攻击造成实际伤害后⑤）</span>+1<span class='lan'>【灵力】</span>，额外+1【攻击行动】。",
+                    "baoNueGong": "响应【暴虐公】",
+                    "baoNueGong_info": "<span class='tiaoJian'>（主动攻击前①，移除至多2点<span class='lan'>【灵力】</span>）</span>每移除1点，本次攻击伤害额外+1。攻击行动结束后，对自己造成1点法术伤害③。与【暴虐公·终焉之剑】不能同时发动。",
+                    "baoNueGongZhongYanZhiJian": "响应【暴虐公·终焉之剑】",
+                    "baoNueGongZhongYanZhiJian_info": "【宝石】×1<span class='tiaoJian'>（主动攻击前①，移除3点<span class='lan'>【灵力】</span>）</span>本次攻击无法被应战、无视【圣盾】，攻击伤害额外+2。若攻击命中，攻击结算后对其余所有对手各造成1点法术伤害③。然后对自己造成2点法术伤害③，并结束【反转形态】。与【暴虐公】不能同时发动。",
+                    "yiShiHuiGui": "被动【意识回归】",
+                    "yiShiHuiGui_info": "<span class='tiaoJian'>（你的<span class='lan'>【灵力】</span>降为0）</span>结束【反转形态】，将<span class='lan'>【灵力】</span>调整至0，并以【王座形态】放置【鏖杀公】。",
                     "zuiHouZhiJianXingDong": "鏖杀公·最后之剑",
                     "zuiHouZhiJianXingDong_info": "下一次额外【攻击行动】获得最后之剑所选择的两项效果；该行动结束或被取消后翻至【王座形态】并清除效果。",
                 },
@@ -2184,12 +2811,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.1",
+            "version": "2.1",
         },
         "files": {
             "character": [
                 "wHeQingLi.jpg",
                 "shiXiang.jpg",
+                "fanZhuanShiXiang.png",
                 "siMiNai.jpg",
                 "shiQiKuangSan.jpg",
             ],
@@ -2197,12 +2825,65 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "skill": [
                 "mark_qinLiLingLi.png",
                 "mark_shiXiangLingLi.png",
+                "mark_fanZhuanLingLi.png",
                 "mark_siMiNaiBingJing.png",
                 "mark_siMiNaiDongJie.png",
                 "mark_shiCha.png",
                 "mark_shiJianJingZhi.png",
             ],
-            "audio": [],
+            "audio": [
+                "audio/skill/siMiNai/shenWeiLingZhuangSiFan.mp3",
+                "audio/skill/siMiNai/bingJieTuXi.mp3",
+                "audio/skill/siMiNai/bingZhiShouHu.mp3",
+                "audio/skill/siMiNai/siMiNaiDeEZuoJu.mp3",
+                "audio/skill/siMiNai/bingZhiQiYuan.mp3",
+                "audio/skill/siMiNai/bingJieKuiLeiSaDan.mp3",
+                "audio/action/siMiNai/gouMai.mp3",
+                "audio/action/siMiNai/heCheng.mp3",
+                "audio/action/siMiNai/tiLian.mp3",
+                "audio/skill/shiQiKuangSan/keKeDi.mp3",
+                "audio/skill/shiQiKuangSan/baZhiDan.mp3",
+                "audio/skill/shiQiKuangSan/yiZhiDan.mp3",
+                "audio/skill/shiQiKuangSan/erZhiDan.mp3",
+                "audio/skill/shiQiKuangSan/siZhiDan.mp3",
+                "audio/skill/shiQiKuangSan/qiZhiDan.mp3",
+                "audio/skill/shiQiKuangSan/shiShiZhiCheng.mp3",
+                "audio/skill/shiQiKuangSan/shiJianJingZhiJieChu.mp3",
+                "audio/action/shiQiKuangSan/gouMai.mp3",
+                "audio/action/shiQiKuangSan/heCheng.mp3",
+                "audio/action/shiQiKuangSan/tiLian.mp3",
+                "audio/skill/wuHeQinLi/shuangSeFaDaiBai.mp3",
+                "audio/skill/wuHeQinLi/shuangSeFaDaiHei.mp3",
+                "audio/skill/wuHeQinLi/qinLiYanLing.mp3",
+                "audio/skill/wuHeQinLi/lingLiShiKong.mp3",
+                "audio/skill/wuHeQinLi/zhuoLanJianGuiFu.mp3",
+                "audio/skill/wuHeQinLi/zhuoLanJianGuiPao.mp3",
+                "audio/skill/wuHeQinLi/yanMoXianXian.mp3",
+                "audio/skill/wuHeQinLi/meiMeiXingTai.mp3",
+                "audio/skill/wuHeQinLi/siLingXingTai.mp3",
+                "audio/skill/wuHeQinLi/siLingDiaoDu.mp3",
+                "audio/action/wuHeQinLi/gouMai.mp3",
+                "audio/action/wuHeQinLi/heCheng.mp3",
+                "audio/action/wuHeQinLi/tiLian.mp3",
+                "audio/skill/yeDaoShenShiXiang/shenWeiLingZhuangShiFan.mp3",
+                "audio/skill/yeDaoShenShiXiang/wangZuoXianXian.mp3",
+                "audio/skill/yeDaoShenShiXiang/lingZhuangHuBi.mp3",
+                "audio/skill/yeDaoShenShiXiang/gongZhuJiangLin.mp3",
+                "audio/skill/yeDaoShenShiXiang/aoShaGong.mp3",
+                "audio/skill/yeDaoShenShiXiang/huangDouFenMianBao.mp3",
+                "audio/skill/yeDaoShenShiXiang/aoShaGongZuiHouZhiJian.mp3",
+                "audio/skill/yeDaoShenShiXiang/jueWangFanZhuan.mp3",
+                "audio/action/yeDaoShenShiXiang/gouMai.mp3",
+                "audio/action/yeDaoShenShiXiang/heCheng.mp3",
+                "audio/action/yeDaoShenShiXiang/tiLian.mp3",
+                "audio/skill/fanZhuanShiXiang/huiMieChongDong.mp3",
+                "audio/skill/fanZhuanShiXiang/baoNueGong.mp3",
+                "audio/skill/fanZhuanShiXiang/baoNueGongZhongYanZhiJian.mp3",
+                "audio/skill/fanZhuanShiXiang/yiShiHuiGui.mp3",
+                "audio/action/fanZhuanShiXiang/gouMai.mp3",
+                "audio/action/fanZhuanShiXiang/heCheng.mp3",
+                "audio/action/fanZhuanShiXiang/tiLian.mp3",
+            ],
         },
         "connect": true,
     };

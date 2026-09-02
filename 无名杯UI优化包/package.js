@@ -3,13 +3,22 @@ extension["无名杯UI优化包"] = {
     author: "蒙牛 / Codex",
     netdisk: "",
     forum: "",
-    version: "1.4",
+    version: "2.1",
     files: [
         "info.json",
         "README.md",
         "package.js",
         "extension.js",
         "extension.css",
+        "waterbear.css",
+        "image/waterbear/table_wood.png",
+        "image/waterbear/parchment_tile.png",
+        "image/waterbear/parchment_border.png",
+        "image/waterbear/frame_xue_v2.png",
+        "image/waterbear/frame_sheng_v2.png",
+        "image/waterbear/frame_ji_v2.png",
+        "image/waterbear/frame_huan_v2.png",
+        "image/waterbear/frame_yong_v2.png",
         "image/shuiJing_xianxia.png",
         "image/baoShi_xianxia.png",
         "image/cardback_xianxia.png",
@@ -32,5 +41,5 @@ extension["无名杯UI优化包"] = {
         "image/card/moRen_xianxia.png",
         "image/card/yiRen_xianxia.png"
     ],
-    size: "10.9MB"
+    size: "25.2MB"
 };
