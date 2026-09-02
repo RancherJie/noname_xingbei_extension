@@ -6659,9 +6659,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 charlotte: true,
                 popup: false,
                 onChooseToUse: function (event) {
+                    // 联机角色包可能晚于扩展初始化载入；在实际行动选择时补装
+                    // 【秘境万象】估值，避免初始化阶段因技能尚未注册而漏补丁。
+                    patchMiJingWanXiangAlwaysUse();
                     if (!event || event.action !== true ||
                         ["gongJiOrFaShu", "gongJi", "faShu"].indexOf(event.name) === -1) return;
-                    if (event.isOnline && event.isOnline()) return;
+                    // 联机行动事件不一定来自真人：房主控制的电脑角色也会进入
+                    // online chooseToUse 流程。仅跳过远端真人；联机电脑仍需应用
+                    // 强制评分，否则【秘境万象】等固定优先行动会退回原版估值。
+                    if (event.isOnline && event.isOnline()) {
+                        var actingPlayer = event.player;
+                        if (!actingPlayer ||
+                            (typeof actingPlayer.isOnline == "function" && actingPlayer.isOnline())) return;
+                    }
                     if (event.isMine && event.isMine() && !_status.auto) return;
                     if (event._shiZhouNianMandatoryAiScoring) return;
                     event._shiZhouNianMandatoryAiScoring = true;
