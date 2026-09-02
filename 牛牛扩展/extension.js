@@ -11,7 +11,48 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
 
 },
         "precontent": function(){
-
+            var actionAudioSkill = 'bigcowcow_actionAudio';
+            if(!lib.skill[actionAudioSkill]) {
+                lib.skill[actionAudioSkill] = {
+                    trigger: { player: ['gouMai', 'heCheng', 'tiLian'] },
+                    forced: true,
+                    popup: false,
+                    charlotte: true,
+                    firstDo: true,
+                    filter: function(event, player) {
+                        return ['youLa', 'heKeTuo', 'tongGuHeRen', 'shiDiFu', 'xiaoYan', 'zhaoFuQueJi'].some(function(id) {
+                            return player.name == id ||
+                                player.name1 == id ||
+                                player.name2 == id;
+                        });
+                    },
+                    content: function(event, trigger, player) {
+                        var action = event.triggername ||
+                            (trigger && trigger.name);
+                        if(!['gouMai', 'heCheng', 'tiLian']
+                            .includes(action)) return;
+                        var character = ['youLa', 'heKeTuo', 'tongGuHeRen', 'shiDiFu', 'xiaoYan', 'zhaoFuQueJi']
+                            .find(function(id) {
+                                return player.name == id ||
+                                    player.name1 == id ||
+                                    player.name2 == id;
+                            });
+                        if(!character) return;
+                        var path = 'ext:bigcowcow/audio/action/' + character +
+                            '/' + action + '.mp3';
+                        game.broadcastAll(function(audioPath, speaker) {
+                            if(!lib.config.background_speak) return;
+                            game.playAudio({
+                                path: audioPath,
+                                spatialPlayer: speaker,
+                                addVideo: false,
+                                onError: function() {},
+                            });
+                        }, path, player);
+                    },
+                };
+            }
+            game.addGlobalSkill(actionAudioSkill);
 },
         "help": {},
         "config": {},
@@ -103,6 +144,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "liZhiMiao",
                             "duiDuiHuMiao",
                             "haiDiLaoYueMiao",
+                            "gangMiao",
                             "yiManShiJianMiao",
                             "miaoYun",
                             "yiJiBaoPai",
@@ -212,6 +254,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "lengKuZhiXin": {
+                        "audio": "ext:bigcowcow/audio/skill/youLa/lengKuZhiXin.mp3",
                         "trigger": {
                             "player": "gongJiShi",
                         },
@@ -226,6 +269,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "_priority": 0,
                     },
                     "ningLangZhiGuangJian": {
+                        "audio": "ext:bigcowcow/audio/skill/youLa/ningLangZhiGuangJian.mp3",
                         "trigger": {
                             "source": "gongJiMingZhong",
                         },
@@ -240,6 +284,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "_priority": 0,
                     },
                     "guangJiangZhiJian": {
+                        "audio": "ext:bigcowcow/audio/skill/youLa/guangJiangZhiJian.mp3",
                         "trigger": {
                             "source": "gongJiMingZhong",
                         },
@@ -347,6 +392,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "_priority": 0,
                     },
                     "chaoJuanBingXiao": {
+                        "audio": "ext:bigcowcow/audio/skill/youLa/chaoJuanBingXiao.mp3",
                         "trigger": {
                             "player": "gongJiEnd",
                         },
@@ -423,6 +469,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "_priority": 0,
                     },
                     "bingChaoDeWoXuan": {
+                        "audio": "ext:bigcowcow/audio/skill/youLa/bingChaoDeWoXuan.mp3",
                         "trigger": {
                             "player": "gongJiBefore",
                         },
@@ -519,6 +566,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return event.yingZhan != true;
                         },
                                 "content": async function(event, trigger, player) {
+                            game.broadcastAll(function(speaker) {
+                                if(!lib.config.background_speak) return;
+                                game.playAudio({
+                                    path: 'ext:bigcowcow/audio/skill/heKeTuo/' +
+                                        'jieShi.mp3',
+                                    spatialPlayer: speaker,
+                                    addVideo: false,
+                                    onError: function() {},
+                                });
+                            }, player);
                             await player.addZhiShiWu('qiangShi');
                         },
                             },
@@ -532,6 +589,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return event.yingZhan == true;
                         },
                                 "content": async function(event, trigger, player) {
+                            game.broadcastAll(function(speaker) {
+                                if(!lib.config.background_speak) return;
+                                game.playAudio({
+                                    path: 'ext:bigcowcow/audio/skill/heKeTuo/' +
+                                        'jieShi.mp3',
+                                    spatialPlayer: speaker,
+                                    addVideo: false,
+                                    onError: function() {},
+                                });
+                            }, player);
                             await player.addZhiShiWu('qiangShi');
                         },
                             },
@@ -578,6 +645,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "lianHuanTuCi": {
+                        "audio": "ext:bigcowcow/audio/skill/heKeTuo/lianHuanTuCi.mp3",
                         "usable": 1,
                         "trigger": {
                             "source": "gongJiWeiMingZhong",
@@ -608,6 +676,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "hengQiangJiaShi": {
+                        "audio": "ext:bigcowcow/audio/skill/heKeTuo/hengQiangJiaShi.mp3",
                         "usable": 1,
                         "enable": "yingZhan",
                         "filter": function(event, player) {
@@ -678,6 +747,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "poZhenHuiQiang": {
+                        "audio": "ext:bigcowcow/audio/skill/heKeTuo/poZhenHuiQiang.mp3",
                         "usable": 1,
                         "trigger": {
                             "player": "gongJiBefore",
@@ -729,6 +799,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "markimage": "extension/bigcowcow/mark_qiangShi.png",
                     },
                     "shengCunQiDian": {
+                        "audio": "ext:bigcowcow/audio/skill/shiDiFu/shengCunQiDian.mp3",
                         "trigger": {
                             "global": "gameStart",
                         },
@@ -759,6 +830,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "caiJi": {
+                        "audio": "ext:bigcowcow/audio/skill/shiDiFu/caiJi.mp3",
                         "trigger": {
                             "player": "shiDiFuYiChuNaiJiu",
                         },
@@ -898,6 +970,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "gongZuoTai": {
+                        "audio": "ext:bigcowcow/audio/skill/shiDiFu/gongZuoTai.mp3",
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
@@ -1039,6 +1112,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "zhanDouFuMo": {
+                        "audio": "ext:bigcowcow/audio/skill/shiDiFu/zhanDouFuMo.mp3",
                         "trigger": {
                             "source": "gongJiMingZhong",
                         },
@@ -1107,13 +1181,37 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     });
 
+                    var voiceOrder = ['lei', 'huo', 'di', 'shui', 'feng', 'guang', 'an']
+                        .filter(function(xiBie) {
+                            return counts[xiBie] > 0;
+                        });
+                    var playBranchVoice = async function(xiBie) {
+                        var voiceIndex = voiceOrder.indexOf(xiBie);
+                        if(voiceIndex < 0) return;
+                        voiceOrder.splice(voiceIndex, 1);
+                        game.broadcastAll(function(audioXiBie, speaker) {
+                            if(!lib.config.background_speak) return;
+                            game.playAudio({
+                                path: 'ext:bigcowcow/audio/skill/shiDiFu/' +
+                                    'zhanDouFuMo_' + audioXiBie + '.mp3',
+                                spatialPlayer: speaker,
+                                addVideo: false,
+                                onError: function() {},
+                            });
+                        }, xiBie, player);
+                        if(voiceOrder.length) await game.delay(0.8);
+                    };
+
                     if(counts.lei > 0) {
+                        await playBranchVoice('lei');
                         trigger.changeDamageNum(counts.lei);
                     }
                     if(counts.huo > 0 && trigger.target && trigger.target.isIn()) {
+                        await playBranchVoice('huo');
                         await trigger.target.faShuDamage(counts.huo, player);
                     }
                     if(counts.di > 0) {
+                        await playBranchVoice('di');
                         var candidates = game.players.filter(function(current) {
                             return current.isIn() && current != trigger.target;
                         });
@@ -1146,12 +1244,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     }
                     if(counts.shui > 0) {
+                        await playBranchVoice('shui');
                         for(var i = 0; i < counts.shui + 1; i++) {
                             if(player.countGaiPai('shiDiFuSuCai') >= 5) break;
                             await lib.skill.caiJi.collect(player);
                         }
                     }
                     if(counts.feng > 0 && trigger.target && trigger.target.isIn()) {
+                        await playBranchVoice('feng');
                         var discardNum = Math.min(
                             counts.feng,
                             trigger.target.countCards('h')
@@ -1167,17 +1267,20 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                     if(counts.guang > 0 &&
                         lib.skill.shiDiFuJian.getSword(player)) {
+                        await playBranchVoice('guang');
                         lib.skill.shiDiFuJian.changeDurability(
                             player,
                             counts.guang + 1
                         );
                     }
                     if(counts.an > 0) {
+                        await playBranchVoice('an');
                         await player.addNengLiang('shuiJing', counts.an + 1);
                     }
                 },
                     },
                     "jingYanXiuBu": {
+                        "audio": "ext:bigcowcow/audio/skill/shiDiFu/jingYanXiuBu.mp3",
                         "trigger": {
                             "source": "gongJiMingZhong",
                         },
@@ -1339,6 +1442,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         ],
                         "subSkill": {
                             "lianJi": {
+                                "audio": "ext:bigcowcow/audio/skill/tongGuHeRen/fengBiZhe.mp3",
                                 "trigger": {
                                     "player": "gongJiEnd",
                                 },
@@ -1379,6 +1483,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "erDaoLiu": {
+                        "audio": "ext:bigcowcow/audio/skill/tongGuHeRen/erDaoLiu.mp3",
                         "trigger": {
                             "player": "gongJiEnd",
                         },
@@ -1403,6 +1508,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "yinSuChongJi": {
+                        "audio": "ext:bigcowcow/audio/skill/tongGuHeRen/yinSuChongJi.mp3",
                         "trigger": {
                             "player": "gongJiSheZhi",
                         },
@@ -1466,6 +1572,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "siFangZhan": {
+                        "audio": "ext:bigcowcow/audio/skill/tongGuHeRen/siFangZhan.mp3",
                         "trigger": {
                             "player": "gongJiSheZhi",
                         },
@@ -1557,6 +1664,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "xingBaoQiLiuZhan": {
+                        "audio": "ext:bigcowcow/audio/skill/tongGuHeRen/xingBaoQiLiuZhan.mp3",
                         "trigger": {
                             "source": "gongJiMingZhong",
                         },
@@ -1695,11 +1803,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "firstDo": true,
                         "priority": 100,
                         "content": async function(event, trigger, player) {
-                    await lib.skill.yiJiBaoPai.replace(
-                        player,
-                        null,
-                        false
-                    );
+                    await lib.skill.yiJiBaoPai.drawAndAdd(player, 1);
                 },
                         "group": "baoPaiZhiShi_daChuPai",
                         "subSkill": {
@@ -1709,12 +1813,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 },
                                 "forced": true,
                                 "filter": function(event, player) {
-                            var baoPai =
-                                lib.skill.yiJiBaoPai.getCard(player);
-                            return !!baoPai &&
-                                !!event.card &&
-                                get.xiBie(event.card) ==
-                                    get.xiBie(baoPai) &&
+                            return lib.skill.yiJiBaoPai
+                                .matches(player, event.card) &&
                                 !player.isZhiShiWuMax('miaoYun');
                         },
                                 "content": async function(event, trigger, player) {
@@ -1724,6 +1824,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "duanYaoJiuMiao": {
+                        "audio": "ext:bigcowcow/audio/skill/zhaoFuQueJi/duanYaoJiuMiao.mp3",
                         "isDuanYaoJiu": function(player) {
                     if(!player || player.countCards('h') < 3) {
                         return false;
@@ -1750,25 +1851,22 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     ).set('ai', function() {
                         var player = _status.event.player;
                         var cards = player.getCards('h');
-                        var baoPai =
-                            lib.skill.yiJiBaoPai.getCard(player);
                         var same = cards.filter(function(card) {
-                            return baoPai &&
-                                get.xiBie(card) ==
-                                    get.xiBie(baoPai);
+                            return lib.skill.yiJiBaoPai
+                                .matches(player, card);
                         }).length;
                         return same + 1 >= 2;
                     }).forResult();
                 },
                         "content": async function(event, trigger, player) {
                     var cards = player.getCards('h').slice();
-                    var baoPai =
-                        lib.skill.yiJiBaoPai.getCard(player);
-                    if(!cards.length || !baoPai) return;
+                    var baoPaiNum = lib.skill.yiJiBaoPai
+                        .getCards(player).length;
+                    if(!cards.length || !baoPaiNum) return;
                     var y = cards.length;
                     var x = cards.filter(function(card) {
-                        return get.xiBie(card) ==
-                            get.xiBie(baoPai);
+                        return lib.skill.yiJiBaoPai
+                            .matches(player, card);
                     }).length;
                     await player.discard(cards)
                         .set('showCards', true);
@@ -1780,27 +1878,28 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     if(drawNum > 0) {
                         await player.draw(drawNum);
                     }
-                    await lib.skill.yiJiBaoPai.replace(
+                    var newBaoPai = get.cards(baoPaiNum);
+                    if(newBaoPai && newBaoPai.length) {
+                        await game.cardsGotoOrdering(newBaoPai);
+                    }
+                    await lib.skill.yiJiBaoPai.replaceAll(
                         player,
-                        null,
-                        false
+                        newBaoPai || []
                     );
                 },
                     },
                     "liZhiMiao": {
+                        "audio": "ext:bigcowcow/audio/skill/zhaoFuQueJi/liZhiMiao.mp3",
                         "trigger": {
                             "player": "gongJiSheZhi",
                         },
                         "usable": 1,
                         "filter": function(event, player) {
-                    var baoPai =
-                        lib.skill.yiJiBaoPai.getCard(player);
                     return !!event &&
                         event.yingZhan != true &&
                         !!event.card &&
-                        !!baoPai &&
-                        get.xiBie(event.card) ==
-                            get.xiBie(baoPai);
+                        lib.skill.yiJiBaoPai
+                            .matches(player, event.card);
                 },
                         "cost": async function(event, trigger, player) {
                     event.result = await player.chooseBool(
@@ -1845,12 +1944,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "duiDuiHuMiao": {
+                        "audio": "ext:bigcowcow/audio/skill/zhaoFuQueJi/duiDuiHuMiao.mp3",
                         "type": "faShu",
                         "enable": "faShu",
                         "position": "h",
                         "selectCard": 1,
                         "discard": true,
-                        "showCards": true,
                         "filterCard": function(card, player) {
                     return get.type(card) == 'faShu' &&
                         lib.filter.cardDiscardable(card, player);
@@ -1879,10 +1978,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         [card],
                         '【对对胡喵】：展示牌库顶牌'
                     );
-                    var baoPai =
-                        lib.skill.yiJiBaoPai.getCard(player);
-                    if(baoPai &&
-                        get.xiBie(card) == get.xiBie(baoPai)) {
+                    if(lib.skill.yiJiBaoPai.matches(player, card)) {
                         if(target && target.isIn()) {
                             await target.faShuDamage(2, player);
                         }
@@ -1892,11 +1988,21 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await target.faShuDamage(1, player);
                         }
                     }
-                    await lib.skill.yiJiBaoPai.replace(
-                        player,
-                        card,
-                        true
-                    );
+                    var baoPai = lib.skill.yiJiBaoPai.getCards(player);
+                    if(!baoPai.length) {
+                        await lib.skill.yiJiBaoPai.add(player, card, true);
+                        return;
+                    }
+                    var links = await player.chooseCardButton(
+                        baoPai,
+                        true,
+                        '【对对胡喵】：选择1张【宝牌】移除'
+                    ).set('ai', function(button) {
+                        return -get.value(button.link, _status.event.player);
+                    }).forResultLinks();
+                    var oldCard = links[0] || baoPai[0];
+                    await lib.skill.yiJiBaoPai.discard(player, [oldCard]);
+                    await lib.skill.yiJiBaoPai.add(player, card, true);
                 },
                         "ai": {
                             "order": 3.8,
@@ -1908,115 +2014,86 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "haiDiLaoYueMiao": {
+                        "audio": "ext:bigcowcow/audio/skill/zhaoFuQueJi/haiDiLaoYueMiao.mp3",
                         "trigger": {
-                            "player": "gainAfter",
+                            "player": "drawAfter",
                         },
-                        "forced": true,
-                        "firstDo": true,
-                        "priority": 100,
                         "filter": function(event, player) {
-                    return event.cause == 'damage' &&
-                        Array.isArray(event.cards) &&
-                        event.cards.length > 0 &&
-                        player.hasSkill(
-                            'yiJiHaiDiLinShiShouPai'
-                        );
+                    return Array.isArray(event.result) &&
+                        event.result.length > 0 &&
+                        !!lib.skill.yiJiBaoPai.getCard(player);
+                },
+                        "cost": async function(event, trigger, player) {
+                    event.result = await player.chooseBool(
+                        '是否发动【海底捞月喵】，展示本次最后摸到的牌？'
+                    ).set('ai', function() {
+                        return true;
+                    }).forResult();
                 },
                         "content": async function(event, trigger, player) {
-                    var card =
-                        trigger.cards[trigger.cards.length - 1];
+                    var card = trigger.result[trigger.result.length - 1];
                     if(!card) return;
-                    try {
-                        await player.showCards(
-                            [card],
-                            '【海底捞月喵】：展示最后摸到的牌'
-                        );
-                        var baoPai =
-                            lib.skill.yiJiBaoPai.getCard(player);
-                        if(!baoPai) return;
-                        if(get.xiBie(card) == get.xiBie(baoPai)) {
-                            await player.changeZhiLiao(1, player);
-                            await player.addZhiShiWu(
-                                'miaoYun',
-                                1
+                    await player.showCards(
+                        [card],
+                        '【海底捞月喵】：展示最后摸到的牌'
+                    );
+                    var baoPai = lib.skill.yiJiBaoPai.getCards(player);
+                    if(lib.skill.yiJiBaoPai.matches(player, card)) {
+                        await player.changeZhiLiao(1, player);
+                        await player.addZhiShiWu('miaoYun', 1);
+                        return;
+                    }
+                    var links = await player.chooseCardButton(
+                        baoPai,
+                        [0, 1],
+                        '可以选择1张【宝牌】与展示的牌交换'
+                    ).set('newCard', card)
+                        .set('ai', function(button) {
+                            return get.value(
+                                button.link,
+                                _status.event.player
+                            ) - get.value(
+                                _status.event.newCard,
+                                _status.event.player
                             );
-                        } else {
-                            var exchange = await player.chooseBool(
-                                '是否将最后摸到的牌与当前【宝牌】交换？'
-                            ).set('ai', function() {
-                                var player =
-                                    _status.event.player;
-                                var oldCard =
-                                    lib.skill.yiJiBaoPai
-                                        .getCard(player);
-                                var newCard =
-                                    _status.event.newCard;
-                                return oldCard && newCard &&
-                                    get.value(oldCard, player) >
-                                        get.value(newCard, player);
-                            }).set('newCard', card)
-                                .forResultBool();
-                            if(exchange &&
-                                get.position(card, true) == 'h') {
-                                var oldCards = player.getGaiPai(
-                                    'yiJiBaoPai'
-                                ).slice();
-                                if(oldCards.length) {
-                                    await player.gain(
-                                        oldCards,
-                                        'gain2'
-                                    );
-                                    await player.addGaiPai(
-                                        [card],
-                                        player,
-                                        'yiJiBaoPai'
-                                    );
-                                }
-                            }
-                        }
-                    } finally {
-                        player.removeSkill(
-                            'yiJiHaiDiLinShiShouPai'
-                        );
-                        var overflow = player.qiPai();
-                        if(overflow) await overflow;
+                        }).forResultLinks();
+                    if(links.length && get.position(card, true) == 'h') {
+                        var oldBaoPai = links[0];
+                        await player.lose(card);
+                        await player.lose(oldBaoPai);
+                        await lib.skill.yiJiBaoPai.add(player, card, true);
+                        await player.gain(oldBaoPai, 'gain2');
                     }
                 },
-                        "group": "haiDiLaoYueMiao_zhunBei",
-                        "subSkill": {
-                            "zhunBei": {
-                                "trigger": {
-                                    "player": "gainBefore",
-                                },
-                                "forced": true,
-                                "firstDo": true,
-                                "priority": 100,
-                                "popup": false,
-                                "filter": function(event, player) {
-                            return event.cause == 'damage' &&
-                                Array.isArray(event.cards) &&
-                                event.cards.length > 0 &&
-                                !!lib.skill.yiJiBaoPai
-                                    .getCard(player);
-                        },
-                                "content": function(event, trigger, player) {
-                            player.storage
-                                .yiJiHaiDiLinShiShouPai =
-                                player.countCards('h') +
-                                trigger.cards.length;
-                            player.addTempSkill(
-                                'yiJiHaiDiLinShiShouPai',
-                                { player: 'chengShouShangHaiAfter' }
-                            );
-                        },
-                            },
-                        },
                     },
-                    "yiManShiJianMiao": {
+                    "gangMiao": {
+                        "audio": "ext:bigcowcow/audio/skill/zhaoFuQueJi/gangMiao.mp3",
                         "type": "qiDong",
                         "trigger": {
                             "player": "qiDong",
                         },
+                        "filter": function(event, player) {
+                    return player.canBiShaShuiJing() &&
+                        player.countZhiShiWu('miaoYun') >= 2 &&
+                        lib.skill.yiJiBaoPai.getCards(player).length < 4;
+                },
+                        "content": async function(event, trigger, player) {
+                    await player.removeBiShaShuiJing();
+                    await player.removeZhiShiWu('miaoYun', 2);
+                    await lib.skill.yiJiBaoPai.drawAndAdd(player, 1);
+                },
+                        "check": function(event, player) {
+                    return lib.skill.yiJiBaoPai.getCards(player).length < 3 ||
+                        player.countZhiShiWu('miaoYun') >= 4;
+                },
+                        "ai": {
+                            "shuiJing": true,
+                        },
+                    },
+                    "yiManShiJianMiao": {
+                        "audio": "ext:bigcowcow/audio/skill/zhaoFuQueJi/yiManShiJianMiao.mp3",
+                        "type": "faShu",
+                        "enable": "faShu",
                         "filter": function(event, player) {
                     return player.canBiShaBaoShi() &&
                         player.countZhiShiWu('miaoYun') >= 5 &&
@@ -2030,27 +2107,23 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     await player.removeZhiShiWu('miaoYun', 5);
                     var cards = get.cards(5);
                     if(!cards || !cards.length) return;
-                    await game.cardsGotoOrdering(cards);
-                    await player.showCards(
-                        cards,
-                        '【役满时间喵】：展示牌库顶5张牌'
+                    await player.viewCards(
+                        '【役满时间喵】：查看牌库顶5张牌',
+                        cards
                     );
-                    var baoPai =
-                        lib.skill.yiJiBaoPai.getCard(player);
                     var x = cards.filter(function(card) {
-                        return baoPai &&
-                            get.xiBie(card) ==
-                                get.xiBie(baoPai);
+                        return lib.skill.yiJiBaoPai
+                            .matches(player, card);
                     }).length;
                     await game.cardsDiscard(cards);
                     var targets = await player.chooseTarget(
                         '役满时间喵：选择一名对手，造成' +
-                            (x + 1) + '点法术伤害',
+                            x + '点法术伤害',
                         true,
                         function(card, player, target) {
                             return target.side != player.side;
                         }
-                    ).set('damage', x + 1)
+                    ).set('damage', x)
                         .set('ai', function(target) {
                             return get.damageEffect2(
                                 target,
@@ -2059,8 +2132,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             );
                         }).forResultTargets();
                     var target = targets[0];
-                    if(target && target.isIn()) {
-                        await target.faShuDamage(x + 1, player);
+                    if(x > 0 && target && target.isIn()) {
+                        await target.faShuDamage(x, player);
+                    }
+                    if(x > 2) {
+                        await player.addFaShu();
+                    }
+                    if(x > 4) {
+                        await player.addZhiShiWu('miaoYun', 5);
                     }
                 },
                         "check": function(event, player) {
@@ -2094,21 +2173,43 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "name": "宝牌",
                             "markcount": "gaiPai",
                             "content": "gaiPai",
-                            "max": 1,
+                            "max": 4,
                             "show": true,
                         },
                         "onremove": function(player, skill) {
                     var cards = player.getGaiPai(skill);
                     if(cards.length) player.loseToDiscardpile(cards);
                 },
-                        "getCard": function(player) {
-                    var cards = player.getGaiPai('yiJiBaoPai');
-                    return cards && cards[0];
+                        "getCards": function(player) {
+                    return player.getGaiPai('yiJiBaoPai').slice();
                 },
-                        "discardCurrent": async function(player) {
-                    var cards = player.getGaiPai(
-                        'yiJiBaoPai'
-                    ).slice();
+                        "getCard": function(player) {
+                    return lib.skill.yiJiBaoPai.getCards(player)[0];
+                },
+                        "matches": function(player, card) {
+                    if(!card) return false;
+                    var xiBie = get.xiBie(card);
+                    return lib.skill.yiJiBaoPai.getCards(player)
+                        .some(function(baoPai) {
+                            return get.xiBie(baoPai) == xiBie;
+                        });
+                        },
+                        "playAudio": function(player) {
+                    game.broadcastAll(function(speaker) {
+                        if(!lib.config.background_speak) return;
+                        game.playAudio({
+                            path: 'ext:bigcowcow/audio/skill/' +
+                                'zhaoFuQueJi/baoPaiZhiShi.mp3',
+                            spatialPlayer: speaker,
+                            addVideo: false,
+                        });
+                    }, player);
+                },
+                        "discard": async function(player, cards) {
+                    cards = (cards || []).filter(function(card) {
+                        return lib.skill.yiJiBaoPai
+                            .getCards(player).includes(card);
+                    });
                     if(!cards.length) return;
                     await player.discard(
                         cards,
@@ -2116,27 +2217,43 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     ).set('visible', true)
                         .set('showCards', true);
                 },
-                        "replace": async function(player, card, shown) {
-                    await lib.skill.yiJiBaoPai
-                        .discardCurrent(player);
-                    if(!card) {
-                        var cards = get.cards(1);
-                        card = cards && cards[0];
-                        if(!card) return null;
-                        await game.cardsGotoOrdering([card]);
-                    }
+                        "add": async function(player, cards, shown) {
+                    cards = (Array.isArray(cards) ? cards : [cards])
+                        .filter(Boolean);
+                    var room = 4 - lib.skill.yiJiBaoPai
+                        .getCards(player).length;
+                    cards = cards.slice(0, Math.max(0, room));
+                    if(!cards.length) return [];
                     if(!shown) {
                         await player.showCards(
-                            [card],
+                            cards,
                             '展示新的【宝牌】'
                         );
                     }
                     await player.addGaiPai(
-                        [card],
+                        cards,
                         player,
                         'yiJiBaoPai'
                     );
-                    return card;
+                    lib.skill.yiJiBaoPai.playAudio(player);
+                    return cards;
+                },
+                        "drawAndAdd": async function(player, num) {
+                    var cards = get.cards(num || 1);
+                    if(!cards || !cards.length) return [];
+                    await game.cardsGotoOrdering(cards);
+                    return lib.skill.yiJiBaoPai.add(
+                        player,
+                        cards,
+                        false
+                    );
+                },
+                        "replaceAll": async function(player, cards) {
+                    await lib.skill.yiJiBaoPai.discard(
+                        player,
+                        lib.skill.yiJiBaoPai.getCards(player)
+                    );
+                    return lib.skill.yiJiBaoPai.add(player, cards, false);
                 },
                     },
                     "shiDiFuJian": {
@@ -2766,6 +2883,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "moQiShaoNianQiong": {
+                        "audio": "ext:bigcowcow/audio/skill/xiaoYan/moQiShaoNianQiong.mp3",
                         "isMoraleCausedBy": function(event, player) {
                     var current = event;
                     var guard = 0;
@@ -2847,6 +2965,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "fenJue": {
+                        "audio": "ext:bigcowcow/audio/skill/xiaoYan/fenJue.mp3",
                         "trigger": {
                             "player": "phaseBegin",
                         },
@@ -2875,6 +2994,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "baJiBeng": {
+                        "audio": "ext:bigcowcow/audio/skill/xiaoYan/baJiBeng.mp3",
                         "trigger": {
                             "source": "gongJiMingZhongAfter",
                         },
@@ -2914,6 +3034,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                     },
                     "yanFenShiLangChi": {
+                        "audio": "ext:bigcowcow/audio/skill/xiaoYan/yanFenShiLangChi.mp3",
                         "trigger": {"source": "gongJiMingZhongAfter"},
                         "priority": 5,
                         "filter": function(event, player) {
@@ -3048,6 +3169,23 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "content": async function(event, trigger, player) {
                     var info = lib.skill.fenJueLianHua.nextFire(player);
                     if(!info) return;
+                    var fireAudio = {
+                        qingLianDiXinHuo: 'qingLianDiXinHuo.mp3',
+                        yunLuoXinYan: 'yunLuoXinYan.mp3',
+                        guLingLengHuo: 'guLingLengHuo.mp3',
+                    }[info.fire];
+                    if(fireAudio) {
+                        game.broadcastAll(function(audioFile, speaker) {
+                            if(!lib.config.background_speak) return;
+                            game.playAudio({
+                                path: 'ext:bigcowcow/audio/skill/xiaoYan/' +
+                                    audioFile,
+                                spatialPlayer: speaker,
+                                addVideo: false,
+                                onError: function() {},
+                            });
+                        }, fireAudio, player);
+                    }
                     if(info.energy == 'shuiJing') {
                         await player.removeBiShaShuiJing();
                     } else {
@@ -3127,6 +3265,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "tianHuoSanXuanBian": {
+                        "audio": "ext:bigcowcow/audio/skill/xiaoYan/tianHuoSanXuanBian.mp3",
                         "aiPlan": function(player) {
                     var manager = lib.skill.xiaoYanYiHuoManager;
                     if(!player || !player.canBiShaShuiJing ||
@@ -3317,6 +3456,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "foNuHuoLian": {
+                        "audio": "ext:bigcowcow/audio/skill/xiaoYan/foNuHuoLian.mp3",
                         "type": "faShu",
                         "enable": "faShu",
                         "filter": function(event, player) {
@@ -3330,7 +3470,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return target.side != player.side;
                         });
                 },
-                        "cost": async function(event, trigger, player) {
+                        "content": async function(event, trigger, player) {
                     var manager = lib.skill.xiaoYanYiHuoManager;
                     var fires = manager.getBright(player);
                     var plan = manager.aiFoNuPlan(player);
@@ -3350,10 +3490,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         return ui.selected.buttons.length <
                             _status.event.desiredCount ? 1 : -10;
                     }).forResultLinks();
-                    if(links.length < 2) {
-                        event.result = { bool: false };
-                        return;
-                    }
+                    if(!links || links.length < 2) return;
                     var targets = await player.chooseTarget(
                         true,
                         '【佛怒火莲】：选择一名目标对手',
@@ -3370,15 +3507,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             3
                         );
                     }).forResultTargets();
-                    event.result = {
-                        bool: targets.length > 0,
-                        targets: targets,
-                        cost_data: links,
-                    };
-                },
-                        "content": async function(event, trigger, player) {
-                    var fires = event.cost_data.slice();
-                    var target = event.targets[0];
+                    if(!targets || !targets.length) return;
+                    fires = links.slice();
+                    var target = targets[0];
                     await player.removeBiShaBaoShi();
                     if(fires.length == 2) {
                         if(target && target.isIn()) {
@@ -4199,23 +4330,6 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "tianHuoSanXuanBianJinZhiFoNu": {
                         "charlotte": true,
                     },
-                    "yiJiHaiDiLinShiShouPai": {
-                        "charlotte": true,
-                        "popup": false,
-                        "mod": {
-                            "maxHandcardFinal": function(player, num) {
-                        return Math.max(
-                            num,
-                            player.storage
-                                .yiJiHaiDiLinShiShouPai || 0
-                        );
-                    },
-                        },
-                        "onremove": function(player) {
-                    delete player.storage
-                        .yiJiHaiDiLinShiShouPai;
-                },
-                    },
                 },
                 "translate": {
                     "lengKuZhiXin": "被动【冷酷之心】",
@@ -4309,21 +4423,23 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "miaoYun": "喵运",
                     "miaoYun_info": "<span class='lan'>【喵运】</span>为一姬的专属指示物，上限为5。",
                     "yiJiBaoPai": "宝牌",
-                    "yiJiBaoPai_info": "<span class='lan'>【宝牌】</span>为全场公开的专属牌，上限为1；替换时弃置原牌，新展示牌成为<span class='lan'>【宝牌】</span>。",
+                    "yiJiBaoPai_info": "<span class='lan'>【宝牌】</span>为全场公开的专属牌，上限为4。与<span class='lan'>【宝牌】</span>同系，指与当前任意一张<span class='lan'>【宝牌】</span>同系。",
                     "baoPaiZhiShi": "被动【宝牌指示】",
-                    "baoPaiZhiShi_info": "<span class='tiaoJian'>（游戏开始时）</span>展示牌库顶1张牌作为<span class='lan'>【宝牌】</span>。使用或打出与<span class='lan'>【宝牌】</span>最终同系的牌后，+1<span class='lan'>【喵运】</span>。",
+                    "baoPaiZhiShi_info": "<span class='tiaoJian'>（游戏开始时）</span>展示牌库顶1张牌作为<span class='lan'>【宝牌】</span>。使用或打出与当前某张<span class='lan'>【宝牌】</span>同系的牌后，+1<span class='lan'>【喵运】</span>。",
                     "duanYaoJiuZhuangTai": "断幺九",
                     "duanYaoJiuZhuangTai_info": "手牌数不少于3，且没有【圣光】【暗灭】【圣盾】【虚弱】【中毒】。",
                     "duanYaoJiuMiao": "响应【断幺九喵】",
-                    "duanYaoJiuMiao_info": "<span class='tiaoJian'>（特殊行动结束后，手牌≥3且没有【圣光】【暗灭】【圣盾】【虚弱】【中毒】）</span>可以展示并弃置全部手牌。Y为弃牌数，X为其中与<span class='lan'>【宝牌】</span>同系数：+X+1<span class='lan'>【喵运】</span>，摸Y-X张牌【强制】，再更换<span class='lan'>【宝牌】</span>。",
+                    "duanYaoJiuMiao_info": "当你的手牌数不少于3，且手牌中没有【圣光】【暗灭】或基础效果牌时，你处于<span class='lan'>【断幺九】</span>状态。<br><span class='tiaoJian'>（特殊行动结束后，处于<span class='lan'>【断幺九】</span>状态）</span>可以展示并弃置全部手牌。令Y为弃置手牌数，X为其中与当前任意<span class='lan'>【宝牌】</span>同系的牌数，Z为当前<span class='lan'>【宝牌】</span>数：+X+1<span class='lan'>【喵运】</span>；摸Y-X张牌【强制】；移除全部<span class='lan'>【宝牌】</span>，展示牌库顶Z张牌，将其作为新的<span class='lan'>【宝牌】</span>。",
                     "liZhiMiao": "响应【立直喵】",
-                    "liZhiMiao_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①，攻击牌与<span class='lan'>【宝牌】</span>同系）</span>伤害+1；若命中，+1【法术行动】。",
+                    "liZhiMiao_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①，攻击牌与某张<span class='lan'>【宝牌】</span>同系）</span>伤害+1；若命中，+1【法术行动】。",
                     "duiDuiHuMiao": "法术【对对胡喵】",
-                    "duiDuiHuMiao_info": "<span class='tiaoJian'>（弃1张法术牌【展示】）</span>+1<span class='lan'>【喵运】</span>，指定一名对手并展示牌库顶牌：与<span class='lan'>【宝牌】</span>同系则对目标造成2点法术伤害③，否则你与目标各受1点法术伤害③。结算后以展示牌更换<span class='lan'>【宝牌】</span>。",
+                    "duiDuiHuMiao_info": "<span class='tiaoJian'>（弃1张法术牌）</span>+1<span class='lan'>【喵运】</span>，指定一名对手并展示牌库顶牌：与某张<span class='lan'>【宝牌】</span>同系，对目标造成2点法术伤害③；否则你与目标各受1点法术伤害③。结算后，选择移除1张<span class='lan'>【宝牌】</span>，将展示牌作为新的<span class='lan'>【宝牌】</span>。",
                     "haiDiLaoYueMiao": "响应【海底捞月喵】",
-                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（你承受实际伤害后⑤，在因该伤害摸牌时）</span>展示最后摸到的1张牌。<br>若该牌与当前<span class='lan'>【宝牌】</span>同系：+1【治疗】；+1<span class='lan'>【喵运】</span>。<br>若该牌与当前<span class='lan'>【宝牌】</span>不同系，你可以将该牌与当前<span class='lan'>【宝牌】</span>交换：将原<span class='lan'>【宝牌】</span>加入你的手牌；将展示的牌作为新的<span class='lan'>【宝牌】</span>。",
-                    "yiManShiJianMiao": "启动【役满时间喵】",
-                    "yiManShiJianMiao_info": "【宝石】<span class='tiaoJian'>（移除5<span class='lan'>【喵运】</span>）</span>展示并弃置牌库顶5张牌，对一名对手造成X+1点法术伤害③；X为其中与<span class='lan'>【宝牌】</span>同系的牌数。",
+                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（你摸牌时）</span>可以展示最后摸到的1张牌。<br>若与某张<span class='lan'>【宝牌】</span>同系：+1【治疗】，+1<span class='lan'>【喵运】</span>。<br>若与所有<span class='lan'>【宝牌】</span>不同系，可以将该牌与其中1张<span class='lan'>【宝牌】</span>交换。",
+                    "gangMiao": "启动【杠喵】",
+                    "gangMiao_info": "【水晶】<span class='tiaoJian'>（移除2<span class='lan'>【喵运】</span>）</span>展示牌库顶1张牌，额外作为你的<span class='lan'>【宝牌】</span>。",
+                    "yiManShiJianMiao": "法术【役满时间喵】",
+                    "yiManShiJianMiao_info": "【宝石】<span class='tiaoJian'>（移除5<span class='lan'>【喵运】</span>）</span>查看并弃置牌库顶5张牌，对一名对手造成X点法术伤害③；X为其中与某张<span class='lan'>【宝牌】</span>同系的牌数。若X＞2，+1【法术行动】；若X＞4，额外+5<span class='lan'>【喵运】</span>。",
                     "moQiShaoNianQiong": "被动【莫欺少年穷】",
                     "moQiShaoNianQiong_info": "<span class='tiaoJian'>（回合结束时，本回合未执行【特殊行动】且未因你的效果令对方士气下降）</span>+1<span class='lan'>【斗气】</span>、+1【治疗】；若己方士气较低，改为+2<span class='lan'>【斗气】</span>并+1【水晶】。【斗气】已满仍获得【水晶】。",
                     "fenJue": "被动【焚决】",
@@ -4370,7 +4486,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.7",
+            "version": "2.8",
         },
         "files": {
             "character": [
@@ -4398,7 +4514,68 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 "mark_douQi.png",
                 "mark_anJin.png",
             ],
-            "audio": [],
+            "audio": [
+                "audio/skill/youLa/lengKuZhiXin.mp3",
+                "audio/skill/youLa/ningLangZhiGuangJian.mp3",
+                "audio/skill/youLa/guangJiangZhiJian.mp3",
+                "audio/skill/youLa/chaoJuanBingXiao.mp3",
+                "audio/skill/youLa/bingChaoDeWoXuan.mp3",
+                "audio/action/youLa/gouMai.mp3",
+                "audio/action/youLa/heCheng.mp3",
+                "audio/action/youLa/tiLian.mp3",
+                "audio/skill/heKeTuo/jieShi.mp3",
+                "audio/skill/heKeTuo/lianHuanTuCi.mp3",
+                "audio/skill/heKeTuo/hengQiangJiaShi.mp3",
+                "audio/skill/heKeTuo/poZhenHuiQiang.mp3",
+                "audio/action/heKeTuo/gouMai.mp3",
+                "audio/action/heKeTuo/heCheng.mp3",
+                "audio/action/heKeTuo/tiLian.mp3",
+                "audio/skill/tongGuHeRen/fengBiZhe.mp3",
+                "audio/skill/tongGuHeRen/erDaoLiu.mp3",
+                "audio/skill/tongGuHeRen/yinSuChongJi.mp3",
+                "audio/skill/tongGuHeRen/siFangZhan.mp3",
+                "audio/skill/tongGuHeRen/xingBaoQiLiuZhan.mp3",
+                "audio/action/tongGuHeRen/gouMai.mp3",
+                "audio/action/tongGuHeRen/heCheng.mp3",
+                "audio/action/tongGuHeRen/tiLian.mp3",
+                "audio/skill/shiDiFu/shengCunQiDian.mp3",
+                "audio/skill/shiDiFu/caiJi.mp3",
+                "audio/skill/shiDiFu/gongZuoTai.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo_lei.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo_huo.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo_di.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo_shui.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo_feng.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo_guang.mp3",
+                "audio/skill/shiDiFu/zhanDouFuMo_an.mp3",
+                "audio/skill/shiDiFu/jingYanXiuBu.mp3",
+                "audio/action/shiDiFu/gouMai.mp3",
+                "audio/action/shiDiFu/heCheng.mp3",
+                "audio/action/shiDiFu/tiLian.mp3",
+                "audio/skill/xiaoYan/moQiShaoNianQiong.mp3",
+                "audio/skill/xiaoYan/fenJue.mp3",
+                "audio/skill/xiaoYan/baJiBeng.mp3",
+                "audio/skill/xiaoYan/yanFenShiLangChi.mp3",
+                "audio/skill/xiaoYan/qingLianDiXinHuo.mp3",
+                "audio/skill/xiaoYan/yunLuoXinYan.mp3",
+                "audio/skill/xiaoYan/guLingLengHuo.mp3",
+                "audio/skill/xiaoYan/tianHuoSanXuanBian.mp3",
+                "audio/skill/xiaoYan/foNuHuoLian.mp3",
+                "audio/action/xiaoYan/gouMai.mp3",
+                "audio/action/xiaoYan/heCheng.mp3",
+                "audio/action/xiaoYan/tiLian.mp3",
+                "audio/skill/zhaoFuQueJi/baoPaiZhiShi.mp3",
+                "audio/skill/zhaoFuQueJi/duanYaoJiuMiao.mp3",
+                "audio/skill/zhaoFuQueJi/liZhiMiao.mp3",
+                "audio/skill/zhaoFuQueJi/duiDuiHuMiao.mp3",
+                "audio/skill/zhaoFuQueJi/haiDiLaoYueMiao.mp3",
+                "audio/skill/zhaoFuQueJi/gangMiao.mp3",
+                "audio/skill/zhaoFuQueJi/yiManShiJianMiao.mp3",
+                "audio/action/zhaoFuQueJi/gouMai.mp3",
+                "audio/action/zhaoFuQueJi/heCheng.mp3",
+                "audio/action/zhaoFuQueJi/tiLian.mp3",
+            ],
         },
         "connect": true,
     };
