@@ -1,9 +1,9 @@
 extension["永夜残响"]={
-    intro:"添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三。",
+    intro:"添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三、鸢一折纸；含隐藏反转形态。",
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"2.1",
+    version:"2.2",
     files:[
     "info.json",
     "README.md",

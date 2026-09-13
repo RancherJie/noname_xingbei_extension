@@ -1,4 +1,332 @@
 game.import("extension", function(lib, game, ui, get, ai, _status) {
+    // One manager owns both forms; all nested feather operations finish before switching.
+    const oz = {
+        light: 'zheZhiGuangYu', dark: 'zheZhiHeiYu',
+        normal: p => [p.name, p.name1, p.name2].includes('yuanYiZheZhi'),
+        inverse: p => [p.name, p.name1, p.name2].includes('fanZhuanZheZhi'),
+        count: (p, mark) => p.countZhiShiWu(mark),
+        players: () => game.players.filter(p => p.isIn()),
+        limit(p, mark) {
+            if(mark === this.light) return this.normal(p) || this.inverse(p) ? (p.storage.ozLightMax ?? 4) : 2;
+            return this.inverse(p) ? (p.storage.ozDarkMax ?? 8) : 8;
+        },
+        room(p, mark) { return p.isIn() && this.count(p, mark) < this.limit(p, mark); },
+        sync(p, key, value) {
+            p.storage[key] = value;
+            p.syncStorage(key);
+            p.update();
+            if(key === 'ozLightMax') this.keepLightMark(p);
+        },
+        keepLightMark(p) {
+            if(this.normal(p) && typeof p.markSkill === 'function') p.markSkill(this.light);
+        },
+        play(p, form, file) {
+            if(!p || !file || !lib.config || !lib.config.background_audio) return;
+            const path = 'ext:永夜残响/audio/skill/' + form + '/' + file;
+            game.broadcastAll(function(audioPath, speaker) {
+                if(!lib.config || !lib.config.background_audio) return;
+                game.playAudio({
+                    path: audioPath,
+                    spatialPlayer: speaker,
+                    addVideo: false,
+                    onError: function() {},
+                });
+            }, path, p);
+        },
+        async add(p, mark, n) {
+            n = Math.min(n, Math.max(0, this.limit(p, mark) - this.count(p, mark)));
+            if(n > 0) await p.addZhiShiWu(mark, n, true);
+        },
+        async move(from, to, mark) {
+            if(!from?.isIn() || !to?.isIn() || from === to || !this.count(from, mark) || !this.room(to, mark)) return false;
+            const before = this.count(to, mark);
+            await this.add(to, mark, 1);
+            if(this.count(to, mark) <= before) return false;
+            await from.removeZhiShiWu(mark, 1);
+            if(mark === this.light) this.keepLightMark(from);
+            return true;
+        },
+        async choose(p, prompt, candidates, score) {
+            if(!candidates.length) return null;
+            const targets = await p.chooseTarget(prompt, true, (card, player, target) => candidates.includes(target))
+                .set('ai', score).forResultTargets();
+            return targets?.[0] || null;
+        },
+        damageScore(p, t, n) {
+            if(!t?.isIn()) return 0;
+            n += this.inverse(p) ? 1 : 0;
+            n += this.inverse(t) ? 1 : 0;
+            const raw = Math.max(0, n - (t.zhiLiao || 0));
+            return (t.side === p.side ? -1 : 1) * (raw + Math.max(0, t.countCards('h') + raw - t.getHandcardLimit()) + 0.2 * Math.min(n, t.zhiLiao || 0));
+        },
+        async hit(p,t,n) {
+            // Core stops a zero-damage event before source modifiers can run.
+            // Seed only our own +1 in that case and suppress its duplicate trigger.
+            const seeded = n === 0 && this.inverse(p);
+            const next = t.faShuDamage(seeded ? 1 : n,p,'nocard');
+            if(seeded) next.ozSourceApplied = true;
+            await next;
+        },
+        deployScore(p, t) { return (t.side !== p.side ? 2 : -2) + this.count(t, this.light) * 0.7; },
+        async batch(p, fn) {
+            p.storage.ozDepth = (p.storage.ozDepth || 0) + 1;
+            try { return await fn(); }
+            finally {
+                p.storage.ozDepth--;
+                if(!p.storage.ozDepth) await this.settle(p);
+            }
+        },
+        async collect(p, mark) {
+            const rows = this.players().filter(t => t !== p).sortBySeat(p)
+                .map(t => ({target:t, num:this.count(t, mark)})).filter(r => r.num > 0);
+            for(const r of rows) await r.target.removeZhiShiWu(mark, r.num);
+            await this.add(p, mark, rows.reduce((n,r) => n+r.num, 0));
+            return rows;
+        },
+        async cannon(p) {
+            const rows = await this.collect(p, this.light);
+            for(const r of rows) if(r.target.isIn()) await r.target.faShuDamage(r.num, p, 'nocard');
+            const target = await this.choose(p, '炮冠：选择原有2枚光羽的角色追加2点伤害',
+                rows.filter(r => r.num === 2 && r.target.isIn()).map(r => r.target), t => this.damageScore(p,t,2));
+            if(target?.isIn()) await target.faShuDamage(2, p, 'nocard');
+        },
+        async annihilate(p) {
+            const rows = await this.collect(p, this.dark);
+            for(const r of rows) if(r.target.isIn()) await r.target.faShuDamage(Math.ceil(r.num/2), p, 'nocard');
+            const total = rows.reduce((n,r) => n+r.num, 0);
+            if(p.isIn()) await this.hit(p,p,Math.ceil(total/2));
+        },
+        async clear(mark) {
+            for(const t of [...game.players, ...(game.dead || [])]) {
+                const n = this.count(t,mark);
+                if(n) await t.removeZhiShiWu(mark,n);
+            }
+        },
+        async cleanup(p) {
+            p.storage.ozSwitching=true;
+            try {
+                await this.clear(this.dark);
+                await this.clear(this.light);
+            } finally {
+                ['ozLightMax','ozDarkMax','ozReturn','ozDepth','ozSwitching'].forEach(k=>delete p.storage[k]);
+            }
+        },
+        async settle(p) {
+            if(!p.isIn() || p.storage.ozDepth || p.storage.ozSwitching) return;
+            p.storage.ozSwitching = true;
+            try {
+                if(this.normal(p) && p.storage.ozLightMax === 0) {
+                    p.logSkill('zheZhiPaoGuan');
+                    await this.cannon(p);
+                    if(!p.isIn()) return;
+                    await p.reinitCharacter('yuanYiZheZhi', 'fanZhuanZheZhi');
+                    this.sync(p,'ozDarkMax',8);
+                    delete p.storage.ozReturn;
+                    const excess = Math.max(0, (p.zhiLiao || 0) - p.getZhiLiaoLimit());
+                    if(excess) await p.changeZhiLiao(-excess);
+                    await this.add(p,this.dark,8);
+                    this.play(p,'fanZhuanZheZhi','zheZhiFanLingZhuang.mp3');
+                } else if(this.inverse(p) && (p.storage.ozReturn || this.count(p,this.dark) === 0)) {
+                    p.logSkill('zheZhiYiShiHuiGui');
+                    p.logSkill('zheZhiJueMie');
+                    await this.annihilate(p);
+                    if(!p.isIn()) return;
+                    await this.clear(this.dark);
+                    await this.clear(this.light);
+                    this.sync(p,'ozLightMax',4);
+                    await p.reinitCharacter('fanZhuanZheZhi','yuanYiZheZhi');
+                    delete p.storage.ozReturn;
+                    await this.add(p,this.light,4);
+                    this.play(p,'fanZhuanZheZhi','zheZhiYiShiHuiGui.mp3');
+                }
+            } finally { delete p.storage.ozSwitching; }
+        },
+        blastScore(p, dark) {
+            const mark = dark ? this.dark : this.light;
+            const rows = this.players().filter(t => t !== p && this.count(t,mark));
+            let score = rows.reduce((s,t) => s+this.damageScore(p,t,dark ? Math.ceil(this.count(t,mark)/2) : this.count(t,mark)),0);
+            if(dark) score += this.damageScore(p,p,Math.ceil(rows.reduce((s,t)=>s+this.count(t,mark),0)/2));
+            else {
+                const choices=rows.filter(t=>this.count(t,mark)===2).map(t=>this.damageScore(p,t,2));
+                if(choices.length) score+=Math.max(...choices);
+            }
+            return score-1.5;
+        },
+    };
+    const origamiSkills = {
+        zheZhiManager: {
+            charlotte:true,manager:oz,
+            trigger:{player:'dieAfter'},forced:true,forceDie:true,popup:false,
+            content:async function(e,tr,p){await oz.cleanup(p);},
+            onremove:function(player) {
+                if(player.storage.ozSwitching || oz.normal(player) || oz.inverse(player)) return;
+                const next=game.createEvent('zheZhiCleanup');
+                next.player=player;
+                next.setContent(async function(event,trigger,player){await oz.cleanup(player);});
+            },
+        },
+        zheZhiGuangYu: {
+            init:function(player) { oz.keepLightMark(player); },
+            markimage:'extension/永夜残响/mark_zheZhiGuangYu.png',
+            intro:{name:'光羽',content:(storage,p)=>'光羽：'+oz.count(p,oz.light)+'；当前上限：'+oz.limit(p,oz.light),max:p=>oz.limit(p,oz.light)},
+            trigger:{source:'gongJiMingZhong'}, forced:true,
+            filter:(e,p)=>!!e && oz.count(p,oz.light)>0 && oz.players().some(t=>t!==p&&oz.room(t,oz.light)),
+            content:async function(e,tr,p) {
+                const t=await oz.choose(p,'光羽：转移1枚并造成1点法术伤害',oz.players().filter(t=>t!==p&&oz.room(t,oz.light)),t=>oz.damageScore(p,t,1));
+                if(t && await oz.move(p,t,oz.light)) {
+                    if(oz.normal(p)) oz.play(p,'yuanYiZheZhi','zheZhiGuangYu.mp3');
+                    await t.faShuDamage(1,p,'nocard');
+                }
+            },
+        },
+        zheZhiHeiYu: {markimage:'extension/永夜残响/mark_zheZhiHeiYu.png',intro:{name:'黑羽',content:(storage,p)=>'黑羽：'+oz.count(p,oz.dark)+'；当前上限：'+oz.limit(p,oz.dark),max:p=>oz.limit(p,oz.dark)}},
+        zheZhiLimitGuard: {
+            trigger:{player:'changeZhiShiWuBefore'},forced:true,popup:false,firstDo:true,priority:100,
+            filter:e=>!!e && e.num>0 && [oz.light,oz.dark].includes(e.zhiShiWu),
+            content:async function(e,tr,p) { tr.num=Math.min(tr.num,Math.max(0,oz.limit(p,tr.zhiShiWu)-oz.count(p,tr.zhiShiWu))); },
+        },
+        zheZhiLingZhuang: {
+            audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiLingZhuang.mp3',
+            trigger:{global:'gameStart'},forced:true,
+            content:async function(e,tr,p) {
+                ['zheZhiGuangYu','zheZhiHeiYu','zheZhiLimitGuard'].forEach(s=>game.addGlobalSkill(s));
+                oz.sync(p,'ozLightMax',4);
+                await oz.add(p,oz.light,4);
+            },
+        },
+        zheZhiJueMieTianShi: {
+            audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiJueMieTianShi.mp3',
+            trigger:{player:['gongJiEnd','faShuEnd']},
+            filter:(e,p)=>!!e && !e.yingZhan && get.is.xingDong(e) && oz.count(p,oz.light)>0 && oz.players().some(t=>t.side!==p.side&&oz.room(t,oz.light)),
+            cost:async function(e,tr,p) {
+                e.result=await p.chooseTarget('绝灭天使：将1枚光羽放于对手面前', (c,p,t)=>t.side!==p.side&&oz.room(t,oz.light))
+                    .set('ai',t=>oz.deployScore(p,t)).forResult();
+            },
+            content:async function(e,tr,p) { if(e.targets?.[0]) await oz.move(p,e.targets[0],oz.light); },
+        },
+        zheZhiJueWang: {
+            audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiJueWang.mp3',
+            trigger:{player:'chengShouShangHaiAfter'},forced:true,
+            filter:(e,p)=>!!e && e.num>0 && oz.normal(p) && !oz.count(p,oz.light) && oz.limit(p,oz.light)>0,
+            content:async function(e,tr,p) {
+                oz.sync(p,'ozLightMax',Math.max(0,oz.limit(p,oz.light)-1));
+                if(p.storage.ozLightMax===0) tr.ozInversion=true;
+                await oz.settle(p);
+            },
+        },
+        zheZhiGuangJian: {
+            audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiGuangJian.mp3',
+            type:'faShu',enable:'faShu',position:'h',selectCard:1,discard:true,
+            filter:(e,p)=>p.countCards('h',c=>get.type(c)==='faShu'&&lib.filter.cardDiscardable(c,p))>0&&
+                game.hasPlayer(t=>t.side!==p.side&&oz.count(t,oz.light)>0),
+            filterCard:(c,p)=>get.type(c)==='faShu'&&lib.filter.cardDiscardable(c,p),
+            filterTarget:(c,p,t)=>t.side!==p.side&&oz.count(t,oz.light)>0,
+            loseTo:'discardPile',visible:true,
+            content:async function(e,tr,p) {
+                if(e.cards?.length) await p.showCards(e.cards,'光剑：展示费用牌');
+                await oz.batch(p,async()=>{
+                    const t=e.target;
+                    await t.faShuDamage(oz.count(t,oz.light)===2?2:1,p,'nocard');
+                    if(!t.isIn()||!oz.count(t,oz.light)) return;
+                    const other=await oz.choose(p,'光剑：将目标1枚光羽移给另一对手',oz.players().filter(x=>x!==t&&x.side!==p.side&&oz.room(x,oz.light)),x=>oz.deployScore(p,x));
+                    if(other) await oz.move(t,other,oz.light);
+                });
+            },
+            check:c=>6-get.value(c),ai:{order:4,result:{target:(p,t)=>get.damageEffect(t,oz.count(t,oz.light)===2?2:1)}},
+        },
+        zheZhiTianYi: {
+            audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiTianYi.mp3',
+            trigger:{player:'chengShouShangHai'},
+            filter:(e,p)=>!!e && e.num>0 && oz.count(p,oz.light)>0 && p.countCards('h')>0 && oz.players().some(t=>t!==p&&t.side===p.side&&oz.room(t,oz.light)),
+            cost:async function(e,tr,p) {
+                e.result=await p.chooseCardTarget({prompt:'天翼：弃1牌，将1光羽移给队友，伤害-1并对其造成1法术伤害',position:'h',selectCard:1,
+                    filterCard:lib.filter.cardDiscardable,
+                    filterTarget:(c,p,t)=>t!==p&&t.side===p.side&&oz.room(t,oz.light),
+                    ai1:c=>6-get.value(c),ai2:t=>-oz.damageScore(p,p,1)+oz.damageScore(p,t,1)-0.4}).forResult();
+            },
+            content:async function(e,tr,p) {
+                await oz.batch(p,async()=>{
+                    const t=e.targets?.[0];
+                    if(!t||!oz.room(t,oz.light)||!oz.count(p,oz.light)) return;
+                    await p.discard(e.cards);
+                    if(await oz.move(p,t,oz.light)) {tr.changeDamageNum(-1);await t.faShuDamage(1,p,'nocard');}
+                });
+            },
+        },
+        zheZhiRiLun: {
+            audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiRiLun.mp3',
+            type:'faShu',enable:'faShu',selectTarget:-1,filterTarget:lib.filter.opponent,multitarget:true,multiline:true,
+            filter:(e,p)=>p.canBiShaShuiJing(),
+            content:async function(e,tr,p) {
+                await p.removeBiShaShuiJing();
+                await oz.batch(p,async()=>{
+                    for(const t of e.targets.slice().sortBySeat(p)) if(t.isIn()) await t.faShuDamage(1,p,'nocard');
+                    for(let i=0;i<4 && oz.count(p,oz.light)>0;i++) {
+                        const t=await oz.choose(p,'日轮：分配1枚光羽',oz.players().filter(t=>t.side!==p.side&&oz.room(t,oz.light)),t=>oz.deployScore(p,t));
+                        if(!t||!await oz.move(p,t,oz.light)) break;
+                    }
+                });
+            },
+            ai:{shuiJing:true,order:4.5,result:{player:p=>oz.count(p,oz.light)*0.3-0.7,target:(p,t)=>get.damageEffect(t,1)}},
+        },
+        zheZhiPaoGuan: {
+            audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiPaoGuan.mp3',
+            type:'faShu',enable:'faShu',selectTarget:-1,filterTarget:(c,p,t)=>p===t,
+            filter:(e,p)=>!oz.count(p,oz.light)&&p.canBiShaBaoShi(),
+            content:async function(e,tr,p) {await p.removeBiShaBaoShi();await oz.batch(p,()=>oz.cannon(p));},
+            ai:{baoShi:true,order:5,result:{player:p=>oz.blastScore(p,false)}},
+        },
+        zheZhiFanLingZhuang: {
+            mod:{maxZhiLiao:(p,n)=>Math.max(0,n-2)},
+            group:['zheZhiFanLingZhuang_source','zheZhiFanLingZhuang_target'],
+            subSkill:{
+                source:{trigger:{source:'zaoChengShangHai'},forced:true,firstDo:true,filter:e=>!e.ozSourceApplied,content:async function(e,tr){tr.changeDamageNum(1);}},
+                target:{trigger:{player:'chengShouShangHaiBefore'},forced:true,firstDo:true,content:async function(e,tr){tr.changeDamageNum(1);}},
+            },
+        },
+        zheZhiJuJue: {
+            audio:'ext:永夜残响/audio/skill/fanZhuanZheZhi/zheZhiJuJue.mp3',
+            trigger:{player:'chengShouShangHaiAfter'},forced:true,
+            filter:(e,p)=>!!e && !e.ozInversion && e.num>0 && e.source && e.source!==p && e.source.isIn(),
+            content:async function(e,tr,p) {
+                await oz.batch(p,async()=>{
+                    await oz.move(p,tr.source,oz.dark);
+                    const friend=await oz.choose(p,'拒绝：选择一名队友承接黑羽与伤害',oz.players().filter(t=>t!==p&&t.side===p.side),t=>oz.damageScore(p,t,1));
+                    if(friend) await oz.move(p,friend,oz.dark);
+                    if(tr.source.isIn()) await tr.source.faShuDamage(1,p,'nocard');
+                    if(friend?.isIn()) await friend.faShuDamage(1,p,'nocard');
+                });
+            },
+        },
+        zheZhiHeiYuShu: {
+            audio:'ext:永夜残响/audio/skill/fanZhuanZheZhi/zheZhiHeiYuShu.mp3',
+            type:'faShu',enable:'faShu',position:'h',selectCard:1,discard:true,visible:true,
+            filter:(e,p)=>p.countCards('h',c=>get.type(c)==='faShu'&&lib.filter.cardDiscardable(c,p))>0&&
+                game.hasPlayer(t=>t.side!==p.side),
+            filterCard:(c,p)=>get.type(c)==='faShu'&&lib.filter.cardDiscardable(c,p),filterTarget:lib.filter.opponent,
+            content:async function(e,tr,p) {
+                if(e.cards?.length) await p.showCards(e.cards,'黑羽：展示费用牌');
+                await oz.batch(p,async()=>{await oz.hit(p,e.target,oz.count(e.target,oz.dark));await oz.move(p,e.target,oz.dark);});
+            },
+            check:c=>6-get.value(c),ai:{order:4,result:{target:(p,t)=>get.damageEffect(t,oz.count(t,oz.dark)+1)}},
+        },
+        zheZhiJueMie: {
+            audio:'ext:永夜残响/audio/skill/fanZhuanZheZhi/zheZhiJueMie.mp3',
+            type:'faShu',enable:'faShu',selectTarget:-1,filterTarget:(c,p,t)=>p===t,
+            filter:(e,p)=>p.canBiShaBaoShi(),
+            content:async function(e,tr,p) {await p.removeBiShaBaoShi();await oz.batch(p,()=>oz.annihilate(p));},
+            ai:{baoShi:true,order:5,result:{player:p=>oz.blastScore(p,true)}},
+        },
+        zheZhiYiShiHuiGui: {
+            trigger:{player:'changeZhiShiWuAfter'},forced:true,popup:false,
+            filter:(e,p)=>!!e && e.zhiShiWu===oz.dark && e.num<0 && oz.inverse(p),
+            content:async function(e,tr,p) {
+                oz.sync(p,'ozDarkMax',Math.max(0,oz.limit(p,oz.dark)+tr.num));
+                if(!oz.count(p,oz.dark)) p.storage.ozReturn=true;
+                await oz.settle(p);
+            },
+        },
+    };
     return {
         "name": "永夜残响",
         "arenaReady": function(){
@@ -104,7 +432,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             player.name2 == "yeDaoShenShiXiang" ||
                             player.name == "fanZhuanShiXiang" ||
                             player.name1 == "fanZhuanShiXiang" ||
-                            player.name2 == "fanZhuanShiXiang";
+                            player.name2 == "fanZhuanShiXiang" ||
+                            player.name == "yuanYiZheZhi" ||
+                            player.name1 == "yuanYiZheZhi" ||
+                            player.name2 == "yuanYiZheZhi" ||
+                            player.name == "fanZhuanZheZhi" ||
+                            player.name1 == "fanZhuanZheZhi" ||
+                            player.name2 == "fanZhuanZheZhi";
                     },
                     content: function(event, trigger, player) {
                         var files = {
@@ -134,6 +468,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             player.name2 == "fanZhuanShiXiang") {
                             character = "fanZhuanShiXiang";
                         }
+                        if(player.name == "yuanYiZheZhi" ||
+                            player.name1 == "yuanYiZheZhi" ||
+                            player.name2 == "yuanYiZheZhi") {
+                            character = "yuanYiZheZhi";
+                        }
+                        if(player.name == "fanZhuanZheZhi" ||
+                            player.name1 == "fanZhuanZheZhi" ||
+                            player.name2 == "fanZhuanZheZhi") {
+                            character = "fanZhuanZheZhi";
+                        }
                         var audioPath = "ext:永夜残响/audio/action/" +
                             character + "/" + file;
                         game.broadcastAll(function(path, speaker) {
@@ -156,6 +500,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "character": {
                 "connect": true,
                 "character": {
+                    "yuanYiZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiLingZhuang","zheZhiJueMieTianShi","zheZhiJueWang","zheZhiGuangJian","zheZhiTianYi","zheZhiRiLun","zheZhiPaoGuan","zheZhiGuangYu"],["des:操纵绝灭天使的光羽布阵，绝望时化为反转折纸。","ext:永夜残响/yuanYiZheZhi.png"]],
+                    "fanZhuanZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiFanLingZhuang","zheZhiJuJue","zheZhiHeiYuShu","zheZhiJueMie","zheZhiYiShiHuiGui","zheZhiHeiYu"],["unseen","forbidai","des:仅由绝望反转进入，黑羽耗尽时强制绝灭并回归。","ext:永夜残响/fanZhuanZheZhi.png"]],
                     "wuHeQinLi": [
                         null,
                         "huanGroup",
@@ -257,6 +603,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "牛牛diy": "牛牛diy",
                     "无名拓展": "无名拓展",
                     "永夜残响": "永夜残响",
+                    "yuanYiZheZhi": "鸢一折纸",
+                    "fanZhuanZheZhi": "反转·折纸",
                     "wuHeQinLi": "五河琴里",
                     "yeDaoShenShiXiang": "夜刀神十香",
                     "fanZhuanShiXiang": "反转·十香",
@@ -271,6 +619,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             },
             "skill": {
                 "skill": {
+                    ...origamiSkills,
                     "shuangSeFaDai": {
                         "getForm": function(player) {
                     if(player.hasSkill('heiSeFaDai')) return 'heiSeFaDai';
@@ -405,6 +754,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     },
                     "lingLiShiKong": {
                         "audio": "ext:永夜残响/audio/skill/wuHeQinLi/lingLiShiKong.mp3",
+                        "group": [
+                            "lingLiShiKong_manLingLiChengShou",
+                        ],
                         "trigger": {
                             "player": "changeZhiShiWuAfter",
                         },
@@ -434,6 +786,34 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         await player.removeZhiShiWu('qinLiLingLi', 1);
                     }
                 },
+                        "subSkill": {
+                            "manLingLiChengShou": {
+                                "trigger": {
+                                    "player": "chengShouShangHaiAfter",
+                                },
+                                "forced": true,
+                                "filter": function(event, player) {
+                            return !!event &&
+                                event.num > 0 &&
+                                !!event.source &&
+                                event.source != player &&
+                                player.hasSkill('baiSeFaDai') &&
+                                player.countZhiShiWu('qinLiLingLi') >= 4 &&
+                                !player.storage.qinLiLingLiOverloading;
+                        },
+                                "content": async function(event, trigger, player) {
+                            player.storage.qinLiLingLiOverloading = true;
+                            await player.faShuDamage(1, player);
+                            if(player.isIn() &&
+                                player.countZhiShiWu('qinLiLingLi') > 0) {
+                                await player.removeZhiShiWu(
+                                    'qinLiLingLi', 1
+                                );
+                            }
+                            delete player.storage.qinLiLingLiOverloading;
+                        },
+                            },
+                        },
                     },
                     "zhuoLanJianGui": {
                         "trigger": {
@@ -502,7 +882,24 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var control = await player.chooseControl(controls)
                         .set('prompt', '是否发动【灼烂歼鬼】？')
                         .set('ai', function() {
-                            return '灼烂歼鬼·斧';
+                            var player = _status.event.player;
+                            var trigger = _status.event.getTrigger();
+                            var axe = trigger.target ? get.damageEffect2(
+                                trigger.target,
+                                player,
+                                1
+                            ) : -100;
+                            var cannon = -100;
+                            game.filterPlayer(function(target) {
+                                return target.side != player.side &&
+                                    target != trigger.target;
+                            }).forEach(function(target) {
+                                cannon = Math.max(cannon,
+                                    get.damageEffect2(target, player, 2));
+                            });
+                            if(cannon > axe + 0.5) return '灼烂歼鬼·炮';
+                            if(axe > 0) return '灼烂歼鬼·斧';
+                            return 'cancel2';
                         })
                         .forResultControl();
                     if(!control || control == 'cancel2') {
@@ -1582,12 +1979,18 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         '受到的伤害-1？'
                     ).set('ai', function() {
                         var player = _status.event.player;
-                        if(player.countCards('h') + 1 >
-                            player.getHandcardLimit()) return false;
-                        return get.attitude(
-                            player,
-                            _status.event.getTrigger().player
-                        ) > 0;
+                        var trigger = _status.event.getTrigger();
+                        var target = trigger && trigger.player;
+                        if(!target || get.attitude(player, target) <= 0) {
+                            return false;
+                        }
+                        var prevented = Math.min(1, trigger.num || 0);
+                        var drawOverflow = Math.max(0,
+                            player.countCards('h') + 1 -
+                            player.getHandcardLimit());
+                        if(prevented >= get.shiQi(target.side)) return true;
+                        return get.damageEffect2(target, player, prevented) +
+                            1.2 - drawOverflow * 2 > 0;
                     }).forResult();
                 },
                         "content": async function(event, trigger, player) {
@@ -1841,6 +2244,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "markimage": "extension/永夜残响/mark_siMiNaiDongJie.png",
                         "global": [
+                            "siMiNaiDongJie_gongJiOrFaShu",
                             "siMiNaiDongJie_gongJi",
                             "siMiNaiDongJie_faShu",
                         ],
@@ -1887,6 +2291,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                     if(event.extraXingDongType == action) return true;
                     if(event.action !== true) return false;
+                    if(action == 'gongJiOrFaShu') {
+                        return phase.extraXingDong === true ||
+                            event.firstAction !== true;
+                    }
                     return phase.xingDong == action;
                 },
                         "cancelExtraAction": async function(trigger, player) {
@@ -1903,6 +2311,27 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     delete player.storage.siMiNaiDongJieSource;
                 },
                         "subSkill": {
+                            "gongJiOrFaShu": {
+                                "trigger": {
+                                    "player": "gongJiOrFaShuBefore",
+                                },
+                                "forced": true,
+                                "firstDo": true,
+                                "filter": function(event, player) {
+                            return player.countZhiShiWu('siMiNaiDongJie') == 1 &&
+                                lib.skill.siMiNaiDongJie.isExtraAction(
+                                    event,
+                                    'gongJiOrFaShu',
+                                    player
+                                );
+                        },
+                                "content": async function(event, trigger, player) {
+                            await lib.skill.siMiNaiDongJie.cancelExtraAction(
+                                trigger,
+                                player
+                            );
+                        },
+                            },
                             "gongJi": {
                                 "trigger": {
                                     "player": "gongJiBefore",
@@ -2712,6 +3141,35 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                 "translate": {
                     "siMiNaiBingJing": "冰晶",
+                    "zheZhiManager": "羽阵管理",
+                    "zheZhiGuangYu": "光羽",
+                    "zheZhiGuangYu_info": "鸢一折纸专属指示物。自身初始上限4，其他角色上限2；普通折纸自身的栏位常驻并显示当前上限。<span class='tiaoJian'>（拥有者攻击命中后②）</span>将自身1枚<span class='lan'>【光羽】</span>移给另一名未满角色，再由拥有者对其造成1点法术伤害③。",
+                    "zheZhiHeiYu": "黑羽",
+                    "zheZhiHeiYu_info": "反转折纸专属指示物，上限8；反转折纸自身上限随黑羽实际减少而递减。",
+                    "zheZhiLingZhuang": "被动【神威灵装·一番】",
+                    "zheZhiLingZhuang_info": "<span class='tiaoJian'>（游戏开始时）</span>将4枚<span class='lan'>【光羽】</span>放于自身。",
+                    "zheZhiJueMieTianShi": "响应【绝灭天使】",
+                    "zheZhiJueMieTianShi_info": "<span class='tiaoJian'>（【攻击行动】或【法术行动】结束后）</span>可将自身1枚<span class='lan'>【光羽】</span>移给一名未满对手。",
+                    "zheZhiJueWang": "被动【绝望反转】",
+                    "zheZhiJueWang_info": "<span class='tiaoJian'>（承受实际伤害后⑤，且自身没有<span class='lan'>【光羽】</span>）</span>自身光羽上限-1，最低0。<span class='tiaoJian'>（光羽上限降至0）</span>免费强制释放【绝灭天使·炮冠】，完整结算后变为【反转·折纸】，将黑羽上限重置为8并获得8枚<span class='lan'>【黑羽】</span>。",
+                    "zheZhiGuangJian": "法术【绝灭天使·光剑】",
+                    "zheZhiGuangJian_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对一名拥有<span class='lan'>【光羽】</span>的对手造成1点法术伤害③。<span class='tiaoJian'>（目标有2枚<span class='lan'>【光羽】</span>）</span>本次伤害+1。然后将其1枚<span class='lan'>【光羽】</span>移给另一名未满对手。",
+                    "zheZhiTianYi": "响应【绝灭天使·天翼】",
+                    "zheZhiTianYi_info": "<span class='tiaoJian'>（承受正数伤害时④，弃置1张牌，将自身1枚<span class='lan'>【光羽】</span>移给另一名未满队友）</span>使本次伤害-1，再由你对该队友造成1点法术伤害③。",
+                    "zheZhiRiLun": "法术【绝灭天使·日轮】",
+                    "zheZhiRiLun_info": "<span class='tiaoJian'>（<span class='lan'>【水晶】</span>）</span>对所有对手各造成1点法术伤害③；全部伤害结算后，由你将自身<span class='lan'>【光羽】</span>逐枚分配给未满对手，尽可能放置，无法放置的保留在自身。",
+                    "zheZhiPaoGuan": "法术【绝灭天使·炮冠】",
+                    "zheZhiPaoGuan_info": "<span class='tiaoJian'>（自身没有<span class='lan'>【光羽】</span>，支付<span class='lan'>【宝石】</span>）</span>回收其他角色的全部<span class='lan'>【光羽】</span>，依座次对原持有者造成等同于其原有光羽数量的法术伤害③；再对其中一名原有2枚<span class='lan'>【光羽】</span>的角色额外造成2点法术伤害③。",
+                    "zheZhiFanLingZhuang": "被动【反灵装·一番】",
+                    "zheZhiFanLingZhuang_info": "你的治疗上限-2；你造成与承受的所有伤害各额外+1。",
+                    "zheZhiJuJue": "被动【救世魔王·拒绝】",
+                    "zheZhiJuJue_info": "<span class='tiaoJian'>（其他角色对你造成实际伤害后⑤）</span>将自身1枚<span class='lan'>【黑羽】</span>移给伤害来源，再将1枚移给另一名队友；然后由你对两者各造成1点法术伤害③。",
+                    "zheZhiHeiYuShu": "法术【救世魔王·黑羽】",
+                    "zheZhiHeiYuShu_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对一名对手造成等同于其<span class='lan'>【黑羽】</span>数量的法术伤害③，再将自身1枚<span class='lan'>【黑羽】</span>移给该角色。",
+                    "zheZhiJueMie": "法术【救世魔王·绝灭】",
+                    "zheZhiJueMie_info": "<span class='tiaoJian'>（<span class='lan'>【宝石】</span>）</span>回收其他角色的全部<span class='lan'>【黑羽】</span>，依座次对原持有者造成其原有黑羽数量一半、向上取整的法术伤害③；然后对自己造成黑羽总数一半、向上取整的法术伤害③。",
+                    "zheZhiYiShiHuiGui": "被动【意识回归】",
+                    "zheZhiYiShiHuiGui_info": "自身每实际减少1枚<span class='lan'>【黑羽】</span>，自身黑羽上限同步-1，最低0。<span class='tiaoJian'>（自身<span class='lan'>【黑羽】</span>降为0）</span>在当前技能完整结算后免费强制释放【救世魔王·绝灭】，将光羽上限恢复至4并获得4枚<span class='lan'>【光羽】</span>，变回普通折纸。",
                     "siMiNaiBingJing_info": "四糸乃的专属指示物，上限为5。",
                     "siMiNaiDongJie": "(专)【冻结】",
                     "siMiNaiDongJie_info": "专属计数卡，每名角色上限为2。<br>·1层：<span class='tiaoJian'>（拥有者即将开始额外【攻击行动】或【法术行动】时）</span>移除其全部<span class='lan'>【冻结】</span>，取消该行动并结束其回合；<br>·达到2层：四糸乃对其造成2点法术伤害③，然后移除其全部<span class='lan'>【冻结】</span>。",
@@ -2756,7 +3214,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "qinLiYanLing": "被动【炎灵】",
                     "qinLiYanLing_info": "<span class='tiaoJian'>（你每次造成实际伤害后⑤，或每次承受其他角色造成的实际伤害后⑤）</span>+1<span class='hong'>【灵力】</span>。两类触发均不限次数；你对自己造成的伤害只触发前者。",
                     "lingLiShiKong": "被动【灵力失控】",
-                    "lingLiShiKong_info": "<span class='hong'>【灵力】</span>达到上限时，将【双色发带】翻至【白色发带】；若已经是该形态，承受1点法术伤害③，然后移除1<span class='hong'>【灵力】</span>。",
+                    "lingLiShiKong_info": "<span class='hong'>【灵力】</span>达到上限时，将【双色发带】翻至【白色发带】；若已经是该形态，承受1点法术伤害③，然后移除1<span class='hong'>【灵力】</span>。处于【白色发带】且已有4<span class='hong'>【灵力】</span>时，再次满足【炎灵】的承受伤害条件，也视为再次达到上限。",
                     "zhuoLanJianGui": "响应【灼烂歼鬼】",
                     "zhuoLanJianGui_info": "<span class='tiaoJian'>（主动攻击前①，移除1<span class='hong'>【灵力】</span>）</span>选择一项：<br>·【斧】：本次攻击伤害额外+1；<br>·【炮】：指定攻击目标以外的一名对手；若本次攻击命中，对其造成2点法术伤害③。<br><span class='tiaoJian'>（【炎魔形态】下）</span>无需移除<span class='hong'>【灵力】</span>，两项同时生效；没有合法炮目标时只结算【斧】。",
                     "yanMoXianXian": "启动【炎魔显现】",
@@ -2807,15 +3265,17 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "zuiHouZhiJianXingDong_info": "下一次额外【攻击行动】获得最后之剑所选择的两项效果；该行动结束或被取消后翻至【王座形态】并清除效果。",
                 },
             },
-            "intro": "添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三。",
+            "intro": "添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三、鸢一折纸；含隐藏反转形态。",
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.1",
+            "version": "2.3",
         },
         "files": {
             "character": [
                 "wHeQingLi.jpg",
+                "yuanYiZheZhi.png",
+                "fanZhuanZheZhi.png",
                 "shiXiang.jpg",
                 "fanZhuanShiXiang.png",
                 "siMiNai.jpg",
@@ -2824,6 +3284,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "card": [],
             "skill": [
                 "mark_qinLiLingLi.png",
+                "mark_zheZhiGuangYu.png",
+                "mark_zheZhiHeiYu.png",
                 "mark_shiXiangLingLi.png",
                 "mark_fanZhuanLingLi.png",
                 "mark_siMiNaiBingJing.png",
@@ -2883,6 +3345,26 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 "audio/action/fanZhuanShiXiang/gouMai.mp3",
                 "audio/action/fanZhuanShiXiang/heCheng.mp3",
                 "audio/action/fanZhuanShiXiang/tiLian.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiLingZhuang.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiJueMieTianShi.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiJueWang.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiGuangJian.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiTianYi.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiRiLun.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiPaoGuan.mp3",
+                "audio/skill/yuanYiZheZhi/zheZhiGuangYu.mp3",
+                "audio/action/yuanYiZheZhi/gouMai.mp3",
+                "audio/action/yuanYiZheZhi/heCheng.mp3",
+                "audio/action/yuanYiZheZhi/tiLian.mp3",
+                "audio/skill/fanZhuanZheZhi/zheZhiFanLingZhuang.mp3",
+                "audio/skill/fanZhuanZheZhi/zheZhiJuJue.mp3",
+                "audio/skill/fanZhuanZheZhi/zheZhiHeiYuShu.mp3",
+                "audio/skill/fanZhuanZheZhi/zheZhiJueMie.mp3",
+                "audio/skill/fanZhuanZheZhi/zheZhiYiShiHuiGui.mp3",
+                "audio/skill/fanZhuanZheZhi/zheZhiHeiYu.mp3",
+                "audio/action/fanZhuanZheZhi/gouMai.mp3",
+                "audio/action/fanZhuanZheZhi/heCheng.mp3",
+                "audio/action/fanZhuanZheZhi/tiLian.mp3",
             ],
         },
         "connect": true,
