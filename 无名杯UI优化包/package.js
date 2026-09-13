@@ -3,7 +3,7 @@ extension["无名杯UI优化包"] = {
     author: "蒙牛 / Codex",
     netdisk: "",
     forum: "",
-    version: "2.1",
+    version: "2.2",
     files: [
         "info.json",
         "README.md",

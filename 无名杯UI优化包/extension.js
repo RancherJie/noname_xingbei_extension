@@ -623,16 +623,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "2.1",
+        version: "2.2",
+        connect: true,
         editable: false,
         precontent: function () {
             loadStyle();
+            // 基础皮肤必须先启用；后续可选钩子即使异常，也不能阻断整个 UI 扩展。
+            startDecoration();
             applyCardDefinitions();
             installSkillFx();
             installCombatLineHook();
             installCombatFx();
-            // 联机大厅先于 arenaReady 创建，必须从预加载阶段启用全局皮肤。
-            startDecoration();
         },
         arenaReady: function () {
             applyCardDefinitions();
@@ -685,7 +686,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.1"
+            version: "2.2"
         },
         files: {
             character: [],
