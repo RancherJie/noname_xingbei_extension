@@ -16,6 +16,7 @@ extension["创世纪"]={
     "tianQiZhe.png",
     "yuXueMoShen.png",
     "mark_nianQi.png",
+    "mark_huaShi.png",
     "mark_luMiYaYanJiu.png",
     "mark_rongYuZhuFu.png",
     "mark_shouHuHuiZhang.png",

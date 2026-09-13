@@ -3,7 +3,7 @@ extension["bigcowcow"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"2.8",
+    version:"2.10",
     files:[
     "info.json",
     "README.md",
@@ -63,6 +63,12 @@ extension["bigcowcow"]={
     "audio/skill/shiDiFu/zhanDouFuMo_guang.mp3",
     "audio/skill/shiDiFu/zhanDouFuMo_an.mp3",
     "audio/skill/shiDiFu/jingYanXiuBu.mp3",
+    "audio/skill/shiDiFu/jianYiGongJu.mp3",
+    "audio/skill/shiDiFu/jiSuHuiKan.mp3",
+    "audio/skill/shiDiFu/chenZhongGeDang.mp3",
+    "audio/skill/shiDiFu/wenDingFengRen.mp3",
+    "audio/skill/shiDiFu/zuanShiPoJia.mp3",
+    "audio/skill/shiDiFu/buHuiZhiFeng.mp3",
     "audio/action/shiDiFu/gouMai.mp3",
     "audio/action/shiDiFu/heCheng.mp3",
     "audio/action/shiDiFu/tiLian.mp3",
@@ -70,6 +76,7 @@ extension["bigcowcow"]={
     "audio/skill/xiaoYan/fenJue.mp3",
     "audio/skill/xiaoYan/baJiBeng.mp3",
     "audio/skill/xiaoYan/yanFenShiLangChi.mp3",
+    "audio/skill/xiaoYan/lianQiHuaDan.mp3",
     "audio/skill/xiaoYan/qingLianDiXinHuo.mp3",
     "audio/skill/xiaoYan/yunLuoXinYan.mp3",
     "audio/skill/xiaoYan/guLingLengHuo.mp3",
@@ -89,5 +96,5 @@ extension["bigcowcow"]={
     "audio/action/zhaoFuQueJi/heCheng.mp3",
     "audio/action/zhaoFuQueJi/tiLian.mp3"
 ],
-    size:"8.29MB"
+    size:"8.46MB"
 };

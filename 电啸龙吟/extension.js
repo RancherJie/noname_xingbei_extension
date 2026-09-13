@@ -1262,8 +1262,20 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         '是否发动【原生摇】？'
                     ).set('ai', function() {
                         var player = _status.event.player;
-                        return player.countCards('h') + 1 <=
-                            player.getHandcardLimit();
+                        if(lib.skill._heCheng &&
+                            lib.skill._heCheng.filter(
+                                _status.event,
+                                player
+                            ) && (get.shiQi(!player.side) <= 1 ||
+                                get.xingBei(player.side) + 1 >=
+                                    game.xingBeiMax)) {
+                            return false;
+                        }
+                        var overflow = Math.max(0,
+                            player.countCards('h') + 1 -
+                            player.getHandcardLimit());
+                        if(overflow >= get.shiQi(player.side)) return false;
+                        return overflow <= 1;
                     }).forResult();
                 },
                         "content": async function(event, trigger, player) {
