@@ -1,0 +1,129 @@
+{
+  "config": {
+    "gamePath": "C:\\Users\\ZhenqiNet\\Downloads\\星杯\\无名杀.exe",
+    "mode": "3v3",
+    "randomCharacters": false,
+    "games": 1,
+    "turnLimit": 12,
+    "simulationDelayMs": 1,
+    "pollIntervalMs": 250,
+    "timelineConsole": false,
+    "suppressVisualLogs": true,
+    "timeoutSeconds": 60,
+    "swapFirst": false,
+    "debugPort": 9239,
+    "background": true,
+    "turbo": true,
+    "closeGameWhenFinished": true,
+    "red": [
+      "fengZhiJianSheng",
+      "kuangZhanShi",
+      "shenJianShou"
+    ],
+    "blue": [
+      "moFaShaoNv",
+      "shengNv",
+      "tianShi"
+    ],
+    "reportDirectory": "wind-reports"
+  },
+  "status": "completed",
+  "startedAt": "2026-09-13T01:45:54.033Z",
+  "updatedAt": "2026-09-13T01:46:32.808Z",
+  "errors": [],
+  "games": [
+    {
+      "winner": "unknown",
+      "status": "crashed",
+      "phaseNumber": 1,
+      "redMorale": 15,
+      "blueMorale": 15,
+      "redCups": 0,
+      "blueCups": 0,
+      "errors": [
+        "Error: 调试命令超时：维持自动战斗（Runtime.evaluate，30000ms）\n    at Timeout._onTimeout (C:\\Users\\ZhenqiNet\\Downloads\\星杯\\resources\\app\\extension\\无名杯自动模拟器\\controller.js:119:31)\n    at listOnTimeout (node:internal/timers:635:17)\n    at process.processTimers (node:internal/timers:571:7)"
+      ],
+      "diagnosticCounts": {
+        "before": 0,
+        "after": 0,
+        "error": 0
+      },
+      "diagnostics": [],
+      "timeline": [
+        {
+          "phase": 1,
+          "events": [
+            {
+              "time": 1789263957305,
+              "phase": 1,
+              "type": "log",
+              "text": "狂战士 的回合开始"
+            },
+            {
+              "time": 1789263957310,
+              "phase": 1,
+              "type": "log",
+              "text": "狂战士 进入了行动阶段"
+            },
+            {
+              "time": 1789263957347,
+              "phase": 1,
+              "type": "log",
+              "text": "狂战士 对 圣女 使用了 地裂斩【地血】 ，主动攻击"
+            },
+            {
+              "time": 1789263957350,
+              "phase": 1,
+              "type": "system",
+              "text": "极速模拟已启用：已跳过本体结算等待"
+            },
+            {
+              "time": 1789263957354,
+              "phase": 1,
+              "type": "skill",
+              "text": "狂战士 发动【(独)[响应]血影狂刀】",
+              "actor": "kuangZhanShi",
+              "actorName": "狂战士",
+              "skill": "xueYingKuangDao",
+              "skillName": "(独)[响应]血影狂刀",
+              "targets": [],
+              "source": "logSkill"
+            },
+            {
+              "time": 1789263957359,
+              "phase": 1,
+              "type": "skill",
+              "text": "狂战士 发动【[被动]狂化】",
+              "actor": "kuangZhanShi",
+              "actorName": "狂战士",
+              "skill": "kuangHua",
+              "skillName": "[被动]狂化",
+              "targets": [],
+              "source": "logSkill"
+            },
+            {
+              "time": 1789263957371,
+              "phase": 1,
+              "type": "log",
+              "text": "红方战绩区增加了1个 宝石"
+            },
+            {
+              "time": 1789263957386,
+              "phase": 1,
+              "type": "log",
+              "text": "圣女 受到 狂战士 造成的3点攻击伤害"
+            },
+            {
+              "time": 1789263957388,
+              "phase": 1,
+              "type": "log",
+              "text": "圣女 摸了3张牌"
+            }
+          ]
+        }
+      ],
+      "players": []
+    }
+  ],
+  "finishedAt": "2026-09-13T01:46:32.808Z"
+}

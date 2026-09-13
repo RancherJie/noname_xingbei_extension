@@ -1,0 +1,10 @@
+{
+ "gamePath":"C:\\Users\\ZhenqiNet\\Downloads\\星杯\\无名杀.exe",
+ "mode":"3v3","randomCharacters":false,"games":1,"turnLimit":12,
+ "simulationDelayMs":1,"pollIntervalMs":250,"timelineConsole":false,
+ "suppressVisualLogs":true,"timeoutSeconds":60,"swapFirst":false,
+ "debugPort":9239,"background":true,"turbo":true,"closeGameWhenFinished":true,
+ "red":["fengZhiJianSheng","kuangZhanShi","shenJianShou"],
+ "blue":["moFaShaoNv","shengNv","tianShi"],
+ "reportDirectory":"wind-reports"
+}
