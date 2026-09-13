@@ -163,6 +163,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "fenJue",
                             "baJiBeng",
                             "yanFenShiLangChi",
+                            "lianQiHuaDan",
                             "fenJueLianHua",
                             "tianHuoSanXuanBian",
                             "foNuHuoLian",
@@ -303,7 +304,36 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     .set('prompt',get.prompt(event.skill))
                     .set('prompt2',lib.translate[event.skill+'_info'])
                     .set('ai',function(card){
-                        return 6-get.value(card);
+                        var player = _status.event.player;
+                        var trigger = _status.event.getTrigger();
+                        var target = trigger && trigger.target;
+                        if(!target || target.side == player.side) return -1;
+                        var score = 0;
+                        var xiBie = get.xiBie(card);
+                        if(xiBie == 'huo') {
+                            score = get.damageEffect2(target, player, 1);
+                        } else if(xiBie == 'di') {
+                            var damage = Math.max(0, (trigger.num || 0) - 1);
+                            game.filterPlayer(function(current) {
+                                return current.side != player.side &&
+                                    current != target;
+                            }).forEach(function(current) {
+                                score += get.damageEffect2(
+                                    current,
+                                    player,
+                                    damage
+                                );
+                            });
+                        } else if(xiBie == 'feng') {
+                            var follow = player.countCards('h', function(current) {
+                                return current != card &&
+                                    get.type(current, player) == 'gongJi' &&
+                                    player.canUse(current, target);
+                            }) > 0;
+                            score = follow ?
+                                get.damageEffect2(target, player, 2) - 1 : -2;
+                        }
+                        return score - get.value(card) * 0.55;
                     })
                     .forResult();
                 },
@@ -419,8 +449,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         })
                         .set('target',trigger.oriTarget)
                         .set('ai',function(button){
-                            if(get.type(button.link)=='gongJi') return 1;
-                            return 0;
+                            var player = _status.event.player;
+                            var target = _status.event.target;
+                            if(get.type(button.link) != 'gongJi') return -1;
+                            var score = get.damageEffect2(
+                                target,
+                                player,
+                                3
+                            ) - get.value(button.link) * 0.35;
+                            if(get.shiQi(target.side) <= 3) score += 4;
+                            return score;
                         }).forResult();
                     event.result={
                         bool:result.bool,
@@ -1133,13 +1171,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             '张【素材】'
                     ).set('ai', function(button) {
                         var player = _status.event.player;
-                        var target = _status.event.attackTarget;
                         var xiBie = get.xiBie(button.link);
                         if(xiBie == 'an') return 9;
                         if(xiBie == 'lei' || xiBie == 'huo') return 8;
-                        if(xiBie == 'feng' && target &&
-                            target.side != player.side &&
-                            target.countCards('h') > 0) {
+                        if(xiBie == 'feng' && game.hasPlayer(function(current) {
+                            return current.isIn() &&
+                                current.side != player.side &&
+                                current.countCards('h') > 0;
+                        })) {
                             return 7.5;
                         }
                         if(xiBie == 'guang') {
@@ -1150,7 +1189,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             }
                         }
                         return 6 - get.value(button.link);
-                    }).set('attackTarget', trigger.target).forResult();
+                    }).forResult();
                     event.result = {
                         bool: result.bool && result.links &&
                             result.links.length >= 1 && result.links.length <= max,
@@ -1250,19 +1289,47 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await lib.skill.caiJi.collect(player);
                         }
                     }
-                    if(counts.feng > 0 && trigger.target && trigger.target.isIn()) {
+                    if(counts.feng > 0) {
                         await playBranchVoice('feng');
-                        var discardNum = Math.min(
-                            counts.feng,
-                            trigger.target.countCards('h')
-                        );
-                        if(discardNum > 0) {
-                            await trigger.target.chooseToDiscard(
+                        var windCandidates = game.players.filter(function(current) {
+                            return current.isIn() && current.countCards('h') > 0;
+                        });
+                        if(windCandidates.length > 0) {
+                            var windTargets = await player.chooseTarget(
+                                1,
+                                true,
+                                '击退：选择1名角色弃置至多' + counts.feng + '张手牌',
+                                function(card, player, target) {
+                                    return target.isIn() && target.countCards('h') > 0;
+                                }
+                            ).set('ai', function(target) {
+                                var player = _status.event.player;
+                                var discardNum = Math.min(
+                                    _status.event.discardNum,
+                                    target.countCards('h')
+                                );
+                                if(target.side != player.side) {
+                                    return 8 + discardNum * 2;
+                                }
+                                var overflow = Math.max(
+                                    0,
+                                    target.countCards('h') - target.getHandcardLimit()
+                                );
+                                return overflow > 0 ? overflow : -8;
+                            }).set('discardNum', counts.feng).forResultTargets();
+                            var windTarget = windTargets[0];
+                            if(windTarget && windTarget.isIn()) {
+                                var discardNum = Math.min(
+                                    counts.feng,
+                                    windTarget.countCards('h')
+                                );
+                                if(discardNum > 0) await windTarget.chooseToDiscard(
                                 'h',
                                 discardNum,
                                 true,
                                 '击退：弃置' + discardNum + '张手牌'
                             );
+                            }
                         }
                     }
                     if(counts.guang > 0 &&
@@ -2285,6 +2352,19 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "getSword": function(player) {
                     return player.storage.shiDiFuDangQianJian || null;
                 },
+                        "playSwordAudio": function(player, file) {
+                    if(!player || !file) return;
+                    game.broadcastAll(function(audioFile, speaker) {
+                        if(!lib.config.background_speak) return;
+                        game.playAudio({
+                            path: 'ext:bigcowcow/audio/skill/shiDiFu/' +
+                                audioFile + '.mp3',
+                            spatialPlayer: speaker,
+                            addVideo: false,
+                            onError: function() {},
+                        });
+                    }, file, player);
+                },
                         "getMaxDurability": function(player, sword) {
                     sword = sword || lib.skill.shiDiFuJian.getSword(player);
                     return lib.skill.shiDiFuJian.durability[sword] || 0;
@@ -2376,9 +2456,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }) > 0;
                     }).forResult();
                 },
-                        "content": async function(event, trigger, player) {
+                "content": async function(event, trigger, player) {
                     trigger.customArgs = trigger.customArgs || {};
                     trigger.customArgs.jianYiGongJu = true;
+                    lib.skill.shiDiFuJian.playSwordAudio(player, 'jianYiGongJu');
                     lib.skill.shiDiFuJian.changeDurability(player, -1);
                     await event.trigger('shiDiFuYiChuNaiJiu');
                 },
@@ -2443,7 +2524,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         });
                     }).forResult();
                 },
-                        "content": async function(event, trigger, player) {
+                "content": async function(event, trigger, player) {
+                    lib.skill.shiDiFuJian.playSwordAudio(player, 'jiSuHuiKan');
                     lib.skill.shiDiFuJian.changeDurability(player, -1);
                     await event.trigger('shiDiFuYiChuNaiJiu');
                     player.addGongJiOrFaShu();
@@ -2510,9 +2592,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 lib.skill.shiDiFuJian.getSword(player) == 'shiJian' &&
                                 lib.skill.shiDiFuJian.getDurability(player) > 0;
                         },
-                                "content": async function(event, trigger, player) {
+                        "content": async function(event, trigger, player) {
                             trigger.customArgs = trigger.customArgs || {};
                             trigger.customArgs.chenZhongGeDang = true;
+                            lib.skill.shiDiFuJian.playSwordAudio(player, 'chenZhongGeDang');
                             lib.skill.shiDiFuJian.changeDurability(player, -1);
                             if(trigger.cards && trigger.cards.length) {
                                 game.setXiBie(
@@ -2559,7 +2642,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             get.damageEffect2(target, player, 1) > 0;
                     }).forResult();
                 },
-                        "content": async function(event, trigger, player) {
+                "content": async function(event, trigger, player) {
+                    lib.skill.shiDiFuJian.playSwordAudio(player, 'wenDingFengRen');
                     lib.skill.shiDiFuJian.changeDurability(player, -1);
                     trigger.changeDamageNum(1);
                     await event.trigger('shiDiFuYiChuNaiJiu');
@@ -2594,7 +2678,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             target.countCards('h') >= 3;
                     }).forResult();
                 },
-                        "content": async function(event, trigger, player) {
+                "content": async function(event, trigger, player) {
+                    lib.skill.shiDiFuJian.playSwordAudio(player, 'zuanShiPoJia');
                     lib.skill.shiDiFuJian.changeDurability(player, -1);
                     trigger.changeDamageNum(1);
                     if(trigger.yingZhan != true) {
@@ -2627,7 +2712,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             get.shiQi(!player.side) <= 2;
                     }).forResult();
                 },
-                        "content": async function(event, trigger, player) {
+                "content": async function(event, trigger, player) {
+                    lib.skill.shiDiFuJian.playSwordAudio(player, 'buHuiZhiFeng');
                     lib.skill.shiDiFuJian.changeDurability(player, -1);
                     trigger.changeDamageNum(1);
                     trigger.wuFaYingZhan();
@@ -3080,6 +3166,112 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     }
                 },
+                    },
+                    "lianQiHuaDan": {
+                        "audio": "ext:bigcowcow/audio/skill/xiaoYan/lianQiHuaDan.mp3",
+                        "type": "faShu",
+                        "enable": "faShu",
+                        "position": "h",
+                        "selectCard": [1, Infinity],
+                        "discard": false,
+                        "lose": false,
+                        "filterCard": function(card, player) {
+                    return get.type(card, player) == 'faShu' &&
+                        lib.filter.cardDiscardable(card, player);
+                },
+                        "filter": function(event, player) {
+                    return player.countCards('h', function(card) {
+                        return lib.skill.lianQiHuaDan.filterCard(
+                            card,
+                            player
+                        );
+                    }) > 0;
+                },
+                        "canWinningSynthesis": function(event, player) {
+                    return !!(lib.skill._heCheng &&
+                        lib.skill._heCheng.filter(event, player) &&
+                        (get.shiQi(!player.side) <= 1 ||
+                            get.xingBei(player.side) + 1 >=
+                                game.xingBeiMax));
+                },
+                        "getAiExtraValue": function(player) {
+                    var value = player.countZhiShiWu('xiaoYanDouQi') < 5 ?
+                        1.1 : 0;
+                    var attacks = player.countCards('h', function(card) {
+                        return get.type(card, player) == 'gongJi';
+                    });
+                    if(attacks > 0) {
+                        value += 2.2;
+                        if(get.shiQi(!player.side) <= 3) value += 1.2;
+                    }
+                    return value;
+                },
+                        "shouldPayExtra": function(event, player) {
+                    var skill = lib.skill.lianQiHuaDan;
+                    if(!player.canBiShaShuiJing()) {
+                        return false;
+                    }
+                    var value = skill.getAiExtraValue(player);
+                    if(value <= 1.4 ||
+                        skill.canWinningSynthesis(event, player)) {
+                        return false;
+                    }
+                    return true;
+                },
+                        "content": async function(event, trigger, player) {
+                    var cards = (event.cards || []).filter(function(card) {
+                        return get.position(card) == 'h' &&
+                            get.type(card, player) == 'faShu' &&
+                            lib.filter.cardDiscardable(card, player);
+                    });
+                    var x = cards.length;
+                    if(!x) return;
+                    await player.discard(cards).set('showCards', true);
+                    await player.addZhiShiWu('xiaoYanDouQi', x);
+                    if(!player.canBiShaShuiJing()) return;
+                    var pay = await player.chooseBool(
+                        '【炼气化丹】：是否额外支付1【水晶】，再+1【斗气】、+1【攻击行动】？'
+                    )
+                        .set('ai', function() {
+                            return lib.skill.lianQiHuaDan.shouldPayExtra(
+                                _status.event,
+                                _status.event.player
+                            );
+                        }).forResultBool();
+                    if(!pay || !player.canBiShaShuiJing()) return;
+                    await player.removeBiShaShuiJing();
+                    await player.addZhiShiWu('xiaoYanDouQi', 1);
+                    player.addGongJi();
+                },
+                        "check": function(card) {
+                    var player = _status.event.player;
+                    var missing = Math.max(0,
+                        5 - player.countZhiShiWu('xiaoYanDouQi'));
+                    var extra = lib.skill.lianQiHuaDan
+                        .shouldPayExtra(_status.event, player);
+                    var desired = Math.max(1, missing - (extra ? 1 : 0));
+                    if(!desired || ui.selected.cards.length >= desired) {
+                        return -1;
+                    }
+                    return 7 - get.value(card, player);
+                },
+                        "ai": {
+                            "order": function(item, player) {
+                        var missing = Math.max(0,
+                            5 - player.countZhiShiWu('xiaoYanDouQi'));
+                        var extra = lib.skill.lianQiHuaDan
+                            .shouldPayExtra(_status.event, player);
+                        return missing > 0 || extra ? 5.2 : 0;
+                    },
+                            "result": {
+                                "player": function(player) {
+                            var missing = Math.max(0,
+                                5 - player.countZhiShiWu('xiaoYanDouQi'));
+                            return missing + lib.skill.lianQiHuaDan
+                                .getAiExtraValue(player) * 0.5;
+                        },
+                            },
+                        },
                     },
                     "fenJueLianHua": {
                         "nextFire": function(player) {
@@ -4363,7 +4555,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "gongZuoTai": "启动【工作台】",
                     "gongZuoTai_info": "<span class='tiaoJian'>（展示并弃置配方所需<span class='lan'>【素材】</span>）</span>制作1把可锻造的剑；将当前剑置于场外，新剑以满【耐久】置于面前。",
                     "zhanDouFuMo": "响应【战斗附魔】",
-                    "zhanDouFuMo_info": "<span class='tiaoJian'>（持剑攻击命中后②，弃置X张<span class='lan'>【素材】</span>；【金剑】或【下界合金剑】X可为1或2，否则X=1）</span>每系数量为Y：<br>雷：伤害+Y。　火：对目标造成Y点法术伤害③。<br>地：对另外Y名角色各造成等额法术伤害③。　水：发动Y+1次【采集】。<br>风：目标弃Y张手牌。　光：当前剑+（Y+1）【耐久】。<br>暗：你+（Y+1）【水晶】。",
+                    "zhanDouFuMo_info": "<span class='tiaoJian'>（持剑攻击命中后②，弃置X张<span class='lan'>【素材】</span>；【金剑】或【下界合金剑】X可为1或2，否则X=1）</span>每系数量为Y：<br>雷：伤害+Y。　火：对目标造成Y点法术伤害③。<br>地：对另外Y名角色各造成等额法术伤害③。　水：发动Y+1次【采集】。<br>风：选择1名角色弃Y张手牌。　光：当前剑+（Y+1）【耐久】。<br>暗：你+（Y+1）【水晶】。",
                     "jingYanXiuBu": "响应【经验修补】",
                     "jingYanXiuBu_info": "【水晶】<span class='tiaoJian'>（攻击命中后②，弃2张手牌）</span>当前剑+2【耐久】，不超过上限。",
                     "shiDiFuSuCai": "素材",
@@ -4448,6 +4640,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "baJiBeng_info": "<span class='tiaoJian'>（攻击命中后③，目标没有【暗劲】，移除1<span class='lan'>【斗气】</span>）</span>将专属卡【暗劲】置于攻击目标面前。",
                     "yanFenShiLangChi": "响应【焰分噬浪尺】",
                     "yanFenShiLangChi_info": "<span class='tiaoJian'>（已炼化至少1张【异火】，攻击命中后③，移除3<span class='lan'>【斗气】</span>）</span>选择攻击目标以外的另外两名角色，对其各造成X点法术伤害；X为已炼化【异火】数量÷2，向上取整。",
+                    "lianQiHuaDan": "法术【炼气化丹】",
+                    "lianQiHuaDan_info": "<span class='tiaoJian'>（弃置X张法术牌，X≥1）</span>+X<span class='lan'>【斗气】</span>；若你额外支付1【水晶】，再+1<span class='lan'>【斗气】</span>、+1【攻击行动】。",
                     "fenJueLianHua": "启动【焚诀·炼化】",
                     "fenJueLianHua_info": "依次炼化【青莲地心火】→【陨落心炎】→【骨灵冷火】：<br>青莲：【水晶】、2<span class='lan'>【斗气】</span>，自伤2。<br>陨落：【水晶】、3<span class='lan'>【斗气】</span>，自伤3。<br>骨灵：【宝石】、3<span class='lan'>【斗气】</span>，自伤4。<br>若自伤及爆牌令己方士气下降，炼化失败并返还1<span class='lan'>【斗气】</span>；否则放置对应【异火】，骨灵成功后失去此技能。",
                     "tianHuoSanXuanBian": "启动【天火三玄变】",
@@ -4486,7 +4680,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.8",
+            "version": "2.10",
         },
         "files": {
             "character": [
@@ -4550,6 +4744,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 "audio/skill/shiDiFu/zhanDouFuMo_guang.mp3",
                 "audio/skill/shiDiFu/zhanDouFuMo_an.mp3",
                 "audio/skill/shiDiFu/jingYanXiuBu.mp3",
+                "audio/skill/shiDiFu/jianYiGongJu.mp3",
+                "audio/skill/shiDiFu/jiSuHuiKan.mp3",
+                "audio/skill/shiDiFu/chenZhongGeDang.mp3",
+                "audio/skill/shiDiFu/wenDingFengRen.mp3",
+                "audio/skill/shiDiFu/zuanShiPoJia.mp3",
+                "audio/skill/shiDiFu/buHuiZhiFeng.mp3",
                 "audio/action/shiDiFu/gouMai.mp3",
                 "audio/action/shiDiFu/heCheng.mp3",
                 "audio/action/shiDiFu/tiLian.mp3",
@@ -4557,6 +4757,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 "audio/skill/xiaoYan/fenJue.mp3",
                 "audio/skill/xiaoYan/baJiBeng.mp3",
                 "audio/skill/xiaoYan/yanFenShiLangChi.mp3",
+                "audio/skill/xiaoYan/lianQiHuaDan.mp3",
                 "audio/skill/xiaoYan/qingLianDiXinHuo.mp3",
                 "audio/skill/xiaoYan/yunLuoXinYan.mp3",
                 "audio/skill/xiaoYan/guLingLengHuo.mp3",
