@@ -34,6 +34,35 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
         return player.storage.suoNaLastSong != song &&
             player.countZhiShiWu('suoNaHeXian') >= 2;
     }
+    function suoNaMatchingUniqueCount(player, song) {
+        var data = suoNaSongData[song];
+        if(!data) return 0;
+        return player.countCards('h', function(card) {
+            return lib.filter.cardDiscardable(card, player) &&
+                suoNaHasUnique(card, data.unique);
+        });
+    }
+    function suoNaSongOrder(player, song, base) {
+        var data = suoNaSongData[song];
+        var matching = suoNaMatchingUniqueCount(player, song);
+        var shareUseful = data && suoNaShareValue(player, data.echo);
+        var value = base;
+        if(matching > 0) {
+            value += 2.6 + Math.min(2, matching - 1) * 0.4;
+            if(shareUseful) value += 1.2;
+        }
+        else if(player.hasSkill('jiXingBianZou') &&
+            player.canBiShaShuiJing() &&
+            suoNaDiscardableCount(player) >= 2 && shareUseful) {
+            value += 0.7;
+        }
+        if(suoNaWillEmpower(player, song)) return value + 2.2;
+        if(player.storage.suoNaLastSong != song) {
+            var chord = player.countZhiShiWu('suoNaHeXian');
+            return value + 1.1 + chord * 0.3;
+        }
+        return value - 1.4;
+    }
     async function suoNaPrepareSong(event, player, song) {
         var parent = event.getParent();
         var different = player.storage.suoNaLastSong != song;
@@ -158,6 +187,400 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
         delete parent.suoNaSong;
         delete parent.suoNaEmpowered;
     }
+ // 巴德：状态与专属实体卡由同一管理器维护，所有附加行动保留来源。
+    function bardOpen(target) {
+        return target && target.isIn() && !target.hasSkill('baDeNingZhi');
+    }
+    function bardCards(target, tag, owner) {
+        return target.getExpansions(tag).filter(card =>
+            !owner || card.storage.baDeOwner === owner.playerid);
+    }
+    async function bardRemove(target, card, tag) {
+        await target.lose(card, ui.special).set('type', 'exclusiveCardRemove').set('getlx', false);
+        if(!bardCards(target, tag).length) target.unmarkSkill(tag);
+    }
+    async function bardPlace(target, card, tag) {
+        game.addGlobalSkill(tag);
+        const next = target.addToExpansion(card, 'gain2');
+        next.gaintag.add(tag);
+        await next;
+        return bardCards(target, tag).includes(card);
+    }
+    function bardInstall() {
+        if(lib.skill.baDeManager.installed) return;
+        lib.skill.baDeManager.installed = true;
+        // 原接口没有行动增加事件，因此在扩展内封装接口；未持有迟缓者完全走原流程。
+        for(const name of ['addGongJi', 'addFaShu', 'addGongJiOrFaShu', 'addExtraXingDong']) {
+            const original = lib.element.player[name];
+            lib.element.player[name] = function(...args) {
+                if(this.hasSkill('baDeChiHuan') &&
+                    (typeof args[0] !== 'number' || args[0] > 0)) return;
+                return original.apply(this, args);
+            };
+        }
+        // 通用目标入口同时覆盖牌、主动技能以及响应中的选目标。
+        for(const name of ['targetEnabled', 'targetEnabled2', 'targetEnabled3']) {
+            const original = lib.filter[name];
+            lib.filter[name] = function(card, source, target, ...rest) {
+                if(target && target.hasSkill('baDeNingZhi')) return false;
+                return original.call(this, card, source, target, ...rest);
+            };
+        }
+        const originalTrigger = lib.filter.filterTrigger;
+        lib.filter.filterTrigger = function(event, player, timing, skill, ...rest) {
+            if(player.hasSkill('baDeNingZhi') && !skill.startsWith('baDeNingZhi')) return false;
+            return originalTrigger.call(this, event, player, timing, skill, ...rest);
+        };
+        for(const name of ['chooseTarget', 'chooseCardTarget']) {
+            const original = lib.element.player[name];
+            lib.element.player[name] = function(...args) {
+                const next = original.apply(this, args);
+                const filter = next.filterTarget;
+                next.filterTarget = function(card, source, target) {
+                    return bardOpen(target) && (typeof filter === 'function' ?
+                        filter.apply(this, arguments) : filter !== false);
+                };
+                return next;
+            };
+        }
+        for(const info of Object.values(lib.skill)) {
+            if(!info || !info.filterTarget || info.baDeTargetWrapped) continue;
+            const filter = info.filterTarget;
+            info.filterTarget = function(card, source, target) {
+                return bardOpen(target) && (typeof filter === 'function' ?
+                    filter.apply(this, arguments) : filter === true);
+            };
+            info.baDeTargetWrapped = true;
+        }
+        ['youShenShengTanEffect', 'shenQiLvChengEffect', 'baDePortalAction']
+            .forEach(skill => game.addGlobalSkill(skill));
+        game.jiChuXiaoGuo.all.add('baDeChiHuan');
+    }
+    const bardSkills = {
+        baDeManager: {
+            trigger: {global: 'gameStart'}, forced: true, firstDo: true, priority: 100,
+            open: bardOpen,
+            cards: bardCards,
+            removeCard: bardRemove,
+            placeCard: bardPlace,
+            install: bardInstall,
+            content: function() { lib.skill.baDeManager.install(); },
+        },
+        tiaoHeZhiYin: {
+            intro: {name: '调和之音', content: 'mark', max: 5},
+            markimage: 'extension/峡谷幻音/mark_baDeTiaoHeZhiYin.png', onremove: 'storage',
+        },
+        muLing: {
+            intro: {name: '木灵', content: 'mark', max: 3},
+            markimage: 'extension/峡谷幻音/mark_baDeMuLing.png', onremove: 'storage',
+        },
+        youShenShengTanInfo: {markimage: 'extension/峡谷幻音/mark_baDeYouShenShengTan.png'},
+        shenQiLvChengInfo: {markimage: 'extension/峡谷幻音/mark_baDeShenQiLvCheng.png'},
+        baDeChiHuanInfo: {markimage: 'extension/峡谷幻音/mark_baDeChiHuan.png'},
+        baDeNingZhiInfo: {markimage: 'extension/峡谷幻音/mark_baDeNingZhi.png'},
+        baDeSanLuo: {
+            mark: true, markimage: 'extension/峡谷幻音/mark_baDeTiaoHeZhiYin.png', marktext: '音',
+            intro: {content: '散落的调和之音；巴德以你为目标完成行动后可以收集。'},
+            onremove: 'storage',
+        },
+        lvZheDeZhaoHuan: {
+            trigger: {global: 'gameStart', player: 'phaseEnd'},
+            forced: true,
+            content: async function(event, trigger, player) {
+                if(player.countZhiShiWu('tiaoHeZhiYin') >= 5) return;
+                const target = game.filterPlayer(p => lib.skill.baDeManager.open(p) && p !== player &&
+                    !p.hasSkill('baDeSanLuo')).randomGet();
+                if(target) target.addSkill('baDeSanLuo');
+            },
+            group: ['lvZheDeZhaoHuan_record', 'lvZheDeZhaoHuan_collect'],
+            subSkill: {
+                record: {
+                    trigger: {player: ['gongJiBefore', 'useSkillBefore', 'useCardBefore']},
+                    forced: true, popup: false,
+                    filter: event => event && event.yingZhan !== true,
+                    content: function(event, trigger, player) {
+                        let action = trigger;
+                        while(action && !get.is.xingDong(action)) {
+                            const parent = action.getParent && action.getParent();
+                            if(!parent || parent === action) return;
+                            action = parent;
+                        }
+                        if(!action || action.player !== player) return;
+                        action.baDeTargets = action.baDeTargets || [];
+                        for(const target of (trigger.targets || [trigger.target])) {
+                            if(target && target !== player && !action.baDeTargets.includes(target))
+                                action.baDeTargets.push(target);
+                        }
+                    },
+                },
+                collect: {
+                    audio: 'ext:峡谷幻音/audio/skill/baDe/lvZheDeZhaoHuan.mp3',
+                    trigger: {player: ['gongJiEnd', 'faShuEnd']}, forced: true,
+                    filter: (event, player) => event && event.yingZhan !== true &&
+                        get.is.xingDong(event) && !event.baDeCollected &&
+                        player.countZhiShiWu('tiaoHeZhiYin') < 5 &&
+                        (event.baDeTargets || []).some(p => lib.skill.baDeManager.open(p) && p.hasSkill('baDeSanLuo')),
+                    content: async function(event, trigger, player) {
+                        trigger.baDeCollected = true;
+                        const candidates = trigger.baDeTargets.filter(p => lib.skill.baDeManager.open(p) && p.hasSkill('baDeSanLuo'));
+                        const targets = await player.chooseTarget(true, '旅者的召唤：收集1个调和之音',
+                            (card, source, target) => _status.event.candidates.includes(target))
+                            .set('candidates', candidates).forResultTargets() || [];
+                        if(!targets.length) return;
+                        const before = player.countZhiShiWu('tiaoHeZhiYin');
+                        await player.addZhiShiWu('tiaoHeZhiYin', 1);
+                        if(player.countZhiShiWu('tiaoHeZhiYin') > before) targets[0].removeSkill('baDeSanLuo');
+                    },
+                },
+            },
+        },
+        muLingSuiXing: {
+            audio: 'ext:峡谷幻音/audio/skill/baDe/muLingSuiXing.mp3',
+            trigger: {global: 'gameStart', player: ['faShuEnd', 'phaseBegin']},
+            forced: true,
+            filter: function(event, player) {
+                if(event.triggername === 'gameStart') {
+                    return player.countZhiShiWu('muLing') < 1;
+                }
+                if(event.triggername === 'phaseBegin') {
+                    return player.countZhiShiWu('tiaoHeZhiYin') >= 3 &&
+                        player.countZhiShiWu('muLing') < 3;
+                }
+                return event && get.is.xingDong(event) && player.countZhiShiWu('muLing') < 3;
+            },
+            content: async function(event, trigger, player) {
+                await player.addZhiShiWu('muLing', 1);
+            },
+        },
+        muLingZhuiJi: {
+            audio: 'ext:峡谷幻音/audio/skill/baDe/muLingZhuiJi.mp3',
+            trigger: {source: 'gongJiMingZhong'},
+            filter: (event, player) => event &&
+                lib.skill.baDeManager.open(event.target) && player.countZhiShiWu('muLing') > 0,
+            check: (event, player) => get.damageEffect2(event.target, player, 1) > 0,
+            content: async function(event, trigger, player) {
+                const target = trigger.target;
+                await player.removeZhiShiWu('muLing', 1);
+                const damage = target.faShuDamage(1, player, 'nocard').set('baDeMeepSource', player.playerid);
+                await damage;
+                if(player.countZhiShiWu('tiaoHeZhiYin') >= 5 && damage.baDeMeepActual === true && lib.skill.baDeManager.open(target))
+                    target.addSkill('baDeChiHuan');
+                if(player.countZhiShiWu('tiaoHeZhiYin') < 3) return;
+                const neighbours = [target.getNext(), target.getPrevious()];
+                if(!neighbours.some(p => lib.skill.baDeManager.open(p) && p !== target && p.side !== player.side)) return;
+                const picked = await player.chooseTarget('木灵追击：可以对相邻的一名其他对手造成1点法术伤害',
+                    (card, source, p) => lib.skill.baDeManager.open(p) && p.side !== source.side &&
+                        _status.event.neighbours.includes(p))
+                    .set('neighbours', neighbours).set('ai', p => get.damageEffect2(p, player, 1))
+                    .forResultTargets() || [];
+                if(picked.length) await picked[0].faShuDamage(1, player, 'nocard');
+            },
+            group: 'muLingZhuiJi_actual',
+            subSkill: {
+                actual: {
+                    trigger: {source: 'chengShouShangHaiAfter'}, forced: true, popup: false,
+                    filter: (event, player) => event && event.baDeMeepSource === player.playerid && event.num > 0,
+                    content: function(event, trigger) { trigger.baDeMeepActual = true; },
+                },
+            },
+        },
+        xingJieShuFu: {
+            audio: 'ext:峡谷幻音/audio/skill/baDe/xingJieShuFu.mp3',
+            type: 'faShu', enable: 'faShu', position: 'h', selectCard: 1, discard: true, showCards: true,
+            filter: (event, player) => player.countCards('h', function(card) {
+                return get.type(card) === 'faShu' && lib.filter.cardDiscardable(card, player);
+            }) > 0 && game.hasPlayer(function(target) {
+                return target.side !== player.side && lib.skill.baDeManager.open(target);
+            }),
+            filterCard: (card, player) => get.type(card) === 'faShu' && lib.filter.cardDiscardable(card, player),
+            filterTarget: (card, player, target) => lib.skill.baDeManager.open(target) && target.side !== player.side,
+            content: async function(event, trigger, player) {
+                const target = event.target;
+                await target.faShuDamage(1, player, 'nocard');
+                if(!lib.skill.baDeManager.open(target)) return;
+                if(target.countCards('x') > 0 || target.jiChuXiaoGuoList().length > 0 ||
+                    target.getSkills().some(id => lib.skill[id]?.intro?.nocount)) {
+                    await player.useCard(game.createCard2('xuRuo'), target);
+                    return;
+                }
+                const neighbours = [target.getNext(), target.getPrevious()];
+                if(!neighbours.some(p => lib.skill.baDeManager.open(p) && p !== target && p.side !== player.side)) return;
+                const picked = await player.chooseTarget('星界束缚：选择相邻的第二名对手',
+                    (card, source, p) => lib.skill.baDeManager.open(p) && p.side !== source.side &&
+                        _status.event.neighbours.includes(p)).set('neighbours', neighbours)
+                    .set('ai', p => get.damageEffect2(p, player, 1)).forResultTargets() || [];
+                if(!picked.length) return;
+                await picked[0].faShuDamage(1, player, 'nocard');
+                for(const p of [target, picked[0]].sortBySeat(player)) {
+                    if(lib.skill.baDeManager.open(p)) await player.useCard(game.createCard2('xuRuo'), p);
+                }
+            },
+            ai: {order: 4, result: {target: -2}},
+        },
+        youShenShengTan: {
+            audio: 'ext:峡谷幻音/audio/skill/baDe/youShenShengTan.mp3',
+            type: 'faShu', enable: 'faShu', position: 'h', selectCard: 1, discard: true,
+            filter: (event, player) => player.countCards('h', function(card) {
+                return lib.filter.cardDiscardable(card, player) && card && typeof card.hasDuYou === 'function' &&
+                    (card.hasDuYou('zhiLiaoShu') || card.hasDuYou('zhiYuZhiGuang'));
+            }) > 0,
+            filterCard: (card, player) => lib.filter.cardDiscardable(card, player) && card &&
+                typeof card.hasDuYou === 'function' && (card.hasDuYou('zhiLiaoShu') || card.hasDuYou('zhiYuZhiGuang')),
+            filterTarget: (card, player, target) => lib.skill.baDeManager.open(target) && target.side === player.side &&
+                !lib.skill.baDeManager.cards(target, 'youShenShengTanEffect', player).length,
+            content: async function(event, trigger, player) {
+                const card = game.createCard2('youShenShengTanKa');
+                card.storage.baDeOwner = player.playerid;
+                card.storage.baDeCharged = false;
+                await lib.skill.baDeManager.placeCard(event.target, card, 'youShenShengTanEffect');
+            },
+            group: 'youShenShengTan_charge',
+            subSkill: {charge: {
+                trigger: {player: 'phaseBegin'}, forced: true, priority: 10,
+                content: function(event, trigger, player) {
+                    for(const target of game.filterPlayer()) {
+                        for(const card of lib.skill.baDeManager.cards(target, 'youShenShengTanEffect', player)) {
+                            game.broadcastAll(function(card) { card.storage.baDeCharged = true; }, card);
+                        }
+                        target.updateMarks();
+                    }
+                },
+            }},
+            ai: {order: 3, result: {target: 1}},
+        },
+        youShenShengTanEffect: {
+            charlotte: true, intro: {name: '游神圣坛', content: 'expansion', markcount: 'expansion'},
+            trigger: {player: ['phaseBegin', 'chengShouShangHaiAfter'], target: 'gongJiMingZhong'},
+            forced: true, popup: false,
+            filter: (event, player, timing) => lib.skill.baDeManager.cards(player, 'youShenShengTanEffect').length > 0 &&
+                (timing === 'phaseBegin' || (timing === 'gongJiMingZhong' ?
+                    event.source && event.source.side !== player.side :
+                    event.num > 0 && event.source && event.source !== player)),
+            content: async function(event, trigger, player) {
+                const destroy = event.triggername === 'gongJiMingZhong';
+                const chooser = destroy ? trigger.source : player;
+                for(const card of lib.skill.baDeManager.cards(player, 'youShenShengTanEffect')) {
+                    const yes = await chooser.chooseBool(destroy ? '是否摧毁目标的游神圣坛？' :
+                        '是否使用游神圣坛？' + (card.storage.baDeCharged ? '（已充能）' : '（未充能）'))
+                        .set('ai', () => destroy || player.zhiLiao < player.getZhiLiaoLimit())
+                        .forResultBool();
+                    if(!yes) continue;
+                    const charged = card.storage.baDeCharged;
+                    await lib.skill.baDeManager.removeCard(player, card, 'youShenShengTanEffect');
+                    if(destroy) continue;
+                    await player.changeZhiLiao(charged ? 2 : 1);
+                    if(charged) await player.chooseToDiscard('h', 1, '游神圣坛：可以弃置1张手牌');
+                }
+            },
+        },
+        shenQiLvCheng: {
+            audio: 'ext:峡谷幻音/audio/skill/baDe/shenQiLvCheng.mp3',
+            type: 'faShu', enable: 'faShu', usable: 1,
+            filter: (event, player) => player.canBiShaShuiJing(),
+            filterTarget: (card, player, target) => lib.skill.baDeManager.open(target) && target !== player && target.side === player.side,
+            content: async function(event, trigger, player) {
+                const direction = await player.chooseControl('左', '右').set('prompt', '神奇旅程：选择方向')
+                    .set('ai', () => '右').forResultControl();
+                await player.removeBiShaShuiJing();
+                const card = game.createCard2('shenQiLvChengKa');
+                card.storage.baDeOwner = player.playerid;
+                card.storage.baDeDirection = direction === '左' ? 'getPrevious' : 'getNext';
+                card.storage.baDeTrips = 0;
+                await lib.skill.baDeManager.placeCard(event.target, card, 'shenQiLvChengEffect');
+            },
+            ai: {shuiJing: true, order: 3.2, result: {target: 1}},
+        },
+        shenQiLvChengEffect: {
+            charlotte: true, intro: {name: '神奇旅程', content: 'expansion', markcount: 'expansion'},
+            trigger: {player: 'phaseBegin'}, forced: true, popup: false,
+            filter: (event, player) => lib.skill.baDeManager.cards(player, 'shenQiLvChengEffect').length > 0,
+            content: async function(event, trigger, player) {
+                for(const card of lib.skill.baDeManager.cards(player, 'shenQiLvChengEffect')) {
+                    const choice = await player.chooseControl('攻击行动', '法术行动', '不使用')
+                        .set('prompt', '神奇旅程：选择额外行动')
+                        .set('ai', () => player.hasSkill('baDeChiHuan') ? '不使用' :
+                            (player.countCards('h', c => get.type(c) === 'gongJi') ? '攻击行动' : '法术行动'))
+                        .forResultControl();
+                    await lib.skill.baDeManager.removeCard(player, card, 'shenQiLvChengEffect');
+                    if(choice === '不使用') continue;
+                    player.storage.baDePortalPending = player.storage.baDePortalPending || [];
+                    player.storage.baDePortalPending.push(choice === '攻击行动' ? 'gongJi' : 'faShu');
+                    if(card.storage.baDeTrips !== 0) continue;
+                    card.storage.baDeTrips = 1;
+                    let next = player;
+                    for(let i = 0; i < game.players.length; i++) {
+                        next = next[card.storage.baDeDirection]();
+                        if(!next || next === player) break;
+                        if(next.side !== player.side) {
+                            if(lib.skill.baDeManager.open(next)) await lib.skill.baDeManager.placeCard(next, card, 'shenQiLvChengEffect');
+                            break;
+                        }
+                    }
+                }
+            },
+        },
+        baDePortalAction: {
+            charlotte: true, trigger: {player: ['xingDongBefore', 'gongJiEnd', 'faShuEnd', 'teShuEnd', 'phaseEnd']},
+            forced: true, popup: false,
+            filter: (event, player) => !!player.storage.baDePortalPending || !!player.storage.baDePortalGranted,
+            content: function(event, trigger, player) {
+                const timing = event.triggername;
+                if(timing === 'xingDongBefore') {
+                    const pending = player.storage.baDePortalPending || [];
+                    delete player.storage.baDePortalPending;
+                    player.storage.baDePortalGranted = [];
+                    for(const type of pending) {
+                        if(player.hasSkill('baDeChiHuan')) continue;
+                        player[type === 'gongJi' ? 'addGongJi' : 'addFaShu']();
+                        player.storage.baDePortalGranted.push(type);
+                    }
+                } else if(timing === 'teShuEnd' || timing === 'phaseEnd') {
+                    for(const type of player.storage.baDePortalGranted || [])
+                        player.storage[type] = Math.max(0, (player.storage[type] || 0) - 1);
+                    delete player.storage.baDePortalGranted;
+                    delete player.storage.baDePortalPending;
+                } else if(get.is.xingDong(trigger) && trigger.yingZhan !== true) {
+                    const phase = trigger.getParent('xingDong');
+                    const grants = player.storage.baDePortalGranted || [];
+                    if(phase && !phase.extraXingDong) {
+                        const index = grants.indexOf(phase.xingDong);
+                        if(index >= 0) grants.splice(index, 1);
+                    }
+                }
+            },
+        },
+        tiaoHeMingYun: {
+            audio: 'ext:峡谷幻音/audio/skill/baDe/tiaoHeMingYun.mp3',
+            type: 'faShu', enable: 'faShu', selectTarget: [1, 2], multitarget: true, multiline: true,
+            filter: (event, player) => player.countNengLiang('baoShi') >= 2,
+            filterTarget: (card, player, target) => lib.skill.baDeManager.open(target),
+            content: async function(event, trigger, player) {
+                await player.removeNengLiang('baoShi', 2);
+                for(const target of event.targets) if(lib.skill.baDeManager.open(target)) target.addSkill('baDeNingZhi');
+            },
+            ai: {baoShi: true, order: 4.5, result: {target: (player, target) =>
+                target.side === player.side ? (target.countCards('h') >= target.getHandcardLimit() ? 2 : -1) : -1}},
+        },
+        baDeChiHuan: {
+            mark: true, markimage: 'extension/峡谷幻音/mark_baDeChiHuan.png', marktext: '缓', intro: {content: '不能获得额外攻击或法术行动；自己的回合结束时移除。'},
+            trigger: {player: 'phaseEnd'}, forced: true, popup: false,
+            content: function(event, trigger, player) { player.removeSkill('baDeChiHuan'); },
+        },
+        baDeNingZhi: {
+            charlotte: true, mark: true, markimage: 'extension/峡谷幻音/mark_baDeNingZhi.png', marktext: '滞',
+            intro: {content: '不可被指定，不受伤害，其他技能暂停；下个回合开始前解除。'},
+            init: player => player.addSkillBlocker('baDeNingZhi'),
+            onremove: player => player.removeSkillBlocker('baDeNingZhi'),
+            skillBlocker: skill => !skill.startsWith('baDeNingZhi'),
+            mod: {targetEnabled: () => false},
+            trigger: {player: ['phaseBefore', 'damageBefore', 'chengShouShangHaiBefore']},
+            forced: true, firstDo: true, priority: 10000,
+            content: function(event, trigger, player) {
+                if(event.triggername === 'phaseBefore') player.removeSkill('baDeNingZhi');
+                else { trigger.num = 0; trigger.cancel(); }
+            },
+        },
+    };
     return {
         "name": "峡谷幻音",
         "arenaReady": function(){
@@ -179,7 +602,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     charlotte: true,
                     firstDo: true,
                     filter: function(event, player) {
-                        return ['tiMo', 'suoNa', 'yaTuoKeSi'].some(function(id) {
+                        return ['baDe', 'tiMo', 'suoNa', 'yaTuoKeSi'].some(function(id) {
                             return player.name == id || player.name1 == id ||
                                 player.name2 == id;
                         });
@@ -189,7 +612,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         if(!['gouMai', 'heCheng', 'tiLian'].includes(action)) {
                             return;
                         }
-                        var character = ['tiMo', 'suoNa', 'yaTuoKeSi']
+                        var character = ['baDe', 'tiMo', 'suoNa', 'yaTuoKeSi']
                             .find(function(id) {
                                 return player.name == id || player.name1 == id ||
                                     player.name2 == id;
@@ -217,6 +640,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "character": {
                 "connect": true,
                 "character": {
+                    "baDe": [null, "yongGroup", 5, ["baDeManager", "lvZheDeZhaoHuan", "muLingSuiXing", "muLingZhuiJi", "xingJieShuFu", "youShenShengTan", "shenQiLvCheng", "tiaoHeMingYun", "muLing", "tiaoHeZhiYin", "baDeChiHuanInfo", "youShenShengTanInfo", "shenQiLvChengInfo", "baDeNingZhiInfo"], ["des:循钟声收集调和之音的星界游神，以木灵、圣坛、通道与凝滞维护星界秩序。"]],
                     "tiMo": [
                         null,
                         "huanGroup",
@@ -283,17 +707,27 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "无名拓展": "无名拓展",
                     "峡谷幻音": "峡谷幻音",
                     "tiMo": "提莫",
+                    "baDe": "巴德",
                     "suoNa": "娑娜",
                     "yaTuoKeSi": "亚托克斯",
                 },
             },
             "card": {
-                "card": {},
-                "translate": {},
+                "card": {
+                    "youShenShengTanKa": {type: 'special', enable: false},
+                    "shenQiLvChengKa": {type: 'special', enable: false},
+                },
+                "translate": {
+                    "youShenShengTanKa": "游神圣坛",
+                    "youShenShengTanKa_info": "回合开始或承受其他角色实际伤害后可使用；未充能+1治疗，已充能+2治疗并可弃1张手牌。对手攻击命中后可摧毁。",
+                    "shenQiLvChengKa": "神奇旅程",
+                    "shenQiLvChengKa_info": "回合开始时可获得1个额外行动；首次使用后沿记录方向交给第一名对手，第二次使用或拒绝时返回场外。",
+                },
                 "list": [],
             },
             "skill": {
                 "skill": {
+                    ...bardSkills,
                     "qinYinGongMing": {
                         "audio": "ext:峡谷幻音/audio/skill/suoNa/qinYinGongMing.mp3",
                         "locked": true,
@@ -331,8 +765,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "ai": {
                             "order": function(item, player) {
-                                return suoNaWillEmpower(player, 'yingYongZanMeiShi') ?
-                                    6.2 : 4.2;
+                                return suoNaSongOrder(
+                                    player, 'yingYongZanMeiShi', 4.8
+                                );
                             },
                             "result": {
                                 "target": function(player, target) {
@@ -367,14 +802,18 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "ai": {
                             "order": function(item, player) {
-                                return suoNaWillEmpower(player, 'jianYiYongTanDiao') ?
-                                    7 : 5;
+                                return suoNaSongOrder(
+                                    player, 'jianYiYongTanDiao', 5
+                                );
                             },
                             "result": {
                                 "target": function(player, target) {
                                     var missing = Math.max(0, 2 - target.zhiLiao);
                                     if(!missing) return 0;
-                                    return target.side == player.side ? 1 + missing : -1;
+                                    var value = 0.8 + missing;
+                                    if(player.storage.suoNaLastSong !=
+                                        'jianYiYongTanDiao') value += 0.5;
+                                    return target.side == player.side ? value : -1;
                                 },
                             },
                         },
@@ -423,16 +862,24 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "ai": {
                             "order": function(item, player) {
-                                return suoNaWillEmpower(player, 'xunJieZouMingQu') ?
-                                    6.5 : 4.5;
+                                return suoNaSongOrder(
+                                    player, 'xunJieZouMingQu', 4.8
+                                );
                             },
                             "result": {
                                 "target": function(player, target) {
                                     if(target.side != player.side) return -1;
                                     var excess = target.countCards('h') -
                                         target.getHandcardLimit();
-                                    return 0.5 + Math.max(0, excess) +
-                                        target.countCards('h') * 0.08;
+                                    var value = 0.6 +
+                                        target.countCards('h') * 0.15 +
+                                        Math.max(0, excess) * 1.8;
+                                    if(player.storage.suoNaLastSong !=
+                                        'xunJieZouMingQu') value += 0.6;
+                                    if(suoNaWillEmpower(
+                                        player, 'xunJieZouMingQu'
+                                    )) value += 0.3;
+                                    return value;
                                 },
                             },
                         },
@@ -1510,8 +1957,41 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }).forResult();
                 },
                         "content": function(event, trigger, player) {
+                    trigger.anYingChongJue = true;
                     trigger.wuFaYingZhan();
                     trigger.changeDamageNum(-2);
+                },
+                    "group": [
+                    "anYingChongJue_qiPai",
+                ],
+                    "subSkill": {
+                    "qiPai": {
+                        "trigger": {
+                            "source": "gongJiMingZhongAfter",
+                        },
+                        "forced": true,
+                        "filter": function(event, player) {
+                            return !!event &&
+                                event.anYingChongJue === true &&
+                                player.countCards('h', function(card) {
+                                    return lib.filter.cardDiscardable(
+                                        card,
+                                        player,
+                                        event
+                                    );
+                                }) > 0;
+                        },
+                        "content": async function(event, trigger, player) {
+                            await player.chooseToDiscard(
+                                'h',
+                                1,
+                                true,
+                                '暗影冲决：弃置1张手牌'
+                            ).set('ai', function(card) {
+                                return 8 - get.value(card);
+                            });
+                        },
+                    },
                 },
                     },
                     "daMie": {
@@ -1530,7 +2010,6 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                         "content": async function(event, trigger, player) {
                     await player.removeBiShaBaoShi();
-                    await player.faShuDamage(2, player, 'nocard');
                     await player.hengZhi();
                     player.addSkill('mieJueXingTaiZhuangTai');
                 },
@@ -1801,6 +2280,42 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     },
                 },
                 "translate": {
+                    "lvZheDeZhaoHuan": "被动【旅者的召唤】",
+                    "lvZheDeZhaoHuan_info": "<span class='tiaoJian'>（游戏开始时及你的回合结束时，若<span class='lan'>【调和之音】</span>未满）</span>随机在一名没有散落<span class='lan'>【调和之音】</span>的其他角色面前放置1个。<span class='tiaoJian'>（以其为目标完成攻击或法术行动后）</span>收集其<span class='lan'>【调和之音】</span>，每次行动至多1个。",
+                    "xingJieShuFu": "法术【星界束缚】",
+                    "xingJieShuFu_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>指定一名对手，对其造成1点法术伤害③。若其面前有基础效果、盖牌或专属卡，为其使用1张【虚弱】；否则可以指定其左右相邻的一名其他对手，对其造成1点法术伤害③，然后为两名目标各使用1张【虚弱】。",
+                    "youShenShengTan": "法术【游神圣坛】",
+                    "youShenShengTan_info": "弃置一张【治疗术】或【治愈之光】，选择一名我方角色，放置1张【游神圣坛】；同一角色至多拥有1张你的【游神圣坛】。<span class='tiaoJian'>（你的回合开始时）</span>已有的【游神圣坛】全部充能。",
+                    "youShenShengTanInfo": "专属【游神圣坛】",
+                    "youShenShengTanInfo_info": "<span class='tiaoJian'>（拥有者回合开始时或承受其他角色造成的实际伤害后⑤）</span>可以移除此卡：未充能时+1【治疗】；已充能时+2【治疗】，然后可以弃置1张手牌。<span class='tiaoJian'>（对手攻击命中拥有者后②）</span>攻击者可以摧毁此卡，不结算上述效果。",
+                    "shenQiLvCheng": "法术【神奇旅程】",
+                    "shenQiLvCheng_info": "【回合限定】【水晶】选择一名其他我方角色及左或右方向，放置【神奇旅程】。",
+                    "shenQiLvChengInfo": "专属【神奇旅程】",
+                    "shenQiLvChengInfo_info": "<span class='tiaoJian'>（拥有者回合开始时）</span>可以使用此卡，选择+1【攻击行动】或+1【法术行动】。首次使用后，沿记录方向转移给第一名对手；第二次使用或拒绝使用后，返回场外。未使用的额外行动在执行【特殊行动】时失效。",
+                    "tiaoHeMingYun": "法术【调和命运】",
+                    "tiaoHeMingYun_info": "【宝石】×2，指定一至两名任意阵营角色（可以选择自己），令其获得【凝滞】。",
+                    "youShenShengTanEffect": "专属【游神圣坛】",
+                    "youShenShengTanEffect_info": "<span class='tiaoJian'>（拥有者回合开始时或承受其他角色造成的实际伤害后⑤）</span>可以移除此卡：未充能时+1【治疗】；已充能时+2【治疗】，然后可以弃置1张手牌。<span class='tiaoJian'>（对手攻击命中拥有者后②）</span>攻击者可以摧毁此卡，不结算上述效果。",
+                    "shenQiLvChengEffect": "专属【神奇旅程】",
+                    "shenQiLvChengEffect_info": "<span class='tiaoJian'>（拥有者回合开始时）</span>可以使用此卡，选择+1【攻击行动】或+1【法术行动】。首次使用后，沿记录方向转移给第一名对手；第二次使用或拒绝使用后，返回场外。未使用的额外行动在执行【特殊行动】时失效。",
+                    "baDeChiHuan": "迟缓",
+                    "baDeChiHuan_info": "不能获得额外【攻击行动】或【法术行动】。<span class='tiaoJian'>（自己的回合结束时）</span>移除。",
+                    "baDeNingZhi": "凝滞",
+                    "baDeNingZhi_info": "不能成为攻击、法术或其他角色技能的目标，不能发动或触发其他技能，不受伤害；原有牌与资源保留。<span class='tiaoJian'>（下个回合开始前）</span>解除。",
+                    "baDeManager": "星界游神",
+                    "tiaoHeZhiYin": "专属【调和之音】",
+                    "tiaoHeZhiYin_info": "巴德的专属指示物，上限为5。散落的<span class='lan'>【调和之音】</span>位于其他角色面前，每名角色至多1个。",
+                    "muLing": "木灵",
+                    "muLing_info": "巴德的专属指示物，上限为3。",
+                    "muLingSuiXing": "被动【木灵随行】",
+                    "muLingSuiXing_info": "<span class='tiaoJian'>（游戏开始时）</span>+1<span class='lan'>【木灵】</span>。<span class='tiaoJian'>（法术行动结束后）</span>+1<span class='lan'>【木灵】</span>。<span class='tiaoJian'>（若你的【调和之音】不少于3，回合开始时）</span>+1<span class='lan'>【木灵】</span>。",
+                    "muLingZhuiJi": "响应【木灵追击】",
+                    "muLingZhuiJi_info": "<span class='tiaoJian'>（攻击命中后②）</span>可以移除1<span class='lan'>【木灵】</span>，对目标造成1点法术伤害③；<span class='tiaoJian'>（<span class='lan'>【调和之音】</span>不少于3时）</span>可以再对其相邻的一名其他对手造成1点法术伤害③；<span class='tiaoJian'>（<span class='lan'>【调和之音】</span>为5且首目标实际承受伤害后⑤）</span>令其获得【迟缓】。",
+                    "baDeChiHuanInfo": "专属【迟缓】",
+                    "baDeChiHuanInfo_info": "不能获得额外【攻击行动】或【法术行动】。<span class='tiaoJian'>（自己的回合结束时）</span>移除。",
+                    "baDeNingZhiInfo": "专属【凝滞】",
+                    "baDeNingZhiInfo_info": "不能成为攻击、法术或其他角色技能的目标，不能发动或触发其他技能，不受伤害；原有牌与资源保留。<span class='tiaoJian'>（下个回合开始前）</span>解除。",
+                    "baDeSanLuo": "散落的调和之音",
                     "qinYinGongMing": "被动【琴音共鸣】",
                     "qinYinGongMing_info": "<span class='tiaoJian'>（你演奏一种乐章时）</span>若与上一次演奏的乐章不同，+1<span class='lan'>【和弦】</span>。若因此达到3，移除全部<span class='lan'>【和弦】</span>，强化本次乐章，并在结算后+1【攻击行动】。",
                     "yingYongZanMeiShi": "法术【英勇赞美诗】",
@@ -1864,25 +2379,32 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "eHuoShuLianKa": "(专)【恶火束链】",
                     "eHuoShuLianKa_info": "全场上限为1。持有者应战攻击伤害-1；<span class='tiaoJian'>（其回合结束时）</span>移除。",
                     "anYingChongJue": "响应【暗影冲决】",
-                    "anYingChongJue_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①）</span>本次攻击无法被应战，但伤害-2。",
+                    "anYingChongJue_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①）</span>本次攻击无法被应战，但伤害-2；命中后弃置1张手牌【强制】。",
                     "daMie": "启动【大灭】",
-                    "daMie_info": "【宝石】<span class='tiaoJian'>（【普通形态】下，<span class='hong'>【血祭】</span>＞0）</span>对自己造成2点法术伤害③，然后【横置】并进入【灭绝形态】。",
+                    "daMie_info": "【宝石】<span class='tiaoJian'>（【普通形态】下，<span class='hong'>【血祭】</span>＞0）</span>【横置】并进入【灭绝形态】。",
                 },
             },
-            "intro": "添加角色提莫、娑娜、亚托克斯。",
+            "intro": "添加角色提莫、娑娜、亚托克斯、巴德。",
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.6",
+            "version": "1.9",
         },
         "files": {
             "character": [
+                "baDe.jpg",
                 "tiMo.jpg",
                 "suoNa.jpg",
                 "yaTuoKeSi.jpg",
             ],
             "card": [],
             "skill": [
+                "mark_baDeTiaoHeZhiYin.png",
+                "mark_baDeMuLing.png",
+                "mark_baDeYouShenShengTan.png",
+                "mark_baDeShenQiLvCheng.png",
+                "mark_baDeChiHuan.png",
+                "mark_baDeNingZhi.png",
                 "mark_tiMoZhongMoGuKa.png",
                 "mark_suoNaHeXian.png",
                 "mark_suoNaYingYongYuYin.png",
@@ -1893,6 +2415,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 "mark_eHuoShuLianKa.png",
             ],
             "audio": [
+                "audio/skill/baDe/lvZheDeZhaoHuan.mp3",
+                "audio/skill/baDe/muLingSuiXing.mp3",
+                "audio/skill/baDe/muLingZhuiJi.mp3",
+                "audio/skill/baDe/xingJieShuFu.mp3",
+                "audio/skill/baDe/youShenShengTan.mp3",
+                "audio/skill/baDe/shenQiLvCheng.mp3",
+                "audio/skill/baDe/tiaoHeMingYun.mp3",
+                "audio/action/baDe/gouMai.mp3",
+                "audio/action/baDe/heCheng.mp3",
+                "audio/action/baDe/tiLian.mp3",
                 "audio/skill/tiMo/yinXingDeChiBang.mp3",
                 "audio/skill/tiMo/zhiMangChuiJian.mp3",
                 "audio/skill/tiMo/xiaoMoKuaiPao.mp3",
