@@ -111,7 +111,17 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             'prompt',
                             '请选择本次1【宝石】费用的支付方式'
                         ).set('ai', function() {
-                            return '支付1【宝石】';
+                            var player = _status.event.player;
+                            var cards = player.getExpansions(
+                                'tianQiZheTianShiZhuFu'
+                            );
+                            var expires = cards.some(function(card) {
+                                return card.storage &&
+                                    card.storage.tianQiZhiZhuToken;
+                            });
+                            return expires ||
+                                player.countNengLiang('baoShi') <= 1 ?
+                                '发动【天使祝福】' : '支付1【宝石】';
                         }).forResultControl();
                         useBlessing =
                             control == '发动【天使祝福】';
@@ -180,6 +190,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "nianZhiAoYi",
                             "qianLianNuFang",
                             "nianQi",
+                            "huaShi",
                         ],
                         [
                             "des:以念气淬炼身体、守护同伴的格斗家。她能在进攻与支援之间切换，并在念气彻底绽放时令千莲席卷全场。",
@@ -784,7 +795,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "player": "teShuEnd",
                             "source": "gongJiMingZhong",
                         },
-                        "forced": true,
+                        "round": 1,
                         "filter": function(event, player, name) {
                     if(player.countZhiShiWu('nianQi') < 1) return false;
                     if(name == 'gongJiMingZhong') {
@@ -792,8 +803,27 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                     return name == 'teShuEnd';
                 },
+                        "cost": async function(event, trigger, player) {
+                    var targets = await player.chooseTarget(
+                        '烈日光辉：令一名我方角色+1【治疗】',
+                        function(card, player, target) {
+                            return target.isIn() &&
+                                target.side == player.side;
+                        }
+                    ).set('ai', function(target) {
+                        return get.zhiLiaoEffect(target, 1);
+                    }).forResultTargets() || [];
+                    event.result = {
+                        bool: targets.length > 0,
+                        targets: targets,
+                    };
+                },
                         "content": async function(event, trigger, player) {
                     await player.removeZhiShiWu('nianQi', 1);
+                    var target = event.targets && event.targets[0];
+                    if(target && target.isIn()) {
+                        await target.changeZhiLiao(1, player);
+                    }
                 },
                     },
                     "guangZhiQinHe": {
@@ -803,9 +833,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         return num + 1;
                     },
                             "targetEnabled": function(card, source, target) {
-                        if(game.jiChuXiaoGuo.all.includes(get.name(card))) {
-                            return false;
-                        }
+                        var name = get.name(card);
+                        return name != 'xuRuo' && name != 'zhongDu';
                             },
                         },
                         "subSkill": {
@@ -834,7 +863,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                         "filter": function(event, player) {
                     if(!game.hasPlayer(function(current) {
-                        return current != player;
+                        return current.side != player.side;
                     })) return false;
                     return player.countCards('h', function(card) {
                         return lib.filter.cardDiscardable(card, player) &&
@@ -842,7 +871,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }) > 0;
                 },
                         "filterTarget": function(card, player, target) {
-                    return target != player;
+                    return target.isIn() && target.side != player.side;
                 },
                         "content": async function(event, trigger, player) {
                     var target = event.target;
@@ -869,50 +898,66 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "luanWuQianYeHua": {
                         "audio": "ext:创世纪/audio/skill/baiHuaLiaoLuan/luanWuQianYeHua.mp3",
                         "trigger": {
-                            "player": "chengShouShangHaiAfter",
+                            "player": "chengShouShangHaiBefore",
                         },
+                        "round": 1,
                         "filter": function(event, player) {
-                    return !!event &&
+                    return player.countZhiShiWu('nianQi') > 0 &&
+                        !!event &&
+                        event.player == player &&
                         event.num > 0 &&
                         !!event.source &&
                         event.source != player;
                 },
                         "cost": async function(event, trigger, player) {
-                    var controls = [];
-                    if(player.countZhiShiWu('nianQi') > 0) {
-                        controls.push('移除1【念气】，+1【治疗】');
-                    }
-                    controls.push('摸1张牌，然后+2【念气】');
-                    controls.push('cancel2');
-                    var control = await player.chooseControl(controls)
-                        .set('prompt', '是否发动【乱舞·千叶花】？')
-                        .set('ai', function() {
-                            var player = _status.event.player;
-                            if(player.countZhiShiWu('nianQi') > 0 &&
-                                player.zhiLiao < player.getZhiLiaoLimit()) {
-                                return '移除1【念气】，+1【治疗】';
-                            }
-                            if(player.countCards('h') + 1 <=
-                                player.getHandcardLimit()) {
-                                return '摸1张牌，然后+2【念气】';
-                            }
-                            return 'cancel2';
-                        })
-                        .forResultControl();
-                    event.result = {
-                        bool: !!control && control != 'cancel2',
-                        cost_data: control,
-                    };
+                    event.result = await player.chooseBool(
+                        '是否移除1【念气】，使此次伤害-1？'
+                    ).set('ai', function() {
+                        var trigger = _status.event.getTrigger();
+                        return !!trigger && trigger.num > 0;
+                    }).forResult();
                 },
                         "content": async function(event, trigger, player) {
-                    if(event.cost_data == '移除1【念气】，+1【治疗】') {
-                        await player.removeZhiShiWu('nianQi', 1);
-                        await player.changeZhiLiao(1, player);
-                    } else if(event.cost_data == '摸1张牌，然后+2【念气】') {
-                        await player.draw(1);
-                        await lib.skill.nianQi.addNianQi(player, 2);
+                    await player.removeZhiShiWu('nianQi', 1);
+                    trigger.changeDamageNum(-1);
+                    if(trigger.num <= 0) {
+						player.storage.luanWuQianYeHua_zengShang = true;
                     }
                 },
+					"onremove": function(player) {
+						delete player.storage.luanWuQianYeHua_zengShang;
+					},
+					"group": [
+						"luanWuQianYeHua_zengShang",
+					],
+					"subSkill": {
+							"zengShang": {
+								"charlotte": true,
+								"trigger": {
+                                    "source": "zaoChengShangHai",
+                                },
+                                "forced": true,
+                                "filter": function(event, player) {
+							return !!event &&
+									player.storage.luanWuQianYeHua_zengShang === true &&
+									event.num > 0 &&
+									event.source == player &&
+								(event.faShu === true ||
+									event.yingZhan === true ||
+									(function() {
+										var card = event.card;
+										if(!card && event.getParent) {
+											card = event.getParent().card;
+										}
+										return !!card && get.type(card) == 'gongJi';
+									})());
+                        },
+                                "content": function(event, trigger, player) {
+							delete player.storage.luanWuQianYeHua_zengShang;
+							trigger.changeDamageNum(1);
+                        },
+                            },
+                        },
                     },
                     "nianQiZhao": {
                         "audio": "ext:创世纪/audio/skill/baiHuaLiaoLuan/nianQiZhao.mp3",
@@ -925,34 +970,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     if(!canPay) return false;
                     return game.hasPlayer(function(target) {
                         return target.side == player.side &&
-                            target.countCards('he', function(card) {
-                                return lib.filter.cardDiscardable(
-                                    card,
-                                    target
-                                );
-                            }) > 0 &&
                             get.zhiLiaoEffect(target, 2) > 0;
                     });
                 },
                         "filter": function(event, player) {
                     return game.hasPlayer(function(current) {
-                        return current.side == player.side &&
-                            current.countCards('he', function(card) {
-                                return lib.filter.cardDiscardable(
-                                    card,
-                                    current
-                                );
-                            }) > 0;
+                        return current.side == player.side;
                     });
                 },
                         "filterTarget": function(card, player, target) {
-                    return target.side == player.side &&
-                        target.countCards('he', function(current) {
-                            return lib.filter.cardDiscardable(
-                                current,
-                                target
-                            );
-                        }) > 0;
+                    return target.isIn() && target.side == player.side;
                 },
                         "content": async function(event, trigger, player) {
                     var selectedTarget = event.target;
@@ -984,12 +1011,21 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         selectedTarget.countCards('he', function(card) {
                             return lib.filter.cardDiscardable(card, selectedTarget);
                         }) > 0) {
-                        await selectedTarget.chooseToDiscard(
-                            'he',
-                            1,
-                            true,
-                            '念气罩：弃置1张牌'
-                        );
+                        var discard = await selectedTarget.chooseBool(
+                            '念气罩：是否弃置1张牌？'
+                        ).set('ai', function() {
+                            var target = _status.event.player;
+                            return target.countCards('h') >
+                                target.getHandcardLimit();
+                        }).forResultBool();
+                        if(discard) {
+                            await selectedTarget.chooseToDiscard(
+                                'he',
+                                1,
+                                true,
+                                '念气罩：弃置1张牌'
+                            );
+                        }
                     }
                 },
                         "ai": {
@@ -1054,97 +1090,48 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "type": "faShu",
                         "enable": "faShu",
                         "filter": function(event, player) {
+                    if(player.hasSkill('qianLianNuFangZhuangTai')) {
+                        return player.countZhiShiWu('huaShi') >= 5;
+                    }
                     return player.canBiShaShuiJing() &&
-                        player.countZhiShiWu('nianQi') >= 3 &&
-                        player.countCards('h', function(card) {
-                            return lib.filter.cardDiscardable(card, player);
-                        }) > 0;
+                        player.countZhiShiWu('nianQi') >= 3;
                 },
                         "content": async function(event, trigger, player) {
-                    var qiCount = player.countZhiShiWu('nianQi');
-                    var qiChoices = [];
-                    for(var i = 3; i <= qiCount; i++) {
-                        qiChoices.push(String(i));
+                    if(player.hasSkill('qianLianNuFangZhuangTai')) {
+                        await player.removeSkill('qianLianNuFangZhuangTai');
+                        var flower = player.countZhiShiWu('huaShi');
+                        if(flower > 0) {
+                            await player.removeZhiShiWu('huaShi', flower);
+                        }
+                        var targets = game.filterPlayer(function(current) {
+                            return current.isIn() &&
+                                current.side != player.side;
+                        }).sortBySeat(player);
+                        for(var target of targets) {
+                            await target.faShuDamage(3, player);
+                        }
+                        return;
                     }
-                    var recommended = String(Math.min(6, qiCount));
-                    var qiControl = await player.chooseControl(qiChoices)
-                        .set('prompt', '千莲怒放：选择移除的【念气】数量')
-                        .set('choice', recommended)
-                        .set('ai', function() {
-                            return _status.event.choice;
-                        })
-                        .forResultControl();
-                    var qiNum = parseInt(qiControl);
-                    if(!qiNum || qiNum < 3) return;
-
-                    var handcards = player.getCards('h').filter(function(card) {
-                        return lib.filter.cardDiscardable(card, player);
-                    });
-                    var xiBieCount = {};
-                    handcards.forEach(function(card) {
-                        var xiBie = get.xiBie(card);
-                        xiBieCount[xiBie] = (xiBieCount[xiBie] || 0) + 1;
-                    });
-                    var maxCards = Math.max.apply(null, Object.values(xiBieCount));
-                    var cards = await player.chooseCard(
-                        'h',
-                        [1, maxCards],
-                        '千莲怒放：弃置至少1张彼此同系的牌【展示】',
-                        true
-                    ).set('filterCard', function(card, player) {
-                        if(!lib.filter.cardDiscardable(card, player)) return false;
-                        if(!ui.selected.cards.length) return true;
-                        return get.xiBie(card) == get.xiBie(ui.selected.cards[0]);
-                    }).set('complexCard', true)
-                        .set('ai', function(card) {
-                            return 6 - get.value(card);
-                        })
-                        .forResultCards();
-                    if(!cards.length) return;
-
                     await player.removeBiShaShuiJing();
-                    await player.removeZhiShiWu('nianQi', qiNum);
-                    await player.discard(cards).set('showCards', true);
-
-                    var targets = game.filterPlayer(function(current) {
-                        return current != player;
-                    }).sortBySeat(player);
-                    var selfDamage = Math.min(4, qiNum + cards.length);
-                    var otherDamage = Math.min(4, qiNum - 2);
-                    await player.faShuDamage(selfDamage, player);
-                    for(var target of targets) {
-                        if(target.isIn()) {
-                            await target.faShuDamage(otherDamage, player);
-                        }
+                    await player.removeZhiShiWu('nianQi', 3);
+                    var flower = player.countZhiShiWu('huaShi');
+                    if(flower > 0) {
+                        await player.removeZhiShiWu('huaShi', flower);
                     }
-
-                    if(player.isIn() && player.countZhiShiWu('nianQi') >= 3) {
-                        var addGem = await player.chooseBool(
-                            '是否额外移除3【念气】，+1【宝石】？'
-                        ).set('ai', function() {
-                            var player = _status.event.player;
-                            var qi = player.countZhiShiWu('nianQi');
-                            var gems = player.countNengLiang('baoShi');
-                            var enemyMorale = get.shiQi(!player.side);
-                            // 没有宝石时优先完成资源转换；已有宝石时保留
-                            // 足够发动技能/维持行动链的念气，除非已接近斩杀。
-                            return gems == 0 || qi >= 5 || enemyMorale <= 2;
-                        }).forResultBool();
-                        if(addGem) {
-                            await player.removeZhiShiWu('nianQi', 3);
-                            await player.addNengLiang('baoShi', 1);
-                        }
-                    }
+                    player.addSkill('qianLianNuFangZhuangTai');
                 },
                         "ai": {
                             "shuiJing": true,
                             "order": 3.9,
                             "result": {
                                 "player": function(player) {
-                            return game.countPlayer(function(current) {
-                                return current != player &&
-                                    get.damageEffect2(current, player, 2) > 0;
-                            }) - 2;
+                            if(player.hasSkill('qianLianNuFangZhuangTai')) {
+                                return game.countPlayer(function(current) {
+                                    return current.side != player.side &&
+                                        get.damageEffect2(current, player, 3) > 0;
+                                });
+                            }
+                            return -1;
                         },
                             },
                         },
@@ -1164,6 +1151,63 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     if(num <= 0) return;
                     await player.addZhiShiWu('nianQi', num);
                 },
+                    },
+                    "huaShi": {
+                        "intro": {
+                            "name": "花势",
+                            "content": "mark",
+                            "max": 5,
+                        },
+					"onremove": "storage",
+					"markimage": "extension/创世纪/mark_huaShi.png",
+					"addHuaShi": async function(player, num) {
+                    if(!player ||
+                        !player.hasSkill('qianLianNuFangZhuangTai')) return;
+                    if(typeof num != 'number') num = 1;
+                    if(num <= 0) return;
+                    await player.addZhiShiWu('huaShi', num);
+                },
+                    },
+                    "qianLianNuFangZhuangTai": {
+                        "charlotte": true,
+                        "group": [
+                            "qianLianNuFangZhuangTai_zengJia",
+                            "qianLianNuFangZhuangTai_jianShao",
+                        ],
+                        "subSkill": {
+                            "zengJia": {
+                                "trigger": {
+                                    "source": "chengShouShangHaiAfter",
+                                },
+                                "forced": true,
+                                "filter": function(event, player) {
+                            return !!event &&
+                                event.num > 0 &&
+                                event.faShu === true &&
+                                event.player &&
+                                event.player != player;
+                        },
+                                "content": async function(event, trigger, player) {
+                            await lib.skill.huaShi.addHuaShi(player, 1);
+                        },
+                            },
+                            "jianShao": {
+                                "trigger": {
+                                    "player": "chengShouShangHaiAfter",
+                                },
+                                "forced": true,
+                                "filter": function(event, player) {
+                            return !!event &&
+                                event.num > 0 &&
+                                event.card &&
+                                player.countZhiShiWu('huaShi') > 0 &&
+                                get.name(event.card) == 'anMie';
+                        },
+                                "content": async function(event, trigger, player) {
+                            await player.removeZhiShiWu('huaShi', 1);
+                        },
+                            },
+                        },
                     },
                     "faMiLiErShiYanShi": {
                         "trigger": {
@@ -2336,10 +2380,18 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 target.side == player.side;
                         }
                     ).set('ai', function(target) {
-                        return get.attitude(
-                            _status.event.player,
-                            target
-                        );
+                        var player = _status.event.player;
+                        var room = target.countEmptyNengLiang ?
+                            target.countEmptyNengLiang() : 1;
+                        var score = room > 0 ? 2.5 : -1;
+                        if(target.countNengLiang('baoShi') == 0) {
+                            score += 0.8;
+                        }
+                        score += Math.max(0,
+                            target.getHandcardLimit() -
+                            target.countCards('h')) * 0.15;
+                        return get.attitude(player, target) > 0 ?
+                            score : -score;
                     }).forResultTargets();
                     event.result = {
                         bool: targets.length > 0,
@@ -2387,7 +2439,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 );
                         }
                     ).set('showCards', true).set('ai', function(card) {
-                        return 6 - get.value(card);
+                        var player = _status.event.player;
+                        var trigger = _status.event.getTrigger();
+                        var target = trigger && trigger.player;
+                        if(!target || target.side == player.side) return -1;
+                        var damage = get.damageEffect2(target, player, 1);
+                        if(get.shiQi(target.side) <= 1) damage += 6;
+                        return damage - get.value(card) * 0.65;
                     }).forResult();
                 },
                         "content": async function(event, trigger, player) {
@@ -2407,7 +2465,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         lib.filter.cardDiscardable(card, player);
                 },
                         "check": function(card) {
-                    return 7 - get.value(card);
+                    var player = _status.event.player;
+                    var best = lib.skill.tianQiZheZhuFu
+                        .getAiBestBlessing(player);
+                    if(!best) return -1;
+                    return best.score - get.value(card) * 0.7;
                 },
                         "filter": function(event, player) {
                     if(!player.countCards('h', function(card) {
@@ -2429,6 +2491,24 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         lib.skill.tianQiZheZhuFuManager
                             .getAvailableCards(target).length > 0;
                 },
+                        "getAiMinDiscardValue": function(player, sacredOnly) {
+                    var value = Infinity;
+                    player.getCards('h', function(card) {
+                        return lib.filter.cardDiscardable(card, player) &&
+                            (!sacredOnly || get.mingGe(card) == 'sheng');
+                    }).forEach(function(card) {
+                        value = Math.min(value, get.value(card, player));
+                    });
+                    return value == Infinity ? 10 : value;
+                },
+                        "hasAiBaoShiSkill": function(player) {
+                    var skills = player.getSkills ?
+                        player.getSkills() : (player.skills || []);
+                    return skills.some(function(skill) {
+                        var info = lib.skill[skill];
+                        return info && info.ai && info.ai.baoShi;
+                    });
+                },
                         "getAiBlessingScore": function(player, target, skill) {
                     if(!target || target == player ||
                         target.side != player.side) return -100;
@@ -2437,44 +2517,59 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var healing = target.zhiLiao || 0;
                     var healingLimit = target.getZhiLiaoLimit();
                     var healingRoom = Math.max(0, healingLimit - healing);
+                    var attacks = target.countCards('h', function(card) {
+                        return get.type(card, target) == 'gongJi';
+                    });
+                    var canAttack = !target.canGongJi || target.canGongJi();
                     if(skill == 'shouHuHuiZhang') {
-                        // 防止攻击伤害也等于减少后续摸牌与爆牌压力。
-                        return 2.2 + (healing == 0 ? 1.5 : 0) +
-                            Math.max(0, hand - handLimit + 2) * 0.5;
+                        return 3.2 + (healing == 0 ? 2 : 0) +
+                            (get.shiQi(target.side) <= 4 ? 1.2 : 0) +
+                            Math.max(0, hand - handLimit + 1) * 0.6;
                     }
                     if(skill == 'wuQiZhuFu') {
-                        return 1.4 + Math.min(3, target.countCards(
-                            'h',
-                            function(card) {
-                                return get.type(card, target) == 'gongJi';
-                            }
-                        )) * 0.7;
+                        return 1.2 + Math.min(3, attacks) * 0.55 +
+                            (healingRoom == 0 ? 0.4 : 0);
                     }
                     if(skill == 'rongYuZhuFu') {
-                        return 1.8 + Math.min(3, target.countCards(
-                            'h',
-                            function(card) {
-                                return get.type(card, target) == 'gongJi';
-                            }
-                        )) * 0.8;
+                        return 1.3 + (canAttack ? 0.8 : -0.8) +
+                            Math.min(3, attacks) * 0.9 +
+                            (get.shiQi(!target.side) <= 4 ? 0.8 : 0);
                     }
                     if(skill == 'tianQiZheTianShiZhuFu') {
-                        var score = 1.8;
-                        var skills = target.getSkills ?
-                            target.getSkills() : (target.skills || []);
-                        for(var i = 0; i < skills.length; i++) {
-                            var info = lib.skill[skills[i]];
-                            if(info && info.ai && info.ai.baoShi) {
-                                score += 2.5;
-                                break;
-                            }
-                        }
+                        var needsGem = lib.skill.tianQiZheZhuFu
+                            .hasAiBaoShiSkill(target);
+                        var score = needsGem ? 4.5 : 0.4;
                         if(target.countNengLiang('baoShi') == 0) {
-                            score += 0.8;
+                            score += needsGem ? 1.5 : 0;
                         }
                         return score;
                     }
                     return 0;
+                },
+                        "getAiBestBlessing": function(player) {
+                    var best = null;
+                    game.filterPlayer(function(target) {
+                        return target != player && target.side == player.side;
+                    }).forEach(function(target) {
+                        lib.skill.tianQiZheZhuFuManager
+                            .getAvailableCards(target)
+                            .forEach(function(skill) {
+                                var score = lib.skill.tianQiZheZhuFu
+                                    .getAiBlessingScore(
+                                        player,
+                                        target,
+                                        skill
+                                    );
+                                if(!best || score > best.score) {
+                                    best = {
+                                        target: target,
+                                        skill: skill,
+                                        score: score,
+                                    };
+                                }
+                            });
+                    });
+                    return best;
                 },
                         "content": async function(event, trigger, player) {
                     var available =
@@ -2541,7 +2636,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                 },
                         "ai": {
-                            "order": 6,
+                            "order": function(item, player) {
+                        var best = lib.skill.tianQiZheZhuFu
+                            .getAiBestBlessing(player);
+                        if(!best) return 0;
+                        return best.score >= 4 ? 7 : 4.5;
+                    },
                             "result": {
                                 "target": function(player, target) {
                             var available = lib.skill
@@ -2559,7 +2659,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                         )
                                 );
                             }
-                            return best;
+                            var cost = lib.skill.tianQiZheZhuFu
+                                .getAiMinDiscardValue(player, true);
+                            return best - cost * 0.7;
                         },
                             },
                         },
@@ -2568,9 +2670,24 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "audio": "ext:创世纪/audio/skill/tianQiZhe/shengYuZhiFeng.mp3",
                         "type": "faShu",
                         "enable": "faShu",
-                        "isSafeForAi": function(player) {
-                    return player.countCards('h') + 2 <=
-                        player.getHandcardLimit();
+                        "getAiValue": function(player) {
+                    var handRoom = player.getHandcardLimit() -
+                        player.countCards('h');
+                    var overflow = Math.max(0, 2 - Math.max(0, handRoom));
+                    var healValue = 0;
+                    game.filterPlayer(function(target) {
+                        return target.side == player.side;
+                    }).forEach(function(target) {
+                        if(target.zhiLiao < target.getZhiLiaoLimit()) {
+                            healValue += get.zhiLiaoEffect2(
+                                target,
+                                player,
+                                1
+                            );
+                        }
+                    });
+                    var drawCost = 2.2 + overflow * 2.5;
+                    return healValue - drawCost;
                 },
                         "content": async function(event, trigger, player) {
                     await player.draw(2);
@@ -2583,13 +2700,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                         "ai": {
                             "order": function(item, player) {
-                        return lib.skill.shengYuZhiFeng
-                            .isSafeForAi(player) ? 3.5 : 0;
+                        var value = lib.skill.shengYuZhiFeng
+                            .getAiValue(player);
+                        return value > 0.6 ? (value >= 3 ? 6.2 : 3.2) : 0;
                     },
                             "result": {
                                 "player": function(player) {
                             return lib.skill.shengYuZhiFeng
-                                .isSafeForAi(player) ? 1 : -100;
+                                .getAiValue(player) - 0.6;
                         },
                             },
                         },
@@ -2630,11 +2748,35 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     });
                     await event.target.changeZhiLiao(1, player);
                 },
+                        "getAiTargetValue": function(player, target) {
+                    if(target.side != player.side || target == player ||
+                        target.zhiLiao >= target.getZhiLiaoLimit()) {
+                        return -100;
+                    }
+                    var cost = lib.skill.tianQiZheZhuFu
+                        .getAiMinDiscardValue(target) * 0.55;
+                    var gain = get.zhiLiaoEffect2(target, player, 1);
+                    var reserve = player.countZhiLiao() <= 1 ? 1.8 : 0.5;
+                    if(player.zhiLiao == player.getZhiLiaoLimit()) {
+                        reserve -= 0.4;
+                    }
+                    return gain - cost - reserve;
+                },
                         "ai": {
-                            "order": 3.7,
+                            "order": function(item, player) {
+                        var best = -100;
+                        game.filterPlayer(function(target) {
+                            return target.side == player.side;
+                        }).forEach(function(target) {
+                            best = Math.max(best, lib.skill.kuaiSuYuHe
+                                .getAiTargetValue(player, target));
+                        });
+                        return best > 0.3 ? 5 : 0;
+                    },
                             "result": {
                                 "target": function(player, target) {
-                            return target.side == player.side ? 1 : -1;
+                            return lib.skill.kuaiSuYuHe
+                                .getAiTargetValue(player, target);
                         },
                             },
                         },
@@ -2669,9 +2811,43 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             get.xingBei(player.side) + 1 >= game.xingBeiMax)) {
                         return false;
                     }
-                    return game.countPlayer(function(target) {
+                    return lib.skill.tianQiZhiZhu.getAiValue(player) >= 5;
+                },
+                        "getAiValue": function(player) {
+                    var enemies = game.filterPlayer(function(target) {
+                        return target.side != player.side;
+                    });
+                    var aoeValue = 0;
+                    enemies.forEach(function(target) {
+                        aoeValue += Math.max(0,
+                            get.damageEffect2(target, player, 1));
+                    });
+                    var expectedTriggers = 0;
+                    var immediateValue = 0;
+                    game.filterPlayer(function(target) {
                         return target.side == player.side;
-                    }) >= 2;
+                    }).forEach(function(target) {
+                        var attacks = target.countCards('h', function(card) {
+                            return get.type(card, target) == 'gongJi';
+                        });
+                        var active = (!target.canGongJi ||
+                            target.canGongJi()) && attacks > 0 ? 0.7 : 0.15;
+                        var response = attacks > 0 ? 0.35 : 0.1;
+                        var shield = target.zhiLiao == 0 ? 0.7 : 0.45;
+                        var angel = lib.skill.tianQiZheZhuFu
+                            .hasAiBaoShiSkill(target) ? 0.65 : 0.05;
+                        expectedTriggers += active + response +
+                            shield + angel;
+                        immediateValue += active * 2.2 + response * 1.7 +
+                            shield * 2.3 + angel * 2;
+                    });
+                    var value = immediateValue +
+                        expectedTriggers * aoeValue - 4.5;
+                    if(expectedTriggers > 0 && enemies.some(function(target) {
+                        return get.shiQi(target.side) <=
+                            Math.max(1, Math.floor(expectedTriggers));
+                    })) value += 8;
+                    return value;
                 },
                         "content": async function(event, trigger, player) {
                     await player.removeNengLiang('baoShi', 2);
@@ -2912,7 +3088,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     return lib.skill.tianQiZheZhuFuManager
                         .hasCard(player, 'shouHuHuiZhang') &&
                         event.target == player &&
-                        event.num > 0;
+                        typeof event.damageNum == 'number' &&
+                        event.damageNum > 0;
                 },
                         "content": async function(event, trigger, player) {
                     lib.skill.tianQiZheZhuFuManager.recordTrigger(
@@ -2924,7 +3101,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         'shouHuHuiZhang'
                     );
                     trigger.changeDamageNum(
-                        -Math.min(2, trigger.num)
+                        -Math.min(2, trigger.damageNum)
                     );
                 },
                         "intro": {
@@ -3544,18 +3721,20 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "xuanWenFaShe_info": "<span class='tiaoJian'>（主动攻击造成实际伤害时⑤，移除最新的1【炫纹】）</span>按其系别结算：<br>水：目标弃1张牌。<br>火：对目标造成1点法术伤害③。<br>暗：对目标造成2点法术伤害③。<br>光：+1【攻击行动】或【法术行动】。",
                     "nianQi": "念气",
                     "nianQi_info": "<span class='hong'>【念气】</span>为百花缭乱专属指示物，上限为8。",
+                    "huaShi": "花势",
+                    "huaShi_info": "<span class='hong'>【花势】</span>为百花缭乱专属指示物，上限为5，仅在【千莲绽放】期间使用。",
                     "nianQiHuanRao": "被动【念气环绕】",
                     "nianQiHuanRao_info": "<span class='tiaoJian'>（你的【法术行动】结束后）</span>+1<span class='hong'>【念气】</span>。",
                     "lieRiGuangHui": "被动【烈日光辉】",
-                    "lieRiGuangHui_info": "<span class='tiaoJian'>（你的【特殊行动】结束后，或你的主动攻击命中后②）</span>若你有<span class='hong'>【念气】</span>，移除1<span class='hong'>【念气】</span>。",
+                    "lieRiGuangHui_info": "<span class='tiaoJian'>（你的主动攻击命中后②，或你的特殊行动结束后）</span>若你有<span class='hong'>【念气】</span>，可移除1<span class='hong'>【念气】</span>，令一名我方角色+1【治疗】。每回合限一次。",
                     "guangZhiQinHe": "被动【光之亲和】",
-                    "guangZhiQinHe_info": "你的【治疗】上限+1；你不能成为基础效果牌的目标。",
+                    "guangZhiQinHe_info": "你的【治疗】上限+1；你不能成为【虚弱】或【中毒】的目标。",
                     "nianQiBo": "法术【念气波】",
-                    "nianQiBo_info": "<span class='tiaoJian'>（弃置1张法术牌或咏类命格牌【展示】，指定另一名角色）</span>对你与目标角色各造成2点法术伤害③，随后+1<span class='hong'>【念气】</span>。",
+                    "nianQiBo_info": "<span class='tiaoJian'>（弃置1张法术牌或咏类命格牌【展示】，指定一名对手）</span>你与目标各受到2点法术伤害③，然后+1<span class='hong'>【念气】</span>。",
                     "luanWuQianYeHua": "响应【乱舞·千叶花】",
-                    "luanWuQianYeHua_info": "<span class='tiaoJian'>（其他角色对你造成伤害后）</span>选择一项：移除1<span class='hong'>【念气】</span>，+1【治疗】；或摸1张牌【强制】，+2<span class='hong'>【念气】</span>。",
+                    "luanWuQianYeHua_info": "<span class='tiaoJian'>（承受其他角色造成的伤害前）</span>若有<span class='hong'>【念气】</span>，可移除1<span class='hong'>【念气】</span>，令此次伤害-1；若此次伤害因此降为0，你下一次攻击伤害或法术伤害+1。",
                     "nianQiZhao": "法术【念气罩】",
-                    "nianQiZhao_info": "选择一名有可弃置牌的我方角色，再选择一项：移除2<span class='hong'>【念气】</span>；或摸2张牌【强制】。随后该角色+2【治疗】并弃1张牌。",
+                    "nianQiZhao_info": "选择一名我方角色，可以选择自己，再选择一项：移除2<span class='hong'>【念气】</span>；或摸2张牌【强制】。随后目标+2【治疗】，目标可以弃置1张牌。",
                     "nianZhiAoYi": "启动【念之奥义】",
                     "nianZhiAoYi_info": "【持续】【宝石】<span class='tiaoJian'>（移除全部【治疗】）</span>将手牌补至上限【强制】，然后【横置】。<br>本回合不能获得<span class='hong'>【念气】</span>；<span class='tiaoJian'>（【法术行动】结束后）</span>若有<span class='hong'>【念气】</span>，移除1<span class='hong'>【念气】</span>，+1【法术行动】；回合结束时【重置】。<br>直到你的下个回合开始前，对方士气最少为1【强制】。",
                     "nianZhiAoYi_effect": "念之奥义",
@@ -3563,7 +3742,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "nianZhiAoYi_shiQi": "念之奥义·士气保护",
                     "nianZhiAoYi_shiQi_info": "直到百花缭乱的下个回合开始前，对方士气最少为1【强制】。",
                     "qianLianNuFang": "法术【千莲怒放】",
-                    "qianLianNuFang_info": "【水晶】<span class='tiaoJian'>（移除A<span class='hong'>【念气】</span>并弃置B张同系牌【展示】，A≥3，B≥1）</span>对自己造成A+B点法术伤害③，对其他角色各造成A-2点法术伤害③，每次伤害至多为4。<span class='tiaoJian'>（结算后）</span>可以再移除3<span class='hong'>【念气】</span>，+1【宝石】。",
+                    "qianLianNuFang_info": "<span class='tiaoJian'>（没有【千莲绽放】时）</span>【水晶】<span class='tiaoJian'>（移除3<span class='hong'>【念气】</span>）</span>进入【千莲绽放】，将<span class='hong'>【花势】</span>置为0；<span class='tiaoJian'>（已有【千莲绽放】且<span class='hong'>【花势】</span>为5时）</span>移除【千莲绽放】，清空<span class='hong'>【花势】</span>，对所有对手各造成3点法术伤害③。",
+                    "qianLianNuFangZhuangTai": "千莲绽放",
+                    "qianLianNuFangZhuangTai_info": "<span class='tiaoJian'>（你对其他角色造成法术伤害后）</span>+1<span class='hong'>【花势】</span>；<span class='tiaoJian'>（你受到【暗灭】造成的伤害后）</span>-1<span class='hong'>【花势】</span>，最低为0；状态持续至下次发动并完成<span class='hong'>【花势】</span>达到5的【千莲怒放】。",
                     "shiYanCaiLiao": "实验材料",
                     "shiYanCaiLiao_info": "<span class='lan'>【实验材料】</span>为露米娅的专属盖牌，上限为3。露米娅可以查看牌面，其他角色只能看到数量。",
                     "luMiYaYanJiu": "研究",
@@ -3609,7 +3790,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "rongYuZhuFu": "荣誉祝福",
                     "rongYuZhuFu_info": "<span class='tiaoJian'>（拥有者的主动攻击命中时②）</span>移除此卡，本次主动攻击伤害额外+2。",
                     "shouHuHuiZhang": "守护徽章",
-                    "shouHuHuiZhang_info": "<span class='tiaoJian'>（拥有者被攻击命中时②）</span>若当前伤害＞0，移除此卡，令本次攻击伤害-2，最低为0。",
+                    "shouHuHuiZhang_info": "<span class='tiaoJian'>（拥有者被攻击命中时②，包括主动攻击与应战攻击）</span>若当前伤害＞0，移除此卡，令本次攻击伤害-2，最低为0。",
                     "wuQiZhuFu": "武器祝福",
                     "wuQiZhuFu_info": "<span class='tiaoJian'>（拥有者的应战攻击命中时②）</span>移除此卡，本次攻击伤害+2。",
                     "tianQiZheTianShiZhuFu": "天使祝福",
@@ -3661,6 +3842,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             ],
             "skill": [
                 "mark_nianQi.png",
+                "mark_huaShi.png",
                 "mark_luMiYaYanJiu.png",
                 "mark_xueQi.png",
                 "mark_xueShaXingTai.png",
