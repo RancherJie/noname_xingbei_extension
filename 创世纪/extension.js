@@ -1,4 +1,206 @@
-game.import("extension", function(lib, game, ui, get, ai, _status) {
+/* AUDIO_PACK_RUNTIME_BEGIN */
+/* Audio JSON runtime v2. Source: tools/audio-pack/runtime.js; bundled into each extension. */
+(function (root) {
+    'use strict';
+    if (root.NonameAudioPacks && root.NonameAudioPacks.format === 2) return;
+    function sha256(bytes) {
+        var k = [], h = [], n = 2;
+        while (k.length < 64) {
+            var prime = true;
+            for (var d = 2; d * d <= n; d++) if (n % d === 0) { prime = false; break; }
+            if (prime) {
+                if (h.length < 8) h.push((Math.sqrt(n) % 1 * 4294967296) | 0);
+                k.push((Math.pow(n, 1 / 3) % 1 * 4294967296) | 0);
+            }
+            n++;
+        }
+        var length = Math.ceil((bytes.length + 9) / 64) * 64;
+        var padded = new Uint8Array(length);
+        padded.set(bytes); padded[bytes.length] = 128;
+        var view = new DataView(padded.buffer);
+        view.setUint32(length - 8, Math.floor(bytes.length / 536870912));
+        view.setUint32(length - 4, (bytes.length * 8) >>> 0);
+        function r(x, c) { return (x >>> c) | (x << (32 - c)); }
+        for (var offset = 0; offset < length; offset += 64) {
+            var w = new Int32Array(64);
+            for (var i = 0; i < 64; i++) {
+                if (i < 16) w[i] = view.getInt32(offset + i * 4);
+                else {
+                    var x = w[i - 15], y = w[i - 2];
+                    w[i] = (w[i - 16] + (r(x, 7) ^ r(x, 18) ^ (x >>> 3)) + w[i - 7] + (r(y, 17) ^ r(y, 19) ^ (y >>> 10))) | 0;
+                }
+            }
+            var a = h[0], b = h[1], c = h[2], dd = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+            for (i = 0; i < 64; i++) {
+                var t1 = (hh + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + k[i] + w[i]) | 0;
+                var t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+                hh = g; g = f; f = e; e = (dd + t1) | 0; dd = c; c = b; b = a; a = (t1 + t2) | 0;
+            }
+            [a, b, c, dd, e, f, g, hh].forEach(function (v, j) { h[j] = (h[j] + v) | 0; });
+        }
+        return h.map(function (v) { return ('00000000' + (v >>> 0).toString(16)).slice(-8); }).join('');
+    }
+    async function hash(bytes) {
+        if (root.crypto && root.crypto.subtle) {
+            var value = new Uint8Array(await root.crypto.subtle.digest('SHA-256', bytes));
+            return Array.from(value).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+        }
+        return sha256(bytes);
+    }
+    function ascii(text) {
+        var bytes = new Uint8Array(text.length);
+        for (var i = 0; i < text.length; i++) {
+            if (text.charCodeAt(i) > 127) throw new Error('音频 JSON 不是原始 ASCII 数据');
+            bytes[i] = text.charCodeAt(i);
+        }
+        return bytes;
+    }
+    function safe(path) {
+        if (typeof path !== 'string' || /[\\:\x00-\x1f]/.test(path) || path.split('/').some(function (p) { return !p || p === '.' || p === '..'; })) throw new Error('非法音频路径: ' + path);
+        return path;
+    }
+    function buffer(value) {
+        return ArrayBuffer.isView(value) ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength) : new Uint8Array(value);
+    }
+    // Cordova's writeFile does not truncate a previously longer file. Truncate only
+    // after writing, then verify the actual bytes with the client's readFile API.
+    async function truncateCordova(path, length) {
+        if (typeof root.resolveLocalFileSystemURL !== 'function') return;
+        var base = root.localStorage.getItem('noname_inited');
+        if (!base || base === 'nodejs') return;
+        await new Promise(function (resolve, reject) {
+            root.resolveLocalFileSystemURL(base + path, function (entry) {
+                entry.createWriter(function (writer) {
+                    writer.onerror = reject;
+                    writer.onwriteend = resolve;
+                    writer.truncate(length);
+                }, reject);
+            }, reject);
+        });
+    }
+    function notice(name) {
+        if (!root.document) return { update: function () {}, remove: function () {} };
+        var node = root.document.createElement('div');
+        node.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.9);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;white-space:pre-wrap;text-align:center;';
+        node.textContent = name + '：正在检查音频资源…';
+        (root.document.body || root.document.documentElement).appendChild(node);
+        return {
+            update: function (done, total) { node.textContent = name + '：正在还原音频 ' + done + '/' + total + '\n所有扩展完成后自动重启，请勿关闭游戏。'; },
+            remove: function () { node.remove(); },
+        };
+    }
+    var queue = Promise.resolve(), pending = new Map();
+    var changed = false, failed = false, restartScheduled = false;
+    async function install(meta, game, options) {
+        options = options || {};
+        var base = 'extension/' + safe(meta.name);
+        var storage = options.storage || root.localStorage;
+        var text = await game.promises.readFileAsText(base + '/audio-data/manifest.json');
+        if (await hash(ascii(text)) !== meta.sha256) throw new Error('音频清单 SHA-256 不匹配，请完整更新扩展');
+        var manifest = JSON.parse(text);
+        if (manifest.format !== 2 || !Array.isArray(manifest.files) || !Array.isArray(manifest.bundles)) throw new Error('无效音频清单');
+        var key = 'noname-audio-pack-v2:' + meta.name;
+        var previous;
+        try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
+        if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
+            return previous.files && previous.files[file.path] === file.sha256;
+        })) return false;
+        var index = 0, position = 0, bytes = null, hashes = Object.create(null), directories = new Set();
+        for (var bundle of manifest.bundles) {
+            safe(bundle.name);
+            text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
+            if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
+            var body = JSON.parse(text);
+            if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
+            for (var record of body.records) {
+                var file = manifest.files[index];
+                if (!file || safe(record.path) !== file.path || record.offset !== position) throw new Error('音频分片顺序错误');
+                if (!bytes) {
+                    if (!Number.isSafeInteger(file.size) || file.size < 0) throw new Error('无效音频长度');
+                    bytes = new Uint8Array(file.size);
+                }
+                var raw = root.atob(record.base64);
+                if (position + raw.length > bytes.length) throw new Error('音频长度超限');
+                for (var j = 0; j < raw.length; j++) bytes[position++] = raw.charCodeAt(j);
+                if (position !== file.size) continue;
+                if (await hash(bytes) !== file.sha256) throw new Error('音频 SHA-256 不匹配: ' + file.path);
+                var target = base + '/' + safe(file.path), split = target.lastIndexOf('/');
+                var parts = target.slice(0, split).split('/');
+                for (j = 1; j <= parts.length; j++) {
+                    var directory = parts.slice(0, j).join('/');
+                    if (!directories.has(directory)) {
+                        await game.promises.createDir(directory);
+                        directories.add(directory);
+                    }
+                }
+                await game.promises.writeFile(bytes.buffer, target.slice(0, split), target.slice(split + 1));
+                await truncateCordova(target, bytes.length);
+                var written = buffer(await game.promises.readFile(target));
+                if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
+                hashes[file.path] = file.sha256;
+                index++; position = 0; bytes = null;
+                if (options.onProgress) options.onProgress(index, manifest.files.length);
+                // Let the browser paint progress during long voice-pack installations.
+                await new Promise(function (resolve) { root.setTimeout(resolve, 0); });
+            }
+        }
+        if (index !== manifest.files.length || bytes) throw new Error('音频数据包不完整');
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
+        return true;
+    }
+    function prepare(meta, lib, game) {
+        if (pending.has(meta.name)) return pending.get(meta.name);
+        if (!Array.isArray(lib.onprepare)) return Promise.reject(new Error('客户端缺少 onprepare 启动钩子'));
+        if (!restartScheduled) {
+            restartScheduled = true;
+            lib.onprepare.push(async function () {
+                await queue;
+                if (changed && !failed) game.reload();
+            });
+        }
+        var task = queue.then(async function () {
+            var progress = notice(meta.name);
+            try {
+                if (await install(meta, game, { onProgress: progress.update })) changed = true;
+            } catch (error) {
+                failed = true;
+                console.error('[音频还原失败] ' + meta.name, error);
+                if (root.alert) root.alert(meta.name + ' 音频还原失败，下次启动会重试：' + (error.message || error));
+                throw error;
+            } finally { progress.remove(); }
+        });
+        queue = task.catch(function () {});
+        pending.set(meta.name, task);
+        task.catch(function () { pending.delete(meta.name); });
+        return task;
+    }
+    root.NonameAudioPacks = {
+        format: 2, sha256: sha256, install: install, prepare: prepare,
+        wrap: function (meta, factory) {
+            return function (lib, game, ui, get, ai, _status) {
+                var object = factory.apply(this, arguments);
+                object.audioPackMetadata = meta;
+                object.audioPackOriginalPrecontent = object.precontent;
+                object.precontent = async function () {
+                    await globalThis.NonameAudioPacks.prepare(this.audioPackMetadata, lib, game);
+                    if (this.audioPackOriginalPrecontent) return this.audioPackOriginalPrecontent.apply(this, arguments);
+                };
+                return object;
+            };
+        },
+    };
+})(typeof globalThis !== 'undefined' ? globalThis : window);
+
+/* AUDIO_PACK_RUNTIME_END */
+game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","sha256":"0e7919cc640fecac6a10bb16a6ad15c7cc1f93496d125ad0884c803f6cb6ef22"}, function(lib, game, ui, get, ai, _status) {
+    // 临时效果牌：创建时不带destroyed标记；必须在效果结算(挂到目标面前)完成后再打标记，
+    // 否则addToExpansion会把带destroyed的牌从结算中剔除，导致效果不触发。
+    lib.chuangShiJiUseTemporaryEffectCard = async function(player, name, target, nolog) {
+        const card = game.createCard(name);
+        await player.useCard(card, target, nolog);
+        card.destroyed = 'discardPile';
+        return card;
+    };
     return {
         "name": "创世纪",
         "arenaReady": function(){
@@ -67,9 +269,17 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             var proto = lib.element && lib.element.Player &&
                 lib.element.Player.prototype;
             if(!proto ||
-                proto._tianQiZheBaoShiPatchedVersion == '1.8') return;
+                proto._tianQiZheBaoShiPatchedVersion == '1.9') return;
             proto._tianQiZheBaoShiPatched = true;
-            proto._tianQiZheBaoShiPatchedVersion = '1.8';
+            proto._tianQiZheBaoShiPatchedVersion = '1.9';
+            if(!proto._tianQiZheOriginalCanBiShaShuiJing) {
+                proto._tianQiZheOriginalCanBiShaShuiJing =
+                    proto.canBiShaShuiJing;
+            }
+            if(!proto._tianQiZheOriginalRemoveBiShaShuiJing) {
+                proto._tianQiZheOriginalRemoveBiShaShuiJing =
+                    proto.removeBiShaShuiJing;
+            }
             if(!proto._tianQiZheOriginalCanBiShaBaoShi) {
                 proto._tianQiZheOriginalCanBiShaBaoShi =
                     proto.canBiShaBaoShi;
@@ -85,6 +295,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 return this.getExpansions(
                     'tianQiZheTianShiZhuFu'
                 ).length > 0;
+            };
+            proto.canBiShaShuiJing = function() {
+                return proto._tianQiZheOriginalCanBiShaShuiJing
+                    .call(this) || this.getExpansions(
+                        'tianQiZheTianShiZhuFu'
+                    ).length > 0;
             };
             proto.removeBiShaBaoShi = function() {
                 var player = this;
@@ -102,7 +318,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 );
                 next.player = player;
                 next.setContent(async function(event, trigger, player) {
-                    var useBlessing = !player.hasNengLiang('baoShi');
+                    var useBlessing = !!player._tianQiZheForceBlessingPay ||
+                        !player.hasNengLiang('baoShi');
                     if(!useBlessing) {
                         var control = await player.chooseControl([
                             '支付1【宝石】',
@@ -146,6 +363,54 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         '以【天使祝福】视为支付了1个',
                         '#g【宝石】'
                     );
+                });
+                return next;
+            };
+            proto.removeBiShaShuiJing = function() {
+                var player = this;
+                if(!player.getExpansions(
+                    'tianQiZheTianShiZhuFu'
+                ).length) {
+                    return proto._tianQiZheOriginalRemoveBiShaShuiJing
+                        .call(player);
+                }
+                var next = game.createEvent('tianShiZhuFuPayShuiJing', false);
+                next.player = player;
+                next.setContent(async function(event, trigger, player) {
+                    var useBlessing = !proto
+                        ._tianQiZheOriginalCanBiShaShuiJing.call(player);
+                    if(!useBlessing) {
+                        var control = await player.chooseControl([
+                            '按原规则支付1【水晶】',
+                            '发动【天使祝福】',
+                        ]).set('prompt', '请选择本次1【水晶】费用的支付方式')
+                            .set('ai', function() {
+                                var player = _status.event.player;
+                                var cards = player.getExpansions(
+                                    'tianQiZheTianShiZhuFu'
+                                );
+                                var expires = cards.some(function(card) {
+                                    return card.storage &&
+                                        card.storage.tianQiZhiZhuToken;
+                                });
+                                return expires ||
+                                    !player.hasNengLiang('shuiJing') ?
+                                    '发动【天使祝福】' :
+                                    '按原规则支付1【水晶】';
+                            }).forResultControl();
+                        useBlessing = control == '发动【天使祝福】';
+                    }
+                    if(useBlessing) {
+                        player._tianQiZheForceBlessingPay = true;
+                        try {
+                            await proto.removeBiShaBaoShi.call(player);
+                        } finally {
+                            delete player._tianQiZheForceBlessingPay;
+                        }
+                    } else {
+                        await proto._tianQiZheOriginalRemoveBiShaShuiJing
+                            .call(player);
+                    }
                 });
                 return next;
             };
@@ -308,7 +573,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "tianQiZheWuQiZhuFuKa": "(专)【武器祝福】",
                     "tianQiZheWuQiZhuFuKa_info": "响应【武器祝福】：<span class='tiaoJian'>（拥有者的应战攻击命中时②）</span>移除此卡，本次攻击伤害+2。",
                     "tianQiZheTianShiZhuFuKa": "(专)【天使祝福】",
-                    "tianQiZheTianShiZhuFuKa_info": "<span class='tiaoJian'>（响应【天使祝福】：拥有者支付技能的1【宝石】时）</span>可以移除此卡，视为已支付该【宝石】。无需移除战绩区资源，没有【宝石】也可发动。",
+                    "tianQiZheTianShiZhuFuKa_info": "<span class='tiaoJian'>（拥有者支付技能的1【宝石】或1【水晶】时）</span>可以移除此卡，视为已支付该费用。没有真实星石也可发动。",
                 },
                 "list": [],
             },
@@ -430,18 +695,18 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var target;
                     switch(xuanWenFaShe_xiBie){
                         case 'huo':
-                            target = await player.chooseTarget(
+                            target = (await player.chooseTarget(
                                 '火系炫纹：对目标角色造成1点法术伤害③',
                                 true
                             ).set('ai',function(target){
                                 var player=_status.event.player;
                                 return get.damageEffect2(target,player,1);
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             target = target[0];
                             if(target) await target.faShuDamage(1,player);
                             break;
                         case'shui':
-                            target = await player.chooseTarget(
+                            target = (await player.chooseTarget(
                                 '水系炫纹：令一名有手牌的角色弃1张牌',
                                 true,
                                 function(card,player,target){
@@ -451,20 +716,20 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 var player = _status.event.player;
                                 if(target.side != player.side) return 0;
                                 return get.attitude(player, target);
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             target = target[0];
                             if(target) {
                                 await target.chooseToDiscard('h',true);
                             }
                             break;
                         case 'an':
-                            target = await player.chooseTarget(
+                            target = (await player.chooseTarget(
                                 '暗系炫纹：对目标角色造成2点法术伤害③',
                                 true
                             ).set('ai',function(target){
                                 var player=_status.event.player;
                                 return get.damageEffect2(target,player,2);
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             target = target[0];
                             if(target) await target.faShuDamage(2,player);
                             break;
@@ -1650,7 +1915,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     } else {
                         var max = experiment.result == '大成功' ? 2 : 1;
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             [0, max],
                             '旋转扫把：指定至多' + max +
                                 '名其他目标对手',
@@ -1666,7 +1931,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 _status.event.amount
                             );
-                        }).set('amount', amount).forResultTargets();
+                        }).set('amount', amount).forResultTargets() || []);
                         for(var target of targets.sortBySeat(player)) {
                             if(amount > 0 && target.isIn()) {
                                 await target.damage(
@@ -1718,7 +1983,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     } else {
                         var damage =
                             experiment.result == '大成功' ? 3 : 2;
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             true,
                             '熔岩药瓶：指定任意一名角色',
                             function() {
@@ -1730,7 +1995,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 _status.event.damage
                             );
-                        }).set('damage', damage).forResultTargets();
+                        }).set('damage', damage).forResultTargets() || []);
                         if(targets[0] && targets[0].isIn()) {
                             await targets[0].faShuDamage(
                                 damage,
@@ -1801,7 +2066,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         );
                         if(candidates.length) {
                             var range = max == 1 ? 1 : [0, 2];
-                            var targets = await player.chooseTarget(
+                            var targets = (await player.chooseTarget(
                                 range,
                                 max == 1,
                                 '酸雨云：指定' +
@@ -1824,7 +2089,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     _status.event.player,
                                     target
                                 );
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             for(var target of targets.sortBySeat(player)) {
                                 var canDiscard = target.isIn() &&
                                     target.countCards(
@@ -1968,7 +2233,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return !current.hasJiChuXiaoGuo('_xuRuo');
                         });
                         if(canUse) {
-                            var targets = await player.chooseTarget(
+                            var targets = (await player.chooseTarget(
                                 true,
                                 '反重力装置：指定任意一名没有【虚弱】的角色',
                                 function(card, player, target) {
@@ -1981,16 +2246,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     _status.event.player,
                                     target
                                 );
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             if(targets[0] && targets[0].isIn()) {
-                                await player.useCard(
-                                    game.createCard2('xuRuo'),
-                                    targets[0]
-                                );
+                                await lib.chuangShiJiUseTemporaryEffectCard(player, 'xuRuo', targets[0]);
                             }
                         }
                     } else {
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             true,
                             '反重力装置：指定任意一名角色摸3张牌',
                             function() {
@@ -2007,7 +2269,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 player,
                                 target
                             );
-                        }).forResultTargets();
+                        }).forResultTargets() || []);
                         if(targets[0] && targets[0].isIn()) {
                             await targets[0].draw(3);
                         }
@@ -2373,7 +2635,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         });
                 },
                         "cost": async function(event, trigger, player) {
-                    var targets = await player.chooseTarget(
+                    var targets = (await player.chooseTarget(
                         '是否发动【灵魂牺牲】，指定一名目标队友？',
                         function(card, player, target) {
                             return target != player &&
@@ -2392,7 +2654,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             target.countCards('h')) * 0.15;
                         return get.attitude(player, target) > 0 ?
                             score : -score;
-                    }).forResultTargets();
+                    }).forResultTargets() || []);
                     event.result = {
                         bool: targets.length > 0,
                         targets: targets,
@@ -3296,7 +3558,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     );
                     if(candidates.length) {
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             '怒气爆发：可以再指定另一名对手',
                             function(card, player, target) {
                                 return target.isIn() &&
@@ -3312,7 +3574,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     1
                                 );
                             }
-                        ).forResultTargets();
+                        ).forResultTargets() || []);
                         if(targets.length && targets[0].isIn()) {
                             await targets[0].faShuDamage(
                                 1,
@@ -3628,7 +3890,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     removed
                                 );
                             }
-                            var targets = await player.chooseTarget(
+                            var targets = (await player.chooseTarget(
                                 '魔狱血刹：指定一名对手',
                                 true,
                                 function(card, player, target) {
@@ -3648,7 +3910,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             }).set(
                                 'removed',
                                 removed
-                            ).forResultTargets();
+                            ).forResultTargets() || []);
                             var primary = targets[0];
                             var others = game.players.slice();
                             try {
@@ -3794,7 +4056,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "wuQiZhuFu": "武器祝福",
                     "wuQiZhuFu_info": "<span class='tiaoJian'>（拥有者的应战攻击命中时②）</span>移除此卡，本次攻击伤害+2。",
                     "tianQiZheTianShiZhuFu": "天使祝福",
-                    "tianQiZheTianShiZhuFu_info": "<span class='tiaoJian'>（拥有者支付技能的1【宝石】时）</span>可以移除此卡，视为已支付该【宝石】。无需移除战绩区资源，没有【宝石】也可发动。",
+                    "tianQiZheTianShiZhuFu_info": "<span class='tiaoJian'>（拥有者支付技能的1【宝石】或1【水晶】时）</span>可以移除此卡，视为已支付该费用。没有真实星石也可发动。",
                     "yuXueMoShenXueQi": "血气",
                     "yuXueMoShenXueQi_info": "<span class='hong'>【血气】</span>为狱血魔神的专属指示物，上限为8。",
                     "xueQiWangSheng": "被动【血气旺盛】",
@@ -3823,7 +4085,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.4",
+            "version": "2.6",
         },
         "files": {
             "character": [
@@ -3912,4 +4174,4 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
         },
         "connect": true,
     };
-});
+}));

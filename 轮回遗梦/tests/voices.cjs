@@ -1,0 +1,30 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+let pack;const played=[],listeners=[],lib={config:{background_speak:true}},status={};
+const game={players:[],import:(k,f)=>pack=f(lib,game,{}, {},{},status),broadcastAll:(f,...args)=>f(...args),playAudio:options=>{
+ played.push(options.path);const events={};listeners.push(events);return {addEventListener:(k,f)=>events[k]=f,pause(){},remove(){}};
+}};
+const source=fs.readFileSync(path.join(__dirname,'../extension.js'),'utf8');
+vm.runInNewContext(source,{game,lib,_status:status,setTimeout:()=>1,clearTimeout(){}});
+const V=lib.lhymVoice,H=lib.lunHuiYiMeng,C=lib.lhymCompanion,p={playerid:'jing',storage:{lhym_sword:{weapon:'魔剑',faces:[]}},syncStorage(){},side:true};
+p.hasSkill=()=>false;
+const event={};V.batch(p,['jingTian/choose_magic','jingTian/yongAn'],event);V.batch(p,['jingTian/choose_magic','jingTian/yongAn'],event);
+assert.equal(played.length,1);listeners[0].ended();assert.equal(played.length,2);listeners[1].error();assert.equal(V.busy,false);assert.equal(V.queue.length,0);
+lib.config.background_speak=false;V.say(p,'jingTian/choose_magic',{});assert.equal(played.length,2);lib.config.background_speak=true;
+const calls=[];V.batch=(p,keys)=>calls.push([...keys]);
+const kui={name:'longKui',playerid:'kui',side:true,storage:{},hasSkill:id=>id==='lhym_jianZhongRen'};
+const snow={name:'xueJian',side:true,hasSkill:id=>id==='lhym_huaYing'};game.players=[p,kui,snow];
+V.transfer(p,kui,'gift',{});kui.storage.lhym_red=true;V.transfer(p,kui,'take',{});V.transfer(p,snow,'gift',{});
+assert.deepEqual(calls.splice(0),[['jingTian/gift_kui','longKui/gift_blue'],['jingTian/take_kui','longKui/take_red'],['jingTian/gift_snow','xueJian/gift']]);
+p.storage.lhym_sword.faces=H.elements.flatMap(x=>[x+'_yin',x+'_yang']);V.complete(p,{});V.complete(p,{});
+assert.deepEqual(calls.splice(0),[['jingTian/complete_magic','longKui/complete_red']]);
+p.storage.lhym_sword={weapon:'镇妖剑',stage:3};V.forge(p,{});assert.deepEqual(calls.splice(0),[['jingTian/forge_3','xueJian/complete_sword']]);
+const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'../audio/台词映射.json'),'utf8'));
+assert.equal(manifest.length,71);assert.equal(new Set(manifest.map(e=>e.file)).size,71);
+for(const entry of manifest){assert(V.files.includes(entry.file));assert(fs.statSync(path.join(__dirname,'..',entry.file)).size>100);}
+for(const s of Object.values(pack.package.skill.skill))assert.equal(s.audio,false,'no automatic plus manual audio');
+assert(source.includes("if(shadows.length){V.say(target,'longKui/qianNian_'"));
+assert(source.includes('faces.push(face);V.complete(player,event)'));
+assert(source.includes('H.sync(p);V.complete(p,_status.event)'));
+assert(source.includes('H.sync(t);V.forge(t,event)'));
+assert(!C.form.toString().includes('V.'),'generic form sync must not speak');
+console.log('PASS: 71 files, manifest, queue ordering/error recovery, mute, event dedup, shape-aware transfers and one-time completion');

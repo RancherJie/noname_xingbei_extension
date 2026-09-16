@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "countedGames": 10,
+  "processedSessions": [
+    "2026-09-14T08:57:59.432Z",
+    "2026-09-14T09:02:03.628Z",
+    "2026-09-14T09:03:08.227Z",
+    "2026-09-14T09:06:13.781Z",
+    "2026-09-14T09:07:52.025Z",
+    "2026-09-14T09:08:20.462Z",
+    "2026-09-14T09:25:04.319Z",
+    "2026-09-14T09:27:29.295Z",
+    "2026-09-14T10:31:40.814Z",
+    "2026-09-14T10:32:43.979Z"
+  ],
+  "characters": {
+    "jingTian": {
+      "characterName": "景天",
+      "wins": 5,
+      "losses": 5
+    },
+    "aNu": {
+      "characterName": "阿奴",
+      "wins": 5,
+      "losses": 5
+    },
+    "longKui": {
+      "characterName": "龙葵",
+      "wins": 5,
+      "losses": 5
+    },
+    "xueJian": {
+      "characterName": "雪见",
+      "wins": 5,
+      "losses": 5
+    },
+    "zhaoLingEr": {
+      "characterName": "赵灵儿",
+      "wins": 5,
+      "losses": 5
+    },
+    "liXiaoYao": {
+      "characterName": "李逍遥",
+      "wins": 5,
+      "losses": 5
+    }
+  }
+}

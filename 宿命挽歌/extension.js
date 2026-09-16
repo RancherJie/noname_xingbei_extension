@@ -1,4 +1,413 @@
-game.import("extension", function(lib, game, ui, get, ai, _status) {
+/* AUDIO_PACK_RUNTIME_BEGIN */
+/* Audio JSON runtime v2. Source: tools/audio-pack/runtime.js; bundled into each extension. */
+(function (root) {
+    'use strict';
+    if (root.NonameAudioPacks && root.NonameAudioPacks.format === 2) return;
+    function sha256(bytes) {
+        var k = [], h = [], n = 2;
+        while (k.length < 64) {
+            var prime = true;
+            for (var d = 2; d * d <= n; d++) if (n % d === 0) { prime = false; break; }
+            if (prime) {
+                if (h.length < 8) h.push((Math.sqrt(n) % 1 * 4294967296) | 0);
+                k.push((Math.pow(n, 1 / 3) % 1 * 4294967296) | 0);
+            }
+            n++;
+        }
+        var length = Math.ceil((bytes.length + 9) / 64) * 64;
+        var padded = new Uint8Array(length);
+        padded.set(bytes); padded[bytes.length] = 128;
+        var view = new DataView(padded.buffer);
+        view.setUint32(length - 8, Math.floor(bytes.length / 536870912));
+        view.setUint32(length - 4, (bytes.length * 8) >>> 0);
+        function r(x, c) { return (x >>> c) | (x << (32 - c)); }
+        for (var offset = 0; offset < length; offset += 64) {
+            var w = new Int32Array(64);
+            for (var i = 0; i < 64; i++) {
+                if (i < 16) w[i] = view.getInt32(offset + i * 4);
+                else {
+                    var x = w[i - 15], y = w[i - 2];
+                    w[i] = (w[i - 16] + (r(x, 7) ^ r(x, 18) ^ (x >>> 3)) + w[i - 7] + (r(y, 17) ^ r(y, 19) ^ (y >>> 10))) | 0;
+                }
+            }
+            var a = h[0], b = h[1], c = h[2], dd = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+            for (i = 0; i < 64; i++) {
+                var t1 = (hh + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + k[i] + w[i]) | 0;
+                var t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+                hh = g; g = f; f = e; e = (dd + t1) | 0; dd = c; c = b; b = a; a = (t1 + t2) | 0;
+            }
+            [a, b, c, dd, e, f, g, hh].forEach(function (v, j) { h[j] = (h[j] + v) | 0; });
+        }
+        return h.map(function (v) { return ('00000000' + (v >>> 0).toString(16)).slice(-8); }).join('');
+    }
+    async function hash(bytes) {
+        if (root.crypto && root.crypto.subtle) {
+            var value = new Uint8Array(await root.crypto.subtle.digest('SHA-256', bytes));
+            return Array.from(value).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+        }
+        return sha256(bytes);
+    }
+    function ascii(text) {
+        var bytes = new Uint8Array(text.length);
+        for (var i = 0; i < text.length; i++) {
+            if (text.charCodeAt(i) > 127) throw new Error('音频 JSON 不是原始 ASCII 数据');
+            bytes[i] = text.charCodeAt(i);
+        }
+        return bytes;
+    }
+    function safe(path) {
+        if (typeof path !== 'string' || /[\\:\x00-\x1f]/.test(path) || path.split('/').some(function (p) { return !p || p === '.' || p === '..'; })) throw new Error('非法音频路径: ' + path);
+        return path;
+    }
+    function buffer(value) {
+        return ArrayBuffer.isView(value) ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength) : new Uint8Array(value);
+    }
+    // Cordova's writeFile does not truncate a previously longer file. Truncate only
+    // after writing, then verify the actual bytes with the client's readFile API.
+    async function truncateCordova(path, length) {
+        if (typeof root.resolveLocalFileSystemURL !== 'function') return;
+        var base = root.localStorage.getItem('noname_inited');
+        if (!base || base === 'nodejs') return;
+        await new Promise(function (resolve, reject) {
+            root.resolveLocalFileSystemURL(base + path, function (entry) {
+                entry.createWriter(function (writer) {
+                    writer.onerror = reject;
+                    writer.onwriteend = resolve;
+                    writer.truncate(length);
+                }, reject);
+            }, reject);
+        });
+    }
+    function notice(name) {
+        if (!root.document) return { update: function () {}, remove: function () {} };
+        var node = root.document.createElement('div');
+        node.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.9);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;white-space:pre-wrap;text-align:center;';
+        node.textContent = name + '：正在检查音频资源…';
+        (root.document.body || root.document.documentElement).appendChild(node);
+        return {
+            update: function (done, total) { node.textContent = name + '：正在还原音频 ' + done + '/' + total + '\n所有扩展完成后自动重启，请勿关闭游戏。'; },
+            remove: function () { node.remove(); },
+        };
+    }
+    var queue = Promise.resolve(), pending = new Map();
+    var changed = false, failed = false, restartScheduled = false;
+    async function install(meta, game, options) {
+        options = options || {};
+        var base = 'extension/' + safe(meta.name);
+        var storage = options.storage || root.localStorage;
+        var text = await game.promises.readFileAsText(base + '/audio-data/manifest.json');
+        if (await hash(ascii(text)) !== meta.sha256) throw new Error('音频清单 SHA-256 不匹配，请完整更新扩展');
+        var manifest = JSON.parse(text);
+        if (manifest.format !== 2 || !Array.isArray(manifest.files) || !Array.isArray(manifest.bundles)) throw new Error('无效音频清单');
+        var key = 'noname-audio-pack-v2:' + meta.name;
+        var previous;
+        try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
+        if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
+            return previous.files && previous.files[file.path] === file.sha256;
+        })) return false;
+        var index = 0, position = 0, bytes = null, hashes = Object.create(null), directories = new Set();
+        for (var bundle of manifest.bundles) {
+            safe(bundle.name);
+            text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
+            if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
+            var body = JSON.parse(text);
+            if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
+            for (var record of body.records) {
+                var file = manifest.files[index];
+                if (!file || safe(record.path) !== file.path || record.offset !== position) throw new Error('音频分片顺序错误');
+                if (!bytes) {
+                    if (!Number.isSafeInteger(file.size) || file.size < 0) throw new Error('无效音频长度');
+                    bytes = new Uint8Array(file.size);
+                }
+                var raw = root.atob(record.base64);
+                if (position + raw.length > bytes.length) throw new Error('音频长度超限');
+                for (var j = 0; j < raw.length; j++) bytes[position++] = raw.charCodeAt(j);
+                if (position !== file.size) continue;
+                if (await hash(bytes) !== file.sha256) throw new Error('音频 SHA-256 不匹配: ' + file.path);
+                var target = base + '/' + safe(file.path), split = target.lastIndexOf('/');
+                var parts = target.slice(0, split).split('/');
+                for (j = 1; j <= parts.length; j++) {
+                    var directory = parts.slice(0, j).join('/');
+                    if (!directories.has(directory)) {
+                        await game.promises.createDir(directory);
+                        directories.add(directory);
+                    }
+                }
+                await game.promises.writeFile(bytes.buffer, target.slice(0, split), target.slice(split + 1));
+                await truncateCordova(target, bytes.length);
+                var written = buffer(await game.promises.readFile(target));
+                if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
+                hashes[file.path] = file.sha256;
+                index++; position = 0; bytes = null;
+                if (options.onProgress) options.onProgress(index, manifest.files.length);
+                // Let the browser paint progress during long voice-pack installations.
+                await new Promise(function (resolve) { root.setTimeout(resolve, 0); });
+            }
+        }
+        if (index !== manifest.files.length || bytes) throw new Error('音频数据包不完整');
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
+        return true;
+    }
+    function prepare(meta, lib, game) {
+        if (pending.has(meta.name)) return pending.get(meta.name);
+        if (!Array.isArray(lib.onprepare)) return Promise.reject(new Error('客户端缺少 onprepare 启动钩子'));
+        if (!restartScheduled) {
+            restartScheduled = true;
+            lib.onprepare.push(async function () {
+                await queue;
+                if (changed && !failed) game.reload();
+            });
+        }
+        var task = queue.then(async function () {
+            var progress = notice(meta.name);
+            try {
+                if (await install(meta, game, { onProgress: progress.update })) changed = true;
+            } catch (error) {
+                failed = true;
+                console.error('[音频还原失败] ' + meta.name, error);
+                if (root.alert) root.alert(meta.name + ' 音频还原失败，下次启动会重试：' + (error.message || error));
+                throw error;
+            } finally { progress.remove(); }
+        });
+        queue = task.catch(function () {});
+        pending.set(meta.name, task);
+        task.catch(function () { pending.delete(meta.name); });
+        return task;
+    }
+    root.NonameAudioPacks = {
+        format: 2, sha256: sha256, install: install, prepare: prepare,
+        wrap: function (meta, factory) {
+            return function (lib, game, ui, get, ai, _status) {
+                var object = factory.apply(this, arguments);
+                object.audioPackMetadata = meta;
+                object.audioPackOriginalPrecontent = object.precontent;
+                object.precontent = async function () {
+                    await globalThis.NonameAudioPacks.prepare(this.audioPackMetadata, lib, game);
+                    if (this.audioPackOriginalPrecontent) return this.audioPackOriginalPrecontent.apply(this, arguments);
+                };
+                return object;
+            };
+        },
+    };
+})(typeof globalThis !== 'undefined' ? globalThis : window);
+
+/* AUDIO_PACK_RUNTIME_END */
+game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌","sha256":"039596c4feae32c801805ec1575577d907d6f3c55e74b115f3536595bd586a37"}, function(lib, game, ui, get, ai, _status) {
+    // 临时效果牌：创建时不带destroyed标记；必须在效果结算(挂到目标面前)完成后再打标记，
+    // 否则addToExpansion会把带destroyed的牌从结算中剔除，导致效果不触发。
+    lib.suMingUseTemporaryEffectCard = async function(player, name, target, nolog) {
+        const card = game.createCard(name);
+        await player.useCard(card, target, nolog);
+        card.destroyed = 'discardPile';
+        return card;
+    };
+    lib.suMingAttachTemporaryEffectCard = async function(target, source, name, tag) {
+        const card = game.createCard(name);
+        await target.addJiChuXiaoGuo(card, source, tag);
+        card.destroyed = 'discardPile';
+        return card;
+    };
+    lib.suMingBaiYueAi = {
+        // 翻开牌库顶时翻到法术牌的估计概率（AI无牌堆信息，取保守值）
+        flipSpellChance: 0.4,
+        // 【封魔】的附加价值：对手被封魔为收益，己方或自己被封魔为代价
+        fengMoValue: function(player, target) {
+            if(target.hasJiChuXiaoGuo('fengMo')) return 0;
+            return target.side == player.side ? -1.2 : 1.2;
+        },
+        // 估算拜月教主剩余仍可发动的法术技能数（含【腥风血雨】）
+        usableSpellCount: function(player) {
+            var names = ['anMie', 'shengGuang', 'xuRuo', 'zhongDou', 'shengDun'];
+            var count = 0;
+            for(var i = 0; i < names.length; i++) {
+                if(player.countCards('h', function(card) {
+                    return get.name(card, player) == names[i];
+                }) > 0) count++;
+            }
+            if(player.canBiShaBaoShi && player.canBiShaBaoShi()) count++;
+            return count;
+        },
+        // 转化进度奖励：释放尚未计入【水魔兽合体】的新类型法术时的额外收益
+        transformBonus: function(player, skillId) {
+            var info = lib.skill.shuiMoShouHeTi;
+            if(!info || !info.spells || !info.spells.includes(skillId)) return 0;
+            var recorded = player.storage.shuiMoShouHeTi;
+            if(Array.isArray(recorded) && recorded.includes(skillId)) return 0;
+            return 0.3;
+        },
+    }
+    lib.suMingBaiYueAi.xingShiTotal = function(player) {
+        if(!player) return 0;
+        if(typeof player.countNengLiangAll == 'function') return player.countNengLiangAll();
+        return (player.countNengLiang('baoShi') || 0) +
+            (player.countNengLiang('shuiJing') || 0);
+    };
+    // 多余水晶：花1颗后仍至少保留1颗
+    lib.suMingBaiYueAi.hasSpareShuiJing = function(player) {
+        return !!player && player.countNengLiang('shuiJing') >= 2;
+    };
+    lib.suMingBaiYueAi.isBaiYue = function(player) {
+        if(!player) return false;
+        return player.name == 'baiYueJiaoZhu' ||
+            player.name == 'shuiMoShouBaiYueJiaoZhu' ||
+            player.name1 == 'baiYueJiaoZhu' ||
+            player.name1 == 'shuiMoShouBaiYueJiaoZhu';
+    };
+    lib.suMingBaiYueAi.needsGem = function(player) {
+        if(!player || (player.canBiShaBaoShi && player.canBiShaBaoShi())) return false;
+        var self = lib.suMingBaiYueAi;
+        if(player.name == 'shuiMoShouBaiYueJiaoZhu' ||
+            player.name1 == 'shuiMoShouBaiYueJiaoZhu') return true;
+        return player.countCards('h', function(card) {
+            return get.name(card, player) == 'shengDun';
+        }) > 0 || self.usableSpellCount(player) == 0;
+    };
+    lib.suMingBaiYueAi.isWrapped = function(fn) {
+        return typeof fn == 'function' && fn.__suMingBaiYueWrap === true;
+    };
+    lib.suMingBaiYueAi.applyActionPatch = function() {
+        var helper = this;
+        if(typeof lib == 'undefined' || !lib.skill) return;
+        function wrapAction(skillId, orderFn, resultFn) {
+            var skill = lib.skill[skillId];
+            if(!skill || !skill.ai) return;
+            if(!helper.isWrapped(skill.ai.order)) {
+                var oldOrder = skill.ai.order;
+                var newOrder = function(item, player) {
+                    if(helper.isBaiYue(player)) return orderFn(item, player);
+                    return typeof oldOrder == 'function' ? oldOrder.apply(this, arguments) : oldOrder;
+                };
+                newOrder.__suMingBaiYueWrap = true;
+                skill.ai.order = newOrder;
+            }
+            if(resultFn && skill.ai.result && !helper.isWrapped(skill.ai.result.player)) {
+                var oldResult = skill.ai.result.player;
+                var newResult = function(player) {
+                    if(helper.isBaiYue(player)) return resultFn(player);
+                    return typeof oldResult == 'function' ? oldResult.apply(this, arguments) : oldResult;
+                };
+                newResult.__suMingBaiYueWrap = true;
+                skill.ai.result.player = newResult;
+            }
+        }
+        // 购买：尽量不买
+        wrapAction('_gouMai', function() { return 0.2; }, function() { return -20; });
+        // 合成：仅接近获胜（差1星杯或敌方士气≤2）时才合成
+        wrapAction('_heCheng',
+            function(item, player) {
+                var cups = (typeof get.xingBei == 'function') ? get.xingBei(player.side) : 0;
+                var cupLimit = (typeof game.xingBeiMax == 'number') ? game.xingBeiMax : 3;
+                return (cups + 1 >= cupLimit || get.shiQi(!player.side) <= 2) ? 5 : 0.2;
+            },
+            function(player) {
+                var cups = (typeof get.xingBei == 'function') ? get.xingBei(player.side) : 0;
+                var cupLimit = (typeof game.xingBeiMax == 'number') ? game.xingBeiMax : 3;
+                return (cups + 1 >= cupLimit || get.shiQi(!player.side) <= 2) ? 1 : -20;
+            });
+        // 提炼：缺宝石或没有可用法术时优先提炼
+        wrapAction('_tiLian',
+            function(item, player) { return 3.5; },
+            function(player) { return 1; });
+        // 主动攻击牌：行动顺序压到最低（不影响应战与响应判断）
+        if(lib.card && !lib.__suMingBaiYueAttackPatched) {
+            for(var name in lib.card) {
+                (function(cardName) {
+                    var info = lib.card[cardName];
+                    if(!info || info.type != 'gongJi') return;
+                    info.ai = info.ai || {};
+                    var oldCardOrder = info.ai.order;
+                    var cardOrder = function(item, player) {
+                        if(helper.isBaiYue(player)) return 0.5;
+                        if(typeof oldCardOrder == 'function') return oldCardOrder.apply(this, arguments);
+                        return oldCardOrder;
+                    };
+                    cardOrder.__suMingBaiYueWrap = true;
+                    info.ai.order = cardOrder;
+                })(name);
+            }
+            lib.__suMingBaiYueAttackPatched = true;
+        }
+        // 爆牌与弃牌倾向：保留法术牌与费用牌，优先弃攻击牌
+        if(!get.__suMingBaiYueValueWrapped) {
+            get.__suMingBaiYueValueWrapped = true;
+            var origValue = get.value;
+            get.value = function(card, player) {
+                if(card && helper.isBaiYue(player)) {
+                    var cardName = get.name(card, player);
+                    var keep = cardName == 'moDan' || cardName == 'anMie' ||
+                        cardName == 'shengGuang' || cardName == 'xuRuo' ||
+                        cardName == 'zhongDou' || cardName == 'shengDun' ||
+                        get.type(card, player) == 'faShu';
+                    if(keep) return 50;
+                    if(get.type(card, player) == 'gongJi') return -50;
+                }
+                return origValue.apply(this, arguments);
+            };
+        }
+    };;
+    // characterReplace只负责显示/随机切换形态；共享名额必须在抽样、分发之前处理。
+    lib.suMingWanGeInstallHiddenDragonSelection = function() {
+        const forms = ['sheYaoNan', 'huYaoNv'];
+        const isForm = id => forms.includes(id);
+        const blocked = () => {
+            const banned = _status.connectMode
+                ? (lib.configOL?.banned || []).concat(lib.connectBanned || [])
+                : (lib.config.banned || []);
+            return banned.some(isForm) || (game.players || []).some(p =>
+                [p.name, p.name1, p.name2].some(isForm));
+        };
+        const collapse = list => {
+            if(!Array.isArray(list)) return list;
+            const unavailable = blocked();
+            const representative = forms.find(id => list.includes(id));
+            let added = false;
+            return list.filter(id => {
+                if(!isForm(id)) return true;
+                if(unavailable || id !== representative || added) return false;
+                added = true;
+                return true;
+            });
+        };
+        lib.suMingWanGeHiddenDragonPool = collapse;
+        for(const key of ['characters','charactersOL','characterGets']) {
+            const original = get[key];
+            if(typeof original !== 'function' || original.suMingHiddenDragonSelection) continue;
+            const wrapped = function() {
+                const args = Array.from(arguments);
+                // 有num参数时必须先合并再抽样，否则会挤掉一个其他角色的候选名额。
+                if(key === 'characterGets') args[0] = collapse(args[0]);
+                return collapse(original.apply(this,args));
+            };
+            wrapped.suMingHiddenDragonSelection = true;
+            get[key] = wrapped;
+        }
+        const originalDialog = ui.create?.characterDialog;
+        if(typeof originalDialog === 'function' && !originalDialog.suMingHiddenDragonSelection) {
+            const wrapped = function() {
+                const args = Array.from(arguments);
+                const dialog = originalDialog.apply(this,args);
+                // 仅处理选将用的自由选角对话框，不影响角色图鉴或卡牌浏览。
+                if(!args.includes('heightset') || args.includes('thisiscard') || !dialog?.buttons) return dialog;
+                let kept = null;
+                dialog.buttons = dialog.buttons.filter(button => {
+                    if(!isForm(button._link) && !isForm(button.link)) return true;
+                    if(blocked() || kept) { button.remove(); return false; }
+                    kept = button;
+                    return true;
+                });
+                // 本体characterx按钮支持在同一名额内切换两种起始形态。
+                if(kept && !kept._replaceButton) {
+                    // 直接复用原按钮，保留capt、group、nodisplay及当前角色包筛选状态；
+                    // 删除后新建characterx按钮会丢失这些元数据并泄漏到其他角色包页面。
+                    kept._replaceButton = true;
+                    if(typeof kept.refresh === 'function') kept.refresh(kept, kept.link);
+                }
+                return dialog;
+            };
+            wrapped.suMingHiddenDragonSelection = true;
+            ui.create.characterDialog = wrapped;
+        }
+    };
     lib.suMingWanGePlayHiddenDragonAudio = function(file, speaker) {
         if(!file || !speaker || typeof game.broadcastAll !== 'function') return;
         game.broadcastAll(function(audioFile, audioSpeaker) {
@@ -65,6 +474,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             game.addGlobalSkill("suMingWanGeCharacterActionAudio");
             game.addGlobalSkill("shiDuRuTi");
             game.addGlobalSkill("shiHua");
+            game.addGlobalSkill("shiHuaBaoLiuZhiShiWu");
 },
         "content": function(config,pack){
 
@@ -78,6 +488,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 sheYaoNan: ['sheYaoNan', 'huYaoNv'],
                 huYaoNv: ['huYaoNv', 'sheYaoNan'],
             });
+            lib.suMingWanGeInstallHiddenDragonSelection();
             if(!lib.suMingWanGeShiQiUiGuard&&
                 typeof ui.updateShiQiInfo=='function'){
                 lib.suMingWanGeShiQiUiGuard=true;
@@ -98,9 +509,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             lib.config.all.background_music.add(menuMusic);
             lib.configMenu.audio.config.background_music.item[menuMusic] =
                 "云谷鹤峰";
+            if(!lib.config.extension_轮回遗梦_enable &&
+                lib.config.background_music == 'lhym_suMing_menu_random'){
+                game.saveConfig('background_music', menuMusic);
+            }
             if(!lib.config.extension_宿命挽歌_menuMusicInstalled){
-                if(lib.config.background_music != "music_off"){
-                    game.saveConfig("background_music", menuMusic);
+                if(["music_default", menuMusic,
+                    "ext:轮回遗梦/audio/bgm/yuJianJiangHu.mp3"
+                ].includes(lib.config.background_music)){
+                    game.saveConfig("background_music",
+                        lib.lhymMenuMusicKey || menuMusic);
                 }
                 game.saveConfig(
                     "extension_宿命挽歌_menuMusicInstalled", true
@@ -125,6 +543,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 });
             }
 },
+        "precontent": function() {
+            if(lib.suMingBaiYueAi) lib.suMingBaiYueAi.applyActionPatch();
+        },
         "help": {},
         "config": {},
         "package": {
@@ -396,13 +817,111 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return player.countEmptyNengLiang() >= 2 ? '水晶' : '宝石';
                         },
                     },
+                    aNuStrategy: {
+                        gu: player => player.getGaiPai('gu') || [],
+                        profile: function(player) {
+                            const gu = this.gu(player);
+                            const byXiBie = {};
+                            let faShu = 0;
+                            gu.forEach(card => {
+                                const x = get.xiBie(card);
+                                byXiBie[x] = (byXiBie[x] || 0) + 1;
+                                if(get.type(card) === 'faShu') faShu++;
+                            });
+                            return {count: gu.length, byXiBie: byXiBie,
+                                distinct: Object.keys(byXiBie).length,
+                                faShuCount: faShu, guangCount: byXiBie.guang || 0};
+                        },
+                        duYouCount: function(player, duYou) {
+                            return player.getCards('h').filter(card =>
+                                card.hasDuYou && card.hasDuYou(duYou)).length;
+                        },
+                        canBoost: function(player, xiBie) {
+                            return player.getCards('h').some(card => get.xiBie(card) === xiBie);
+                        },
+                        fireFollowUp: function(player) {
+                            return this.duYouCount(player, 'huoQou') > 0 ? 1.5 : 0;
+                        },
+                        guHunger: function(player) {
+                            const p = this.profile(player);
+                            if(p.count >= 9) return 0;
+                            let hunger = 0;
+                            if(p.distinct < 5) hunger += 0.8;
+                            if(player.countNengLiang('baoShi') > 0) hunger += 0.6;
+                            if(this.duYouCount(player, 'huoQou') > 0 ||
+                                this.duYouCount(player, 'leiJi') > 0) hunger += 0.4;
+                            if(p.guangCount === 0) hunger += 0.3;
+                            return hunger;
+                        },
+                        sideNeedsStars: function(player) {
+                            return game.filterPlayer(p => p.side === player.side && p.isIn() &&
+                                p.countEmptyNengLiang && p.countEmptyNengLiang() > 0).length > 0;
+                        },
+                        lianGuStars: function(player, zhanJiLength) {
+                            const cap = Math.max(0, Math.min(zhanJiLength,
+                                9 - this.profile(player).count));
+                            const hunger = this.guHunger(player);
+                            if(hunger <= 0.5) return 0;
+                            if(this.sideNeedsStars(player)) {
+                                // 星石是购买/合成的共用资源；存量>3时可酌情烧1-2颗
+                                if(zhanJiLength > 3) return Math.min(cap, hunger >= 1.5 ? 2 : hunger >= 0.7 ? 1 : 0);
+                                return 0;
+                            }
+                            return Math.min(cap, hunger >= 1.5 ? cap : 1);
+                        },
+                        tianLeiPoWantsGu: function(player) {
+                            const p = this.profile(player);
+                            if(p.count >= 9) return false;
+                            if(p.distinct < 5) return true;
+                            if(this.duYouCount(player, 'huoQou') > 0) return true;
+                            return p.count <= 4;
+                        },
+                        yanShaZhouValue: function(player, target) {
+                            if(!target || target.side === player.side) return -1;
+                            if(target.hasSkill('baoZhaGu_xiaoGuo')) return -1;
+                            if(target.hasSkillTag && target.hasSkillTag('noShiQiXiaJiang')) return -1;
+                            let value = 1 + this.fireFollowUp(player);
+                            const chaZhi = target.getHandcardLimit() - target.countCards('h');
+                            if(chaZhi <= 1) value -= 1.2;
+                            return value;
+                        },
+                        wanGuTargets: player => game.filterPlayer(target =>
+                            !target.hasZhiShiWu('wuDuZhu')),
+                        sanShiGuTarget: function(player, target) {
+                            if(!target || target.side === player.side) return 0;
+                            if(target.hasZhiShiWu('wuDuZhu')) return 0;
+                            let value = -1.5;
+                            if(target.hasJiChuXiaoGuo('_zhongDu')) {
+                                // 已中毒目标留给御蜂术跟进：攻击+1并回1蛊
+                                value -= player.getCards('h').some(card =>
+                                    get.type(card) === 'gongJi') ? 1.2 : 0.5;
+                            }
+                            return value;
+                        },
+                        wuDuZhuNeedy: function(player, leftTarget) {
+                            return game.filterPlayer(p => p.side === player.side &&
+                                p !== leftTarget && p.hasJiChuXiaoGuo('_zhongDu') &&
+                                p.countCards('h') >= p.getHandcardLimit());
+                        },
+                        wuDuZhuChoice: function(player, leftTarget) {
+                            return this.wuDuZhuNeedy(player, leftTarget).length > 0 ?
+                                '移除战绩区1星石并指定目标' : '传给左手边角色';
+                        },
+                        wuDuZhuTarget: function(player, target) {
+                            if(target.side !== player.side || target.hasZhiShiWu('wuDuZhu')) return -100;
+                            let value = get.attitude(player, target);
+                            if(target.hasJiChuXiaoGuo('_zhongDu') &&
+                                target.countCards('h') >= target.getHandcardLimit()) value += 10;
+                            return value;
+                        },
+                    },
                     yinLongCangZhen: {
                         mod: {maxNengLiang: function(player, num) {return num + 2;}},
                         trigger: {player: 'phaseEnd'}, forced: true,
                         content: async function(event, trigger, player) {
                             const choice = await player.chooseControl('宝石', '水晶')
                                 .set('prompt', '隐龙藏珍：获得1宝石或2水晶')
-                                .set('ai', () => lib.skill.yinLongStrategy.energyChoice(player)).forResultControl();
+                                .set('ai', () => { var player = _status.event["online_18853_player"]; return lib.skill.yinLongStrategy.energyChoice(player); }).set("online_18853_player", player).forResultControl();
                             await player.addNengLiang(choice === '宝石' ? 'baoShi' : 'shuiJing', choice === '宝石' ? 1 : 2);
                             const character = lib.skill.yinLongStrategy.snake(player) ? 'sheYaoNan' : 'huYaoNv';
                             lib.suMingWanGePlayHiddenDragonAudio(character + '_yinLongCangZhenEnd', player);
@@ -421,7 +940,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 const choices = ['baoShi', 'shuiJing'].filter(type => player.countNengLiang(type) > 0);
                                 const choice = await source.chooseControl(choices.concat('cancel2'))
                                     .set('prompt', '隐龙藏珍：可以取得受伤角色的一颗星石')
-                                    .set('ai', () => source.side === player.side ? 'cancel2' : choices[0]).forResultControl();
+                                    .set('ai', () => { var source = _status.event["online_20438_source"]; var player = _status.event["online_20438_player"]; var choices = _status.event["online_20438_choices"]; return source.side === player.side ? 'cancel2' : choices[0]; }).set("online_20438_source", source).set("online_20438_player", player).set("online_20438_choices", choices).forResultControl();
                                 if(!choices.includes(choice) || !source.isIn() || source.countEmptyNengLiang() <= 0 || !player.hasNengLiang(choice)) return;
                                 const before = source.countNengLiang(choice);
                                 await source.addNengLiang(choice, 1);
@@ -489,7 +1008,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await player.showCards(cards, '回梦');
                             const name = get.type(cards[0]) === 'faShu' ? 'xuRuo' : 'zhongDu';
                             await game.cardsDiscard(cards);
-                            if(event.target && event.target.isIn()) await player.useCard(game.createCard2(name), event.target);
+                            if(event.target && event.target.isIn()) await lib.suMingUseTemporaryEffectCard(player, name, event.target);
                         },
                         ai: {order: function(item, player) {
                             return lib.skill.yinLongStrategy.enemies(player).some(target => lib.skill.yinLongStrategy.dream(player, target) > 0) ? 3.2 : 0;
@@ -528,8 +1047,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             event.result = await player.chooseTarget('五雷咒：支付水晶，对另一名对手造成等额法术伤害',
                                 (card, source, target) => target.side !== source.side && target !== _status.event.originalTarget)
                                 .set('originalTarget', trigger.player)
-                                .set('ai', target => lib.skill.yinLongStrategy.damage(target, player, trigger.num) -
-                                    lib.skill.yinLongStrategy.stoneCost(player)).forResult();
+                                .set('ai', target => { var player = _status.event["online_28592_player"]; return lib.skill.yinLongStrategy.damage(target, player, _status.event.onlineDragonDamage) -
+                                    lib.skill.yinLongStrategy.stoneCost(player); }).set("online_28592_player", player).set('onlineDragonDamage', trigger.num).forResult();
                         },
                         content: async function(event, trigger, player) {
                             const target = event.targets && event.targets[0];
@@ -636,6 +1155,30 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "content": async function(event, trigger, player) {
                             await lib.suMingWanGeTransformShiDuTarget(player);
+                        },
+                    },
+                    "shiHuaBaoLiuZhiShiWu": {
+                        "charlotte": true,
+                        "trigger": {"global": "changeSkillsBefore"},
+                        "forced": true,
+                        "firstDo": true,
+                        "priority": 1000,
+                        "popup": false,
+                        "filter": function(event) {
+                            return !!event && !!event.player &&
+                                !!event.player.storage.shiHuaTransforming &&
+                                event.player.name1 == 'suMingJiangShi' &&
+                                Array.isArray(event.removeSkill);
+                        },
+                        "content": function(event, trigger) {
+                            trigger.removeSkill = trigger.removeSkill.filter(function(skill) {
+                                var info = get.info(skill);
+                                // Pure counter skills own the mark and its storage. Removing them
+                                // during reinit would run onremove and erase the counter.
+                                return !info || !info.intro || !info.onremove ||
+                                    info.trigger || info.enable || info.group ||
+                                    info.mod || info.skillBlocker;
+                            });
                         },
                     },
                     "jiangJunZhong": {
@@ -1184,6 +1727,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     break;
                                 }
                             }
+                            if(!music && lib.config.extension_轮回遗梦_enable &&
+                                lib.lhymBattleMusic && lib.lhymBattleMusic.chooseTrack){
+                                music=lib.lhymBattleMusic.chooseTrack();
+                            }
                             var bigCowTracks=[
                                 ["zhaoFuQueJi","ext:宿命挽歌/audio/bgm/gangGangJiJi.mp3"],
                                 ["tongGuHeRen","ext:宿命挽歌/audio/bgm/swordland.mp3"],
@@ -1383,7 +1930,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await event.trigger("wuLingXianShuStart");
                             var charNum= event.getParent().charNum || 1;
                             //var baseNum= event.getParent().baseNum || 1;
-                            var targets=await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
+                            var targets=(await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
                                 return lib.skill.wuLingXianShu.isLegalTarget(player, target);
                             })
                             .set("ai", function (target) {
@@ -1393,7 +1940,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 ) : 0;
                             })
                             .set('source',player).set('damageNum',event.num)
-                            .forResultTargets();
+                            .forResultTargets() || []);
 
                             for(var target of targets.sortBySeat(player)){
                                 if(charNum ==1 )
@@ -1465,7 +2012,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await event.trigger("wuLingXianShuStart");
                             var charNum= event.getParent().charNum || 1;
                             //var baseNum= event.getParent().baseNum || 1;
-                            var targets=await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
+                            var targets=(await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
                                 return lib.skill.wuLingXianShu.isLegalTarget(player, target);
                             })
                             .set("ai", function (target) {
@@ -1474,7 +2021,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     target, source, _status.event.damageNum
                                 ) : 0;
                             }).set('source',player)
-                            .set('damageNum',event.num).forResultTargets();
+                            .set('damageNum',event.num).forResultTargets() || []);
                             for(var target of targets.sortBySeat(player)){
                                 if(charNum ==1 )
                                     await target.faShuDamage(event.num, player).set('shengLingZhu',false);
@@ -1482,13 +2029,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     await target.faShuDamage(event.num, player).set('shengLingZhu',true);
                             }
                             //'step 2'
-                            var targets=await player.chooseTarget(1, `冰冻：选择1名角色+1点[治疗]`, true)
+                            var targets=(await player.chooseTarget(1, `冰冻：选择1名角色+1点[治疗]`, true)
                             .set("ai", function (target) {
                             var source = _status.event.source;
                                 return source ? get.zhiLiaoEffect2(
                                     target, source, 1
                                 ) : 0;
-                            }).set('source',player).forResultTargets();
+                            }).set('source',player).forResultTargets() || []);
                             for(var target of targets.sortBySeat(player)){
                                 await target.changeZhiLiao(1, player);
                             }
@@ -1564,7 +2111,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await event.trigger("wuLingXianShuStart");
                             var charNum= event.getParent().charNum || 1;
                             //var baseNum= event.getParent().baseNum || 1;
-                            var targets=await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
+                            var targets=(await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
                                 return lib.skill.wuLingXianShu.isLegalTarget(player, target);
                             })
                             .set("ai", function (target) {
@@ -1573,7 +2120,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     target, source, _status.event.damageNum
                                 ) : 0;
                             }).set('source',player)
-                            .set('damageNum',event.num).forResultTargets();
+                            .set('damageNum',event.num).forResultTargets() || []);
                             for(var target of targets.sortBySeat(player)){
                                 if(charNum ==1 )
                                     await target.faShuDamage(event.num, player).set('shengLingZhu',false);
@@ -1644,7 +2191,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await event.trigger("wuLingXianShuStart");
                             var charNum= event.getParent().charNum || 1;
                             //var baseNum= event.getParent().baseNum || 1;
-                            var targets=await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
+                            var targets=(await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
                                 return lib.skill.wuLingXianShu.isLegalTarget(player, target);
                             })
                             .set("ai", function (target) {
@@ -1653,7 +2200,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     target, source, _status.event.damageNum
                                 ) : 0;
                             }).set('source',player)
-                            .set('damageNum',event.num).forResultTargets();
+                            .set('damageNum',event.num).forResultTargets() || []);
                             for(var target of targets.sortBySeat(player)){
                                 if(charNum ==1 )
                                     await target.faShuDamage(event.num, player).set('shengLingZhu',false);
@@ -1726,7 +2273,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await event.trigger("wuLingXianShuStart");
                             var charNum= event.getParent().charNum || 1;
                             //var baseNum= event.getParent().baseNum || 1;
-                            var targets=await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
+                            var targets=(await player.chooseTarget(charNum, `对${charNum}名角色造成${event.num}点法术伤害`, true,function(card,player,target){
                                 return lib.skill.wuLingXianShu.isLegalTarget(player, target);
                             })
                             .set("ai", function (target) {
@@ -1735,7 +2282,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     target, source, _status.event.damageNum
                                 ) : 0;
                             }).set('source',player)
-                            .set('damageNum',event.num).forResultTargets();
+                            .set('damageNum',event.num).forResultTargets() || []);
                             for(var target of targets.sortBySeat(player)){
                                 if(charNum ==1 )
                                     await target.faShuDamage(event.num, player).set('shengLingZhu',false);
@@ -2579,7 +3126,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return current.countCards('h')>0;
                         }).sortBySeat(player);
                     for(var linkedPlayer of linkedPlayers){
-                        var discarded=await linkedPlayer
+                        var discarded=(await linkedPlayer
                             .chooseToDiscard(
                                 'h',
                                 '【柔情侠骨】：是否弃置1张手牌，代替'+
@@ -2595,7 +3142,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     return 8-get.value(card);
                                 }
                                 return 4-get.value(card);
-                            }).set('beneficiary',player).forResultCards();
+                            }).set('beneficiary',player).forResultCards() || []);
                         if(discarded&&discarded.length){
                             player.logSkill(
                                 'liXiaoYaoRouQingXiaGu',linkedPlayer
@@ -2884,11 +3431,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var cards = entries.map(function(entry) {
                         return entry.card;
                     });
-                    var selected = await target.chooseCardButton(
+                    var selected = (await target.chooseCardButton(
                         cards,
                         true,
                         "移除一个盖牌"
-                    ).forResultLinks();
+                    ).forResultLinks() || []);
                     var card = selected[0] || cards[0];
                     var entry = entries.find(function(current) {
                         return current.card == card;
@@ -3403,7 +3950,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     "order": 3.5,
                                     "result": {
                                         "target": function(player,target){
-                                    return get.damageEffect(target,2);
+                                    var num = 2 + (lib.skill.aNuStrategy.canBoost(player,'huo') ? 1 : 0);
+                                    var value = get.damageEffect(target,num);
+                                    if(target.hasSkill && target.hasSkill('baoZhaGu_xiaoGuo')) value -= 2;
+                                    return value;
                                 },
                                     },
                                 },
@@ -3463,10 +4013,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return 6-get.value(card);
                         },
                                 "ai": {
-                                    "order": 3.5,
+                                    "order": 3.4,
                                     "result": {
                                         "target": function(player,target){
-                                    return get.damageEffect(target);
+                                    var num = 1 + (lib.skill.aNuStrategy.canBoost(player,'lei') ? 1 : 0);
+                                    return get.damageEffect(target,num);
                                 },
                                     },
                                 },
@@ -3497,9 +4048,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         for(var i=0;i<zhanJi.length;i++){
                             list.push([zhanJi[i],get.translation(zhanJi[i])]);
                         }
-                        var desired=Math.max(0,Math.min(
-                            zhanJi.length,6-player.countGaiPai('gu')
-                        ));
+                        var desired=lib.skill.aNuStrategy.lianGuStars(player,zhanJi.length);
                         var result=await player.chooseButton([
                             '苗疆圣女：可移除任意颗我方【战绩区】星石，额外获得等量的【蛊】',
                             [list,'tdnodes'],
@@ -3584,7 +4133,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "check": function(event, player) {
                     var target = event.target;
                     return !!target && target.side != player.side &&
-                        !target.hasSkill('baoZhaGu_xiaoGuo');
+                        !target.hasSkill('baoZhaGu_xiaoGuo') &&
+                        lib.skill.aNuStrategy.yanShaZhouValue(player,target) > 0;
                 },
                     },
                     "tianLeiPo": {
@@ -3598,7 +4148,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     player.addGaiPai(cards,'gu');
                 },
                         "check": function(event, player) {
-                    return player.countGaiPai('gu') <= 3;
+                    return lib.skill.aNuStrategy.tianLeiPoWantsGu(player);
                 },
                     },
                     "yuFengShu": {
@@ -3653,6 +4203,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     trigger.changeDamageNum(1);
                     if(player.countCards('h')>0){
                         player.chooseCard('h',1,true).set('prompt','将自己1张手牌作为蛊').set('ai',function(card){
+                            if(card.hasDuYou && (card.hasDuYou('huoQou')||card.hasDuYou('leiJi'))) return -1;
                             var xiBie=get.xiBie(card);
                             var type=get.type(card);
                             if(xiBie=='guang'||xiBie=='huo'||type=='faShu') return 1;
@@ -3662,6 +4213,17 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
 					'step 1'
                     player.addGaiPai('gu',result.cards);
                 },
+                        "ai": {
+                            "effect": {
+                                "player": function(card, player, target) {
+                                    if(!card || get.type(card, player) !== 'gongJi') return;
+                                    if(!target || target.side === player.side) return;
+                                    if(!(target.hasJiChuXiaoGuo && target.hasJiChuXiaoGuo('_zhongDu'))) return;
+                                    // 御蜂术联动：攻击中毒目标伤害+1并回1蛊，放大目标受损估值
+                                    return [1, 0, 1.6, -0.4];
+                                },
+                            },
+                        },
                     },
                     "jinCanWang": {
                         "audio": "ext:宿命挽歌/audio/skill/jinCanWang.mp3",
@@ -3720,7 +4282,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 "player": 1,
                                 "target": function(player, target) {
                     if(target.side != player.side) return 100;
-                    return 2;
+                    var value = 2;
+                    value += Math.max(0, 2 - target.countNengLiang('baoShi')) * 0.8;
+                    if(target.countEmptyNengLiang && target.countEmptyNengLiang() <= 0) value -= 3;
+                    return value;
                 },
                             },
                         },
@@ -3745,11 +4310,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                         "contentBefore": async function(event,trigger,player){
                     var cards=player.getGaiPai('gu');
-                    var selectedCards = await player.chooseCardButton(cards,true,1,'爆炸蛊：选择1张火系【蛊】弃置')
+                    var selectedCards = (await player.chooseCardButton(cards,true,1,'爆炸蛊：选择1张火系【蛊】弃置')
                         .set('filterButton',function(button){
                         if(get.xiBie(button.link)!='huo') return false;
                         return true;
-                        }).forResultLinks();
+                        }).forResultLinks() || []);
                     await player.discard(selectedCards,'gu').set('showHiddenCards',true);
                 },
                         "content": function(event,trigger,player){
@@ -3763,7 +4328,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "result": {
                                 "target": function(player, target) {
                     if(target.side == player.side) return 100;
-                    return -2;
+                    var value = get.damageEffect(target,2) - 0.5;
+                    value -= lib.skill.aNuStrategy.fireFollowUp(player) * 0.5;
+                    return value;
                 },
                             },
                         },
@@ -3772,7 +4339,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 "mark": true,
                                 "marktext": "爆",
                                 "intro": {
-                                    "content": "受到火系攻击或火系法术伤害后，受到2点法术伤害",
+                                    "content": "受到火系攻击或火系法术伤害后，受到2点法术伤害，随后【爆炸蛊】移除",
                                 },
                                 "onremove": function(player){
                             delete player.storage.baoZhaGu_source;
@@ -3786,6 +4353,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                                 "content": async function(event,trigger,player){
                             var source=player.storage.baoZhaGu_source;
+                            player.removeSkill("baoZhaGu_xiaoGuo");
                             var damageEvent;
                             if(source&&!source.isDead()){
                                 damageEvent=player.faShuDamage(2,source,'nocard');
@@ -3794,6 +4362,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             }
                             await damageEvent.set('baoZhaGu',true);
                             game.log(player,'因【爆炸蛊】受到2点法术伤害');
+                            game.log(player,'的【爆炸蛊】已引爆并移除');
                         },
                             },
                         },
@@ -3819,16 +4388,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                         "contentBefore": async function(event,trigger,player){
                     var cards=player.getGaiPai('gu');
-                    var selectedCards = await player.chooseCardButton(cards,true,1,'三尸蛊：选择1张法术【蛊】弃置')
+                    var selectedCards = (await player.chooseCardButton(cards,true,1,'三尸蛊：选择1张法术【蛊】弃置')
                         .set('filterButton',function(button){
                         if(get.type(button.link)!='faShu') return false;
                         return true;
-                        }).forResultLinks();
+                        }).forResultLinks() || []);
                     await player.discard(selectedCards,'gu').set('showHiddenCards',true);
                 },
                         "content": async function(event,trigger,player){
-                    var poisonCard=game.createCard2('zhongDu');
-                    await player.useCard(poisonCard,event.target);
+                    await lib.suMingUseTemporaryEffectCard(player,'zhongDu',event.target);
                     player.addGongJiOrFaShu();
                 },
                         "ai": {
@@ -3837,7 +4405,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 "player": 1,
                                 "target": function(player, target) {
                     if(target.side == player.side) return 100;
-                    return -1.5;
+                    return lib.skill.aNuStrategy.sanShiGuTarget(player,target);
                 },
                             },
                         },
@@ -3910,8 +4478,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         var targets=game.filterPlayer();
                         if(!targets.length) break;
                         var target=targets[Math.floor(Math.random()*targets.length)];
-                        var poisonCard=game.createCard2('zhongDu');
-                        await player.useCard(poisonCard,target);
+                        await lib.suMingUseTemporaryEffectCard(player,'zhongDu',target);
                         game.log(target,'被【万蛊蚀天】施加了【中毒】');
                     }
                 },
@@ -3930,11 +4497,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "getAiScore": function(player) {
                     var score = 0;
-                    game.countPlayer(function(target) {
-                        if(target.hasZhiShiWu('wuDuZhu')) return;
+                    lib.skill.aNuStrategy.wanGuTargets(player).forEach(function(target) {
                         score += target.side == player.side ? -1 : 1;
                     });
                     if(get.shiQi(!player.side) <= 2) score += 0.75;
+                    var p = lib.skill.aNuStrategy.profile(player);
+                    if(p.guangCount > 0 && get.shiQi(player.side) <= 4) score -= 0.5;
                     return score;
                 },
                     },
@@ -3959,7 +4527,16 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "content": function(){
                     'step 0'
                     var cards=player.getGaiPai('gu');
-                    player.chooseCardButton(cards,'舍弃'+(cards.length-9)+'张【蛊】',true,cards.length-9);
+                    player.chooseCardButton(cards,'舍弃'+(cards.length-9)+'张【蛊】',true,cards.length-9)
+                        .set('ai',function(button){
+                        var card=button.link;
+                        var x=get.xiBie(card);
+                        var sameX=cards.filter(function(c){return get.xiBie(c)==x;}).length;
+                        var score=sameX*2;
+                        if(x=='guang') score+=0.5;
+                        if(get.type(card)=='faShu') score+=0.5;
+                        return score;
+                        });
                     'step 1'
                     if(result.links){
                         player.discard(result.links,'gu').set('sheQi',true);
@@ -4029,19 +4606,19 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     '移除战绩区1星石并指定目标'
                                 ).set('prompt','五毒珠：选择传递方式')
                                 .set('ai',function(){
-                                    return '传给左手边角色';
+                                    return lib.skill.aNuStrategy.wuDuZhuChoice(player,leftTarget);
                                 }).forResultControl();
 
                                 if(control=='移除战绩区1星石并指定目标'){
-                                    var targets=await player.chooseTarget(
+                                    var targets=(await player.chooseTarget(
                                         true,
                                         '五毒珠：选择一名其他角色获得【五毒珠】',
                                         function(card,player,target){
                                             return target!=player;
                                         }
                                     ).set('ai',function(target){
-                                        return get.attitude(_status.event.player,target);
-                                    }).forResultTargets();
+                                        return lib.skill.aNuStrategy.wuDuZhuTarget(_status.event.player,target);
+                                    }).forResultTargets() || []);
                                     if(!targets.length) return;
                                     target=targets[0];
 
@@ -4050,10 +4627,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     for(var i=0;i<zhanJi.length;i++){
                                         list.push([zhanJi[i],get.translation(zhanJi[i])]);
                                     }
-                                    var links=await player.chooseButton([
+                                    var links=(await player.chooseButton([
                                         '五毒珠：移除我方【战绩区】1星石',
                                         [list,'tdnodes'],
-                                    ],true).forResultLinks();
+                                    ],true).forResultLinks() || []);
                                     if(!links.length) return;
                                     await player.removeZhanJi(links[0],1);
                                 }
@@ -4079,7 +4656,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 "forced": true,
                                 "popup": false,
                                 "content": function(event, trigger, player) {
-                                    game.addGlobalSkill('fengMo');
+                                    if(lib.suMingBaiYueAi) lib.suMingBaiYueAi.applyActionPatch();
+                            game.addGlobalSkill('fengMo');
                                     game.broadcastAll(function(path, speaker) {
                                         if(!lib.config.background_audio) return;
                                         game.playAudio({
@@ -4104,10 +4682,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 !event.target.hasJiChuXiaoGuo('fengMo');
                         },
                         "content": async function(event, trigger, player) {
-                            var card = game.createCard2('fengMo');
-                            await trigger.target.addJiChuXiaoGuo(
-                                card, player, 'fengMo'
-                            );
+                            await lib.suMingAttachTemporaryEffectCard(trigger.target, player, 'fengMo', 'fengMo');
                             if(trigger.target.hasJiChuXiaoGuo('fengMo')) {
                                 trigger.target.addSkill('fengMo');
                                 game.broadcastAll(function(path, speaker) {
@@ -4238,14 +4813,22 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await player.addNengLiang('shuiJing', 1);
                         },
                         "ai": {
-                            "order": 5.8,
-                            "result": {"target": function(player, target) {
-                                var num = Math.min(4, Math.max(1,
-                                    player.getHandcardLimit() -
-                                    player.countCards('h') + 1));
-                                return get.damageEffect2(target, player, num);
-                            }},
-                        },
+    "order": 2.5,
+    "result": {
+        "player": function(player) {
+            // 只有手牌小于3时才发动，保留高手牌数量换取更高伤害
+            return player.countCards('h') < 3 ? 1 : -1;
+        },
+        "target": function(player, target) {
+            var num = Math.min(4, Math.max(1,
+                player.getHandcardLimit() - player.countCards('h') + 1));
+            var effect = get.damageEffect2(target, player, num);
+            // 这一击可直接清零目标阵营士气时视为斩杀
+            if(get.shiQi(target.side) <= num) effect += 5;
+            return effect;
+        },
+    },
+},
                     },
                     "duoHun": {
                         "audio": "ext:宿命挽歌/audio/skill/duoHun.mp3",
@@ -4284,13 +4867,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             }
                         },
                         "ai": {
-                            "order": 3.6,
-                            "result": {"player": function(player) {
-                                var own = get.shiQi(player.side);
-                                var enemy = get.shiQi(!player.side);
-                                return enemy <= 2 && own > enemy ? 1 : -1;
-                            }},
-                        },
+    "order": 5.5,
+    "result": {
+        "player": 1,
+        "target": function(player, target) {
+            if(target == player) return 0;
+            return target.side == player.side ? -1 : 1;
+        },
+    },
+},
                     },
                     "daZhouShe": {
                         "audio": "ext:宿命挽歌/audio/skill/daZhouShe.mp3",
@@ -4307,20 +4892,41 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "filterTarget": function() { return true; },
                         "content": async function(event, trigger, player) {
                             if(event.target.hasJiChuXiaoGuo('_xuRuo')) return;
-                            await player.useCard(
-                                game.createCard2('xuRuo'), event.target, false
-                            );
+                            await lib.suMingUseTemporaryEffectCard(player, 'xuRuo', event.target, false);
                         },
                         "contentAfter": async function(event, trigger, player) {
                             await player.addFaShu();
                         },
                         "ai": {
-                            "order": 4.8,
-                            "result": {"target": function(player, target) {
-                                if(target.hasJiChuXiaoGuo('_xuRuo')) return 0;
-                                return target.side == player.side ? -1.5 : 2;
-                            }},
-                        },
+    "order": 8.5,
+    "result": {
+        "target": function(player, target) {
+            if(target.hasJiChuXiaoGuo('_xuRuo')) return 0;
+            return target.side == player.side ? -1.5 : 2;
+        },
+        "player": function(player) {
+            // 不空放：必须有后续法术可衔接且仍剩法术行动
+            if(!(typeof player.storage.faShu == 'number' && player.storage.faShu > 0)) return -1;
+                        var gemFollow = player.canBiShaBaoShi && player.canBiShaBaoShi();
+            var hasShengDun = player.countCards('h', function(card) {
+                return get.name(card, player) == 'shengDun';
+            }) > 0;
+            var hasZhongDou = player.countCards('h', function(card) {
+                return get.name(card, player) == 'zhongDou';
+            }) > 0;
+            var names = ['anMie', 'shengGuang', 'zhongDou', 'shengDun'];
+            var follow = false;
+            for(var i = 0; i < names.length; i++) {
+                if(player.countCards('h', function(card) {
+                    return get.name(card, player) == names[i];
+                }) > 0) { follow = true; break; }
+            }
+            // 单独用宝石接腥风血雨会与虚弱重复，仅当另有圣盾或中毒时才允许
+            if(!follow && gemFollow && (hasShengDun || hasZhongDou)) follow = true;
+return follow ? 1 : -1;
+        },
+    },
+},
                     },
                     "duTunTianXia": {
                         "audio": "ext:宿命挽歌/audio/skill/duTunTianXia.mp3",
@@ -4337,17 +4943,27 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "filterTarget": function() { return true; },
                         "content": async function(event, trigger, player) {
                             for (var i = 0; i < 2; i++) {
-                                await player.useCard(
-                                    game.createCard2('zhongDu'), event.target, false
-                                );
+                                await lib.suMingUseTemporaryEffectCard(player, 'zhongDu', event.target, false);
                             }
                         },
                         "ai": {
-                            "order": 5,
-                            "result": {"target": function(player, target) {
-                                return target.side == player.side ? -2 : 2.5;
-                            }},
-                        },
+    "order": 4.5,
+    "result": {
+        "target": function(player, target) {
+            return target.side == player.side ? -2 : 2.5;
+        },
+        "player": function(player) {
+            // 全场（含自己与己方）施加2层中毒：按敌我净和评估
+            var net = lib.suMingBaiYueAi.transformBonus(player, 'duTunTianXia');
+            for(var i = 0; i < game.players.length; i++) {
+                var cur = game.players[i];
+                if(!cur.isIn()) continue;
+                net += cur.side == player.side ? -2 : 2.5;
+            }
+            return net > 0 ? net : -1;
+        },
+    },
+},
                     },
                     "qunMoLuanWu": {
                         "audio": "ext:宿命挽歌/audio/skill/qunMoLuanWu.mp3",
@@ -4370,17 +4986,21 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             );
                         },
                         "ai": {
-                            "order": 5.4,
-                            "result": {"target": function(player, target) {
-                                return get.damageEffect2(target, player, 2);
-                            }},
-                        },
+    "order": 7.5,
+    "result": {
+        "player": 1,
+        "target": function(player, target) {
+            return get.damageEffect2(target, player, 2) +
+                lib.suMingBaiYueAi.fengMoValue(player, target);
+        },
+    },
+},
                     },
                     "guiJiang": {
                         "audio": "ext:宿命挽歌/audio/skill/guiJiang.mp3",
                         "trigger": {"player": "chengShouShangHaiBefore"},
                         "filter": function(event, player) {
-                            return event.num > 0 && player.countCards('h', function(card) {
+                            return event.num >= 4 && player.countCards('h', function(card) {
                                 return get.name(card) == 'moDan';
                             }) > 0 && game.hasPlayer(function(current) {
                                 return current.side != player.side;
@@ -4394,15 +5014,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 return 8 - get.value(card);
                             }).forResultCards() || [];
                             if(!cards.length) { event.result = {bool:false}; return; }
-                            var targets = await player.chooseTarget(
+                            var targets = (await player.chooseTarget(
                                 true, '【鬼降】：选择承受转移伤害的对手',
                                 function(card, player, target) {
                                     return target.side != player.side;
                                 }
                             ).set('ai', function(target) {
-                                return get.damageEffect2(target, _status.event.player,
-                                    _status.event.getTrigger().num);
-                            }).forResultTargets();
+                                // 指定手牌最多的对手承受转移伤害
+                                return target.countCards('h');}).forResultTargets() || []);
                             event.result = {bool:targets.length > 0, cost_data:targets[0]};
                         },
                         "content": async function(event, trigger, player) {
@@ -4444,7 +5063,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             }
                         },
                         "check": function(event, player) {
-                            return get.jiChuXiaoGuoEffect(player) > 0;
+                            // 只在满手牌且被挂虚弱时考虑，星石达3颗或有多余水晶才允许消耗
+                            return player.hasJiChuXiaoGuo('_xuRuo') &&
+                                player.countCards('h') >= player.getHandcardLimit() &&
+                                (lib.suMingBaiYueAi.xingShiTotal(player) >= 3 ||
+                                    lib.suMingBaiYueAi.hasSpareShuiJing(player));
                         },
                         "ai": {"shuiJing": true},
                     },
@@ -4461,22 +5084,36 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await event.target.faShuDamage(2, player, 'nocard');
                             if(!event.target.isIn()) return;
                             if(get.shiQi(event.target.side) < oldMorale) {
-                                await player.useCard(
-                                    game.createCard2('zhongDu'), event.target, false
-                                );
+                                await lib.suMingUseTemporaryEffectCard(player, 'zhongDu', event.target, false);
                             } else if(!event.target.hasJiChuXiaoGuo('_xuRuo')) {
-                                await player.useCard(
-                                    game.createCard2('xuRuo'), event.target, false
-                                );
+                                await lib.suMingUseTemporaryEffectCard(player, 'xuRuo', event.target, false);
                             }
                         },
                         "ai": {
-                            "baoShi": true,
-                            "order": 6,
-                            "result": {"target": function(player, target) {
-                                return get.damageEffect2(target, player, 2);
-                            }},
-                        },
+    "baoShi": true,
+    "order": 6.5,
+    "result": {
+        "target": function(player, target) {
+            var effect = get.damageEffect2(target, player, 2);
+            // 治疗不足2点时大概率因士气下降追加中毒
+            if(target.side != player.side && (target.zhiLiao || 0) < 2) effect += 0.6;
+            return effect;
+        },
+        "player": function(player) {
+            // 全场2点法术伤害：掉士气者追加中毒，未掉士气者被施加虚弱
+            var net = lib.suMingBaiYueAi.transformBonus(player, 'xingFengXueYu');
+            for(var i = 0; i < game.players.length; i++) {
+                var cur = game.players[i];
+                if(!cur.isIn()) continue;
+                net += get.damageEffect2(cur, player, 2);
+                if((cur.zhiLiao || 0) < 2) net += cur.side == player.side ? -0.6 : 0.6;
+                // 自己的虚弱永远强吃，不计入发动代价
+                else if(!cur.hasJiChuXiaoGuo('_xuRuo')) net += cur == player ? 0 : (cur.side == player.side ? -0.4 : 0.2);
+            }
+            return net > 0.5 ? net : -1;
+        },
+    },
+},
                     },
                     "shuiMoShouZhiQu": {
                         "forced": true,
@@ -4643,9 +5280,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                         "content": async function(event, trigger, player) {
                             if(trigger.player.isIn()) {
-                                await player.useCard(
-                                    game.createCard2('zhongDu'), trigger.player, false
-                                );
+                                await lib.suMingUseTemporaryEffectCard(player, 'zhongDu', trigger.player, false);
                             }
                         },
                     },
@@ -4684,7 +5319,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 return score > 0 ? 5.6 : 1.8;
                             },
                             "result": {
-                                "player": 0.8,
+                                "player": function(player) {
+                                    // 地裂天崩后永远接风雪冰天：没有宝石时改为提炼，不空放
+                                    return (player.canBiShaBaoShi && player.canBiShaBaoShi()) ? 0.8 : -1;
+                                },
                                 "target": function(player, target) {
                                     return Math.max(0,
                                         target.getHandcardLimit() -
@@ -4694,6 +5332,23 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         },
                     },
                     "taoTianJuLang": {
+                        aiCostPlan: function(player) {
+                            var hand=player.getCards('h'),best=[],score=-Infinity;
+                            for(var i=0;i<hand.length;i++) for(var j=i+1;j<hand.length;j++) {
+                                if(!lib.filter.cardDiscardable(hand[i],player,'taoTianJuLang') ||
+                                    !lib.filter.cardDiscardable(hand[j],player,'taoTianJuLang')) continue;
+                                var safe=hand.some(function(card,k) {
+                                    return k!==i&&k!==j&&get.type(card,player)==='gongJi'&&get.name(card,player)!=='anMie'&&
+                                        lib.filter.cardEnabled(card,player)&&game.hasPlayer(function(target) {
+                                            return target.side!==player.side&&player.canUseXingBei(card,target);
+                                        });
+                                });
+                                if(!safe) continue;
+                                var value=14-get.value(hand[i],player)-get.value(hand[j],player);
+                                if(value>score){score=value;best=[hand[i],hand[j]];}
+                            }
+                            return best;
+                        },
                         "audio": "ext:宿命挽歌/audio/skill/taoTianJuLang.mp3",
                         "type": "qiDong",
                         "trigger": {"player": "qiDong"},
@@ -4704,9 +5359,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             var cards = await player.chooseToDiscard(
                                 'h', 2, get.prompt('taoTianJuLang')
                             ).set('prompt2', lib.translate.taoTianJuLang_info)
+                                .set('taoTianSafeCost',lib.skill.taoTianJuLang.aiCostPlan(player))
                                 .set('visible', true)
                                 .set('ai', function(card) {
-                                    return 7 - get.value(card, _status.event.player);
+                                    return _status.event.taoTianSafeCost.includes(card)?100:-10000;
                                 }).forResultCards() || [];
                             event.result = {bool: cards.length == 2};
                         },
@@ -4715,6 +5371,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             await player.addZhiShiWu('hongShui', 2, 8);
                         },
                         "check": function(event, player) {
+                            // 启动技发动后当回合无法提炼：星石不足3颗不放；
+                            // 多余水晶放宽时要求宝石至少1颗，保证后续【风雪冰天】费用
+                            var xingShi = lib.suMingBaiYueAi.xingShiTotal(player);
+                            var spareOK = lib.suMingBaiYueAi.hasSpareShuiJing(player) &&
+                                player.countNengLiang('baoShi') >= 1;
+                            if(xingShi < 3 && !spareOK) return false;
+                            if(lib.skill.taoTianJuLang.aiCostPlan(player).length!==2) return false;
                             var current = player.countZhiShiWu('hongShui');
                             if(current >= 8) return false;
                             if(lib.skill._heCheng &&
@@ -4723,7 +5386,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     get.xingBei(player.side) + 1 >= game.xingBeiMax)) {
                                 return false;
                             }
-                            if(get.shiQi(player.side) <= 3) return true;
+                                                        if(get.shiQi(player.side) <= 3) return true;
                             if(current > 6) return false;
                             var cards = player.getCards('h').sort(function(a, b) {
                                 return get.value(a, player) - get.value(b, player);
@@ -4731,7 +5394,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             var cost = (cards[0] ? get.value(cards[0], player) : 10) +
                                 (cards[1] ? get.value(cards[1], player) : 10);
                             return current <= 4 || cost <= 9;
-                        },
+                            },
                         "ai": {"shuiJing": true},
                     },
                     "fengXueBingTian": {
@@ -5041,7 +5704,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "jinCanWang": "法术【金蚕王】",
                     "jinCanWang_info": "<span class='tiaoJian'>（弃置5张不同系的<span class='lan'>【蛊】</span>）</span>目标角色+2【宝石】，你+1【宝石】。",
                     "baoZhaGu": "法术【爆炸蛊】",
-                    "baoZhaGu_info": "<span class='tiaoJian'>（弃置1张火系<span class='lan'>【蛊】</span>）</span>对目标施加【爆炸蛊】。<span class='tiaoJian'>（其承受火系攻击或火系法术伤害后⑤）</span>再承受2点法术伤害③。",
+                    "baoZhaGu_info": "<span class='tiaoJian'>（弃置1张火系<span class='lan'>【蛊】</span>）</span>对目标施加【爆炸蛊】。<span class='tiaoJian'>（其承受火系攻击或火系法术伤害后⑤）</span>再承受2点法术伤害③，随后移除【爆炸蛊】。",
                     "sanShiGu": "法术【三尸蛊】",
                     "sanShiGu_info": "【回合限定】<span class='tiaoJian'>（弃置1张法术<span class='lan'>【蛊】</span>）</span>视为对目标使用一次【中毒】，然后选择+1【攻击行动】或【法术行动】。",
                     "yinGu": "响应【隐蛊】",
@@ -5058,7 +5721,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-			"version": "2.26",
+			"version": "2.30",
         },
         "files": {
             "character": [
@@ -5218,4 +5881,4 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
         },
         "connect": true,
     };
-});
+}));
