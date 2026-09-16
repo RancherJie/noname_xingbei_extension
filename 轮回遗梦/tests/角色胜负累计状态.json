@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "countedGames": 170,
+  "processedSessions": [
+    "2026-09-13T09:39:18.803Z",
+    "2026-09-13T09:40:24.284Z",
+    "2026-09-13T09:42:30.822Z",
+    "2026-09-13T09:44:22.065Z",
+    "2026-09-13T09:45:40.604Z",
+    "2026-09-13T09:46:13.113Z",
+    "2026-09-13T09:47:05.267Z",
+    "2026-09-13T09:47:34.261Z",
+    "2026-09-13T09:48:28.238Z",
+    "2026-09-13T09:49:47.176Z",
+    "2026-09-13T09:51:09.681Z",
+    "2026-09-14T05:41:34.790Z",
+    "2026-09-14T05:42:54.473Z",
+    "2026-09-14T05:46:03.510Z",
+    "2026-09-14T06:13:14.499Z",
+    "2026-09-14T06:19:18.721Z",
+    "2026-09-14T06:34:54.136Z",
+    "2026-09-14T06:44:52.717Z",
+    "2026-09-14T07:05:32.006Z",
+    "2026-09-14T07:08:28.170Z",
+    "2026-09-14T07:30:03.189Z",
+    "2026-09-14T07:41:54.499Z",
+    "2026-09-14T08:05:30.822Z",
+    "2026-09-14T08:11:57.843Z",
+    "2026-09-14T08:55:44.165Z"
+  ],
+  "characters": {
+    "fengZhiJianSheng": {
+      "characterName": "风之剑圣",
+      "wins": 5,
+      "losses": 15
+    },
+    "kuangZhanShi": {
+      "characterName": "狂战士",
+      "wins": 15,
+      "losses": 5
+    },
+    "anShaZhe": {
+      "characterName": "暗杀者",
+      "wins": 1,
+      "losses": 0
+    },
+    "shenJianShou": {
+      "characterName": "神箭手",
+      "wins": 5,
+      "losses": 15
+    },
+    "yinYouShiRen": {
+      "characterName": "吟游诗人",
+      "wins": 0,
+      "losses": 1
+    },
+    "jingTian": {
+      "characterName": "景天",
+      "wins": 49,
+      "losses": 38
+    },
+    "beiyanadopushen": {
+      "characterName": "贝亚娜斗神",
+      "wins": 14,
+      "losses": 17
+    },
+    "baiHuaLiaoLuan": {
+      "characterName": "百花缭乱",
+      "wins": 14,
+      "losses": 16
+    },
+    "liXiaoYao": {
+      "characterName": "李逍遥",
+      "wins": 8,
+      "losses": 17
+    },
+    "baiYueJiaoZhu": {
+      "characterName": "水魔兽·拜月教主",
+      "wins": 30,
+      "losses": 7
+    },
+    "xiaoYan": {
+      "characterName": "萧炎",
+      "wins": 15,
+      "losses": 12
+    },
+    "tongGuHeRen": {
+      "characterName": "桐谷和人",
+      "wins": 14,
+      "losses": 15
+    },
+    "naiLong": {
+      "characterName": "奶龙",
+      "wins": 6,
+      "losses": 8
+    },
+    "yuanYiZheZhi": {
+      "characterName": "鸢一折纸",
+      "wins": 13,
+      "losses": 15
+    },
+    "zhaoFuQueJi": {
+      "characterName": "一姬",
+      "wins": 11,
+      "losses": 10
+    },
+    "siMiNai": {
+      "characterName": "四糸乃",
+      "wins": 11,
+      "losses": 13
+    },
+    "sheYaoNan": {
+      "characterName": "蛇妖男",
+      "wins": 19,
+      "losses": 14
+    },
+    "guiJiangJun": {
+      "characterName": "鬼将军",
+      "wins": 17,
+      "losses": 19
+    },
+    "yongChuTaFei": {
+      "characterName": "永雏塔菲",
+      "wins": 13,
+      "losses": 8
+    },
+    "suoNa": {
+      "characterName": "娑娜",
+      "wins": 12,
+      "losses": 14
+    },
+    "zhaoLingEr": {
+      "characterName": "赵灵儿",
+      "wins": 14,
+      "losses": 13
+    },
+    "aNu": {
+      "characterName": "阿奴",
+      "wins": 9,
+      "losses": 10
+    },
+    "heKeTuo": {
+      "characterName": "赫克托",
+      "wins": 8,
+      "losses": 15
+    },
+    "tiMo": {
+      "characterName": "提莫",
+      "wins": 15,
+      "losses": 17
+    },
+    "luMiYa": {
+      "characterName": "露米娅",
+      "wins": 15,
+      "losses": 15
+    },
+    "shiDiFu": {
+      "characterName": "史蒂夫",
+      "wins": 21,
+      "losses": 9
+    },
+    "tianQiZhe": {
+      "characterName": "天启者",
+      "wins": 14,
+      "losses": 16
+    },
+    "yuXueMoShen": {
+      "characterName": "狱血魔神",
+      "wins": 12,
+      "losses": 12
+    },
+    "youLa": {
+      "characterName": "优菈",
+      "wins": 16,
+      "losses": 9
+    },
+    "linYueRu": {
+      "characterName": "林月如",
+      "wins": 10,
+      "losses": 13
+    },
+    "yeDaoShenShiXiang": {
+      "characterName": "夜刀神十香",
+      "wins": 8,
+      "losses": 22
+    },
+    "shiQiKuangSan": {
+      "characterName": "时崎狂三",
+      "wins": 13,
+      "losses": 20
+    },
+    "yaTuoKeSi": {
+      "characterName": "亚托克斯",
+      "wins": 12,
+      "losses": 5
+    },
+    "dianGunOtto": {
+      "characterName": "电棍Otto",
+      "wins": 12,
+      "losses": 17
+    },
+    "wuHeQinLi": {
+      "characterName": "五河琴里",
+      "wins": 13,
+      "losses": 11
+    },
+    "baDe": {
+      "characterName": "巴德",
+      "wins": 10,
+      "losses": 10
+    }
+  }
+}

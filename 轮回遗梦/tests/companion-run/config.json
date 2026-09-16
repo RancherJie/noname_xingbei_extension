@@ -1,0 +1,12 @@
+{
+ "gamePath":"C:\\Users\\ZhenqiNet\\Downloads\\星杯\\无名杀.exe",
+ "mode":"3v3","randomCharacters":true,"games":2,"turnLimit":90,
+ "fixedCharacter":"jingTian",
+ "testAllies":["jingTian","xueJian","longKui"],
+ "testOpponents":["aNu","zhaoLingEr","liXiaoYao"],
+ "allowedPacks":["创世纪","电啸龙吟","宿命挽歌","轮回遗梦","峡谷幻音","永夜残响","bigcowcow"],
+ "simulationDelayMs":1,"pollIntervalMs":250,"timelineConsole":false,
+ "suppressVisualLogs":true,"timeoutSeconds":120,"swapFirst":false,
+ "debugPort":9246,"background":true,"turbo":true,"closeGameWhenFinished":true,
+ "recordHands":true,"red":[],"blue":[],"reportDirectory":"reports"
+}

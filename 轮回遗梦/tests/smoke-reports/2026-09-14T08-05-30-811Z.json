@@ -1,0 +1,78 @@
+{
+  "config": {
+    "gamePath": "C:\\Users\\ZhenqiNet\\Downloads\\星杯\\无名杀.exe",
+    "mode": "3v3",
+    "randomCharacters": true,
+    "games": 100,
+    "turnLimit": 90,
+    "allowedPacks": [
+      "创世纪",
+      "电啸龙吟",
+      "宿命挽歌",
+      "轮回遗梦",
+      "峡谷幻音",
+      "永夜残响",
+      "bigcowcow"
+    ],
+    "simulationDelayMs": 1,
+    "pollIntervalMs": 250,
+    "timelineConsole": false,
+    "suppressVisualLogs": true,
+    "timeoutSeconds": 100,
+    "swapFirst": false,
+    "debugPort": 9241,
+    "background": true,
+    "turbo": true,
+    "closeGameWhenFinished": true,
+    "recordHands": true,
+    "red": [],
+    "blue": [],
+    "reportDirectory": "smoke-reports"
+  },
+  "status": "running",
+  "startedAt": "2026-09-14T08:05:30.822Z",
+  "updatedAt": "2026-09-14T08:05:44.666Z",
+  "errors": [],
+  "games": [
+    {
+      "winner": "unknown",
+      "status": "crashed",
+      "phaseNumber": 0,
+      "redMorale": null,
+      "blueMorale": null,
+      "redCups": 0,
+      "blueCups": 0,
+      "errors": [
+        "Error: Error: 阵容不符合牛牛合集六人\n    at window.__xingbeiSimulator.ensureAuto (<anonymous>:531:78)\n    at <anonymous>:1:54\n    at CdpClient.evaluate (C:\\Users\\ZhenqiNet\\Downloads\\星杯\\resources\\app\\extension\\无名杯自动模拟器\\controller.js:138:19)\n    at async main (C:\\Users\\ZhenqiNet\\Downloads\\星杯\\resources\\app\\extension\\无名杯自动模拟器\\controller.js:1160:17)"
+      ],
+      "diagnosticCounts": {
+        "before": 0,
+        "after": 0,
+        "error": 0
+      },
+      "diagnostics": [],
+      "timeline": [],
+      "players": []
+    },
+    {
+      "winner": "unknown",
+      "status": "crashed",
+      "phaseNumber": 0,
+      "redMorale": null,
+      "blueMorale": null,
+      "redCups": 0,
+      "blueCups": 0,
+      "errors": [
+        "Error: Error: 阵容不符合牛牛合集六人\n    at window.__xingbeiSimulator.ensureAuto (<anonymous>:531:78)\n    at <anonymous>:1:54\n    at CdpClient.evaluate (C:\\Users\\ZhenqiNet\\Downloads\\星杯\\resources\\app\\extension\\无名杯自动模拟器\\controller.js:138:19)\n    at async main (C:\\Users\\ZhenqiNet\\Downloads\\星杯\\resources\\app\\extension\\无名杯自动模拟器\\controller.js:1160:17)"
+      ],
+      "diagnosticCounts": {
+        "before": 0,
+        "after": 0,
+        "error": 0
+      },
+      "diagnostics": [],
+      "timeline": [],
+      "players": []
+    }
+  ]
+}

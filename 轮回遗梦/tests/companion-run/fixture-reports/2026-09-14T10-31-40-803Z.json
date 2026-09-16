@@ -1,0 +1,1231 @@
+{
+  "config": {
+    "gamePath": "C:\\Users\\ZhenqiNet\\Downloads\\星杯\\无名杀.exe",
+    "mode": "3v3",
+    "randomCharacters": true,
+    "games": 1,
+    "turnLimit": 20,
+    "fixedCharacter": "jingTian",
+    "testWeapon": "镇妖剑",
+    "fixture": "fixture.js",
+    "testAllies": [
+      "jingTian",
+      "xueJian",
+      "longKui"
+    ],
+    "testOpponents": [
+      "aNu",
+      "zhaoLingEr",
+      "liXiaoYao"
+    ],
+    "allowedPacks": [
+      "创世纪",
+      "电啸龙吟",
+      "宿命挽歌",
+      "轮回遗梦",
+      "峡谷幻音",
+      "永夜残响",
+      "bigcowcow"
+    ],
+    "simulationDelayMs": 1,
+    "pollIntervalMs": 250,
+    "timelineConsole": false,
+    "suppressVisualLogs": true,
+    "timeoutSeconds": 120,
+    "swapFirst": false,
+    "debugPort": 9246,
+    "background": true,
+    "turbo": true,
+    "closeGameWhenFinished": true,
+    "recordHands": true,
+    "red": [],
+    "blue": [],
+    "reportDirectory": "fixture-reports"
+  },
+  "status": "completed",
+  "startedAt": "2026-09-14T10:31:40.814Z",
+  "updatedAt": "2026-09-14T10:31:46.017Z",
+  "errors": [],
+  "games": [
+    {
+      "winner": "red",
+      "firstSide": "random",
+      "phaseNumber": 6,
+      "redMorale": 1000,
+      "blueMorale": 998,
+      "redCups": 0,
+      "blueCups": 0,
+      "errors": [
+        "Error: Companion fixture: sword hit moves flower and heals\n    at check (<anonymous>:81:55)\n    at GameEvent.content (<anonymous>:114:3)\n    at async GameEvent.content (http://localhost:8089/noname/library/element/GameEvent/compilers/ArrayCompiler.js:26:19)\n    at async GameEvent.loop (http://localhost:8089/noname/library/element/gameEvent.js:1151:6)\n    at async http://localhost:8089/noname/library/element/gameEvent.js:1123:4\n    at async http://localhost:8089/noname/library/element/gameEvent.js:1193:5\n    at async GameEvent.content (http://localhost:8089/noname/library/element/GameEvent/compilers/ArrayCompiler.js:29:24)\n    at async GameEvent.loop (http://localhost:8089/noname/library/element/gameEvent.js:1151:6)\n    at async http://localhost:8089/noname/library/element/gameEvent.js:1123:4\n    at async http://localhost:8089/noname/library/element/gameEvent.js:1193:5"
+      ],
+      "timeline": [
+        {
+          "phase": 0,
+          "events": [
+            {
+              "time": 1789381904079,
+              "phase": 0,
+              "type": "skill",
+              "text": "景天（双剑宿缘）",
+              "reportOrder": 0,
+              "actor": "jingTian",
+              "actorName": "景天",
+              "skill": "lhym_shuangJian",
+              "skillName": "双剑宿缘",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904081,
+              "phase": 0,
+              "type": "log",
+              "text": "景天 发动了 【被动【双剑宿缘】】",
+              "reportOrder": 1
+            },
+            {
+              "time": 1789381904111,
+              "phase": 0,
+              "type": "log",
+              "text": "景天 获得了 2 个 【水晶】",
+              "reportOrder": 2
+            },
+            {
+              "time": 1789381904122,
+              "phase": 0,
+              "type": "skill",
+              "text": "雪见（花楹）",
+              "reportOrder": 3,
+              "actor": "xueJian",
+              "actorName": "雪见",
+              "skill": "lhym_huaYing",
+              "skillName": "花楹",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904123,
+              "phase": 0,
+              "type": "log",
+              "text": "雪见 发动了 【被动【花楹】】",
+              "reportOrder": 4
+            },
+            {
+              "time": 1789381904128,
+              "phase": 0,
+              "type": "log",
+              "text": "雪见 将【花楹】移至 雪见",
+              "reportOrder": 5
+            },
+            {
+              "time": 1789381904130,
+              "phase": 0,
+              "type": "skill",
+              "text": "龙葵（剑中人）",
+              "reportOrder": 6,
+              "actor": "longKui",
+              "actorName": "龙葵",
+              "skill": "lhym_jianZhongRen",
+              "skillName": "剑中人",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904130,
+              "phase": 0,
+              "type": "log",
+              "text": "龙葵 发动了 【专属【剑中人】】",
+              "reportOrder": 7
+            },
+            {
+              "time": 1789381904136,
+              "phase": 0,
+              "type": "skill",
+              "text": "阿奴（五毒珠）",
+              "reportOrder": 8,
+              "actor": "aNu",
+              "actorName": "阿奴",
+              "skill": "wuDuZhu_kaiShi",
+              "skillName": "五毒珠",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904136,
+              "phase": 0,
+              "type": "log",
+              "text": "阿奴 发动了 【专属【五毒珠】】",
+              "reportOrder": 9
+            },
+            {
+              "time": 1789381904142,
+              "phase": 0,
+              "type": "log",
+              "text": "阿奴 获得了 1 个 【(专)[五毒珠]】",
+              "reportOrder": 10
+            }
+          ]
+        },
+        {
+          "phase": 1,
+          "events": [
+            {
+              "time": 1789381904160,
+              "phase": 1,
+              "type": "log",
+              "text": "李逍遥 的回合开始",
+              "reportOrder": 12
+            },
+            {
+              "time": 1789381904163,
+              "phase": 1,
+              "type": "hands",
+              "text": "初始手牌",
+              "reportOrder": 13,
+              "initial": true,
+              "hands": [
+                {
+                  "seat": 1,
+                  "characterName": "景天",
+                  "cards": [
+                    "风刀",
+                    "雷刀",
+                    "地刀",
+                    "地刀"
+                  ]
+                },
+                {
+                  "seat": 2,
+                  "characterName": "李逍遥",
+                  "cards": [
+                    "地圣盾",
+                    "水虚弱",
+                    "雷刀",
+                    "雷中毒"
+                  ]
+                },
+                {
+                  "seat": 3,
+                  "characterName": "雪见",
+                  "cards": [
+                    "圣光",
+                    "风圣盾",
+                    "风刀",
+                    "火刀"
+                  ]
+                },
+                {
+                  "seat": 4,
+                  "characterName": "赵灵儿",
+                  "cards": [
+                    "水刀",
+                    "地圣盾",
+                    "水刀",
+                    "雷刀"
+                  ]
+                },
+                {
+                  "seat": 5,
+                  "characterName": "龙葵",
+                  "cards": [
+                    "风刀",
+                    "地刀",
+                    "雷魔弹",
+                    "火刀"
+                  ]
+                },
+                {
+                  "seat": 6,
+                  "characterName": "阿奴",
+                  "cards": [
+                    "火魔弹",
+                    "暗灭",
+                    "水刀",
+                    "风刀"
+                  ]
+                }
+              ]
+            },
+            {
+              "time": 1789381904167,
+              "phase": 1,
+              "type": "log",
+              "text": "李逍遥 进入了行动阶段",
+              "reportOrder": 14
+            },
+            {
+              "time": 1789381904198,
+              "phase": 1,
+              "type": "spell",
+              "text": "李逍遥（地圣盾）→赵灵儿",
+              "reportOrder": 15
+            },
+            {
+              "time": 1789381904210,
+              "phase": 1,
+              "type": "log",
+              "text": "李逍遥 将 地圣盾 【圣盾】 置于 赵灵儿 角色牌上",
+              "reportOrder": 16
+            }
+          ]
+        },
+        {
+          "phase": 2,
+          "events": [
+            {
+              "time": 1789381904325,
+              "phase": 2,
+              "type": "log",
+              "text": "雪见 的回合开始",
+              "reportOrder": 18
+            },
+            {
+              "time": 1789381904327,
+              "phase": 2,
+              "type": "hands",
+              "text": "手牌变化",
+              "reportOrder": 19,
+              "initial": false,
+              "hands": [
+                {
+                  "seat": 2,
+                  "characterName": "李逍遥",
+                  "cards": [
+                    "水虚弱",
+                    "雷刀",
+                    "雷中毒"
+                  ]
+                }
+              ]
+            },
+            {
+              "time": 1789381904331,
+              "phase": 2,
+              "type": "log",
+              "text": "雪见 进入了行动阶段",
+              "reportOrder": 20
+            },
+            {
+              "time": 1789381904362,
+              "phase": 2,
+              "type": "skill",
+              "text": "雪见（神树献灵）→景天",
+              "reportOrder": 21,
+              "actor": "xueJian",
+              "actorName": "雪见",
+              "skill": "lhym_shenShu",
+              "skillName": "神树献灵",
+              "targets": [
+                "jingTian"
+              ],
+              "source": "useSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904364,
+              "phase": 2,
+              "type": "log",
+              "text": "雪见 对 景天 发动了 【法术【神树献灵】】",
+              "reportOrder": 22
+            }
+          ]
+        },
+        {
+          "phase": 3,
+          "events": [
+            {
+              "time": 1789381904468,
+              "phase": 3,
+              "type": "log",
+              "text": "赵灵儿 的回合开始",
+              "reportOrder": 24
+            },
+            {
+              "time": 1789381904472,
+              "phase": 3,
+              "type": "log",
+              "text": "赵灵儿 进入了行动阶段",
+              "reportOrder": 25
+            },
+            {
+              "time": 1789381904492,
+              "phase": 3,
+              "type": "system",
+              "text": "阵容验证通过：牛牛合集六名角色：jingTian、liXiaoYao、xueJian、zhaoLingEr、longKui、aNu",
+              "reportOrder": 26
+            },
+            {
+              "time": 1789381904492,
+              "phase": 3,
+              "type": "system",
+              "text": "极速模拟已启用：已跳过本体结算等待",
+              "reportOrder": 27
+            },
+            {
+              "time": 1789381904518,
+              "phase": 3,
+              "type": "skill",
+              "text": "赵灵儿（观音咒）→赵灵儿",
+              "reportOrder": 28,
+              "actor": "zhaoLingEr",
+              "actorName": "赵灵儿",
+              "skill": "guanYinZhou",
+              "skillName": "观音咒",
+              "targets": [
+                "zhaoLingEr"
+              ],
+              "source": "useSkill",
+              "suppressBrief": true
+            },
+            {
+              "time": 1789381904518,
+              "phase": 3,
+              "type": "log",
+              "text": "赵灵儿 对 赵灵儿 发动了 【法术【观音咒】】",
+              "reportOrder": 29
+            },
+            {
+              "time": 1789381904521,
+              "phase": 3,
+              "type": "action",
+              "text": "赵灵儿（观音咒）→赵灵儿（治疗+1）",
+              "reportOrder": 30
+            },
+            {
+              "time": 1789381904528,
+              "phase": 3,
+              "type": "log",
+              "text": "赵灵儿 获得了 1 个 【灵力】",
+              "reportOrder": 31
+            }
+          ]
+        },
+        {
+          "phase": 4,
+          "events": [
+            {
+              "time": 1789381904545,
+              "phase": 4,
+              "type": "log",
+              "text": "龙葵 的回合开始",
+              "reportOrder": 33
+            },
+            {
+              "time": 1789381904549,
+              "phase": 4,
+              "type": "log",
+              "text": "龙葵 进入了行动阶段",
+              "reportOrder": 34
+            },
+            {
+              "time": 1789381904563,
+              "phase": 4,
+              "type": "skill",
+              "text": "李逍遥（仙风云体术）",
+              "reportOrder": 35,
+              "actor": "liXiaoYao",
+              "actorName": "李逍遥",
+              "skill": "xianFengYunTiShu",
+              "skillName": "仙风云体术",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904563,
+              "phase": 4,
+              "type": "log",
+              "text": "李逍遥 发动了 【响应【仙风云体术】】",
+              "reportOrder": 36
+            },
+            {
+              "time": 1789381904571,
+              "phase": 4,
+              "type": "log",
+              "text": "李逍遥 展示了 风圣盾",
+              "reportOrder": 37
+            },
+            {
+              "time": 1789381904578,
+              "phase": 4,
+              "type": "log",
+              "text": "蓝方战绩区增加了1个 宝石",
+              "reportOrder": 38
+            },
+            {
+              "time": 1789381904589,
+              "phase": 4,
+              "type": "action",
+              "text": "李逍遥摸2",
+              "reportOrder": 39
+            },
+            {
+              "time": 1789381904711,
+              "phase": 4,
+              "type": "attack",
+              "text": "龙葵（风刀）→李逍遥（-2）",
+              "reportOrder": 34.75
+            }
+          ]
+        },
+        {
+          "phase": 5,
+          "events": [
+            {
+              "time": 1789381904726,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 的回合开始",
+              "reportOrder": 42
+            },
+            {
+              "time": 1789381904727,
+              "phase": 5,
+              "type": "hands",
+              "text": "手牌变化",
+              "reportOrder": 43,
+              "initial": false,
+              "hands": [
+                {
+                  "seat": 2,
+                  "characterName": "李逍遥",
+                  "cards": [
+                    "火刀",
+                    "火刀",
+                    "风圣盾",
+                    "水虚弱",
+                    "雷刀",
+                    "雷中毒"
+                  ]
+                },
+                {
+                  "seat": 5,
+                  "characterName": "龙葵",
+                  "cards": [
+                    "地刀",
+                    "雷魔弹",
+                    "火刀"
+                  ]
+                }
+              ]
+            },
+            {
+              "time": 1789381904730,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 进入了行动阶段",
+              "reportOrder": 44
+            },
+            {
+              "time": 1789381904743,
+              "phase": 5,
+              "type": "log",
+              "text": "本次攻击无法被应战",
+              "reportOrder": 45
+            },
+            {
+              "time": 1789381904766,
+              "phase": 5,
+              "type": "attack",
+              "text": "阿奴（暗灭）→雪见（圣光）",
+              "reportOrder": 44.75
+            },
+            {
+              "time": 1789381904777,
+              "phase": 5,
+              "type": "skill",
+              "text": "阿奴（五毒珠）",
+              "reportOrder": 47,
+              "actor": "aNu",
+              "actorName": "阿奴",
+              "skill": "wuDuZhu_chuanDi",
+              "skillName": "五毒珠",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904777,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 发动了 【专属【五毒珠】】",
+              "reportOrder": 48
+            },
+            {
+              "time": 1789381904781,
+              "phase": 5,
+              "type": "log",
+              "text": "龙葵 获得了 1 个 【(专)[五毒珠]】",
+              "reportOrder": 49
+            },
+            {
+              "time": 1789381904787,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 移去了 1 个 【(专)[五毒珠]】",
+              "reportOrder": 50
+            },
+            {
+              "time": 1789381904794,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 将【五毒珠】传递给了 龙葵",
+              "reportOrder": 51
+            },
+            {
+              "time": 1789381904795,
+              "phase": 5,
+              "type": "skill",
+              "text": "阿奴（炼蛊术）",
+              "reportOrder": 52,
+              "actor": "aNu",
+              "actorName": "阿奴",
+              "skill": "miaoJiangShengNv_lianGuShu",
+              "skillName": "炼蛊术",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904795,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 发动了 【【炼蛊术】】",
+              "reportOrder": 53
+            },
+            {
+              "time": 1789381904799,
+              "phase": 5,
+              "type": "skill",
+              "text": "阿奴（苗疆圣女）",
+              "reportOrder": 54,
+              "actor": "aNu",
+              "actorName": "阿奴",
+              "skill": "miaoJiangShengNv",
+              "skillName": "苗疆圣女",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904799,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 发动了 【被动【苗疆圣女】】",
+              "reportOrder": 55
+            },
+            {
+              "time": 1789381904804,
+              "phase": 5,
+              "type": "log",
+              "text": "阿奴 将 1 张 【蛊】 置于角色牌上",
+              "reportOrder": 56
+            }
+          ]
+        },
+        {
+          "phase": 6,
+          "events": [
+            {
+              "time": 1789381904927,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 的回合开始",
+              "reportOrder": 58
+            },
+            {
+              "time": 1789381904929,
+              "phase": 6,
+              "type": "hands",
+              "text": "手牌变化",
+              "reportOrder": 59,
+              "initial": false,
+              "hands": [
+                {
+                  "seat": 3,
+                  "characterName": "雪见",
+                  "cards": [
+                    "风圣盾",
+                    "风刀",
+                    "火刀"
+                  ]
+                },
+                {
+                  "seat": 6,
+                  "characterName": "阿奴",
+                  "cards": [
+                    "火魔弹",
+                    "水刀",
+                    "风刀"
+                  ]
+                }
+              ]
+            },
+            {
+              "time": 1789381904931,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 移去了 2 个 【水晶】",
+              "reportOrder": 60
+            },
+            {
+              "time": 1789381904938,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 获得了 1 个 【宝石】",
+              "reportOrder": 61
+            },
+            {
+              "time": 1789381904944,
+              "phase": 6,
+              "type": "skill",
+              "text": "景天（典当）",
+              "reportOrder": 62,
+              "actor": "jingTian",
+              "actorName": "景天",
+              "skill": "lhym_dianDang",
+              "skillName": "典当",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904944,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 发动了 【响应【典当】】",
+              "reportOrder": 63
+            },
+            {
+              "time": 1789381904950,
+              "phase": 6,
+              "type": "skill",
+              "text": "景天（宿缘相应）→雪见",
+              "reportOrder": 64,
+              "actor": "jingTian",
+              "actorName": "景天",
+              "skill": "lhym_suYuan",
+              "skillName": "宿缘相应",
+              "targets": [
+                "xueJian"
+              ],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904950,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 对 雪见 发动了 【响应【宿缘相应】】",
+              "reportOrder": 65
+            },
+            {
+              "time": 1789381904954,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 获得了 1 个 【水晶】",
+              "reportOrder": 66
+            },
+            {
+              "time": 1789381904961,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 获得了 1 个 【水晶】",
+              "reportOrder": 67
+            },
+            {
+              "time": 1789381904971,
+              "phase": 6,
+              "type": "log",
+              "text": "蓝方战绩区增加了2个 水晶",
+              "reportOrder": 68
+            },
+            {
+              "time": 1789381904977,
+              "phase": 6,
+              "type": "skill",
+              "text": "雪见提炼",
+              "reportOrder": 69,
+              "actor": "xueJian",
+              "actorName": "雪见",
+              "skill": "_tiLian_backup",
+              "skillName": "提炼",
+              "targets": [],
+              "source": "useSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904978,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 发动了 【提炼】",
+              "reportOrder": 70
+            },
+            {
+              "time": 1789381904983,
+              "phase": 6,
+              "type": "log",
+              "text": "蓝方战绩区移除了2个 水晶",
+              "reportOrder": 71
+            },
+            {
+              "time": 1789381904989,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 获得了 2 个 【水晶】",
+              "reportOrder": 72
+            },
+            {
+              "time": 1789381904996,
+              "phase": 6,
+              "type": "skill",
+              "text": "景天（飞龙探云手）",
+              "reportOrder": 73,
+              "actor": "jingTian",
+              "actorName": "景天",
+              "skill": "lhym_feiLong",
+              "skillName": "飞龙探云手",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381904996,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 发动了 【被动【飞龙探云手】】",
+              "reportOrder": 74
+            },
+            {
+              "time": 1789381905000,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 移去了 1 个 【水晶】",
+              "reportOrder": 75
+            },
+            {
+              "time": 1789381905006,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 获得了 1 个 【水晶】",
+              "reportOrder": 76
+            },
+            {
+              "time": 1789381905019,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 将【花楹】移至 景天",
+              "reportOrder": 77
+            },
+            {
+              "time": 1789381905019,
+              "phase": 6,
+              "type": "action",
+              "text": "景天 弃4 摸2",
+              "reportOrder": 78
+            },
+            {
+              "time": 1789381905027,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 获得了 地刀、地刀、地刀、地刀、地刀、地刀",
+              "reportOrder": 79
+            },
+            {
+              "time": 1789381905162,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 受到 李逍遥 造成的2点法术伤害",
+              "reportOrder": 80
+            },
+            {
+              "time": 1789381905302,
+              "phase": 6,
+              "type": "skill",
+              "text": "雪见（花楹护主）→景天",
+              "reportOrder": 81,
+              "actor": "xueJian",
+              "actorName": "雪见",
+              "skill": "lhym_huZhu",
+              "skillName": "花楹护主",
+              "targets": [
+                "jingTian"
+              ],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381905302,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 对 景天 发动了 【响应【花楹护主】】",
+              "reportOrder": 82
+            },
+            {
+              "time": 1789381905309,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 将 1 张 【花露】 置于角色牌上",
+              "reportOrder": 83
+            },
+            {
+              "time": 1789381905412,
+              "phase": 6,
+              "type": "action",
+              "text": "景天 弃1",
+              "reportOrder": 84
+            },
+            {
+              "time": 1789381905417,
+              "phase": 6,
+              "type": "action",
+              "text": "蓝方士气-1",
+              "reportOrder": 85
+            },
+            {
+              "time": 1789381905424,
+              "phase": 6,
+              "type": "spell",
+              "text": "李逍遥（法术伤害）→景天（-2）",
+              "reportOrder": 79.5
+            },
+            {
+              "time": 1789381905424,
+              "phase": 6,
+              "type": "skill",
+              "text": "雪见（神树献灵）→景天",
+              "reportOrder": 87,
+              "actor": "xueJian",
+              "actorName": "雪见",
+              "skill": "lhym_shenShu",
+              "skillName": "神树献灵",
+              "targets": [
+                "jingTian"
+              ],
+              "source": "useSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381905426,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 对 景天 发动了 【法术【神树献灵】】",
+              "reportOrder": 88
+            },
+            {
+              "time": 1789381905434,
+              "phase": 6,
+              "type": "action",
+              "text": "李逍遥 弃6",
+              "reportOrder": 89
+            },
+            {
+              "time": 1789381905441,
+              "phase": 6,
+              "type": "log",
+              "text": "赵灵儿 移除了 1 张 【圣盾】",
+              "reportOrder": 90
+            },
+            {
+              "time": 1789381905446,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 将【花楹】移至 雪见",
+              "reportOrder": 91
+            },
+            {
+              "time": 1789381905446,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 获得了 火刀",
+              "reportOrder": 92
+            },
+            {
+              "time": 1789381905554,
+              "phase": 6,
+              "type": "action",
+              "text": "景天 弃1",
+              "reportOrder": 93
+            },
+            {
+              "time": 1789381905558,
+              "phase": 6,
+              "type": "action",
+              "text": "蓝方士气-1",
+              "reportOrder": 94
+            },
+            {
+              "time": 1789381905570,
+              "phase": 6,
+              "type": "skill",
+              "text": "景天（神剑照胆）",
+              "reportOrder": 95,
+              "actor": "jingTian",
+              "actorName": "景天",
+              "skill": "lhym_zhaoDan",
+              "skillName": "神剑照胆",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381905570,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 发动了 【响应【神剑照胆】】",
+              "reportOrder": 96
+            },
+            {
+              "time": 1789381905575,
+              "phase": 6,
+              "type": "skill",
+              "text": "景天（锋芒毕露）",
+              "reportOrder": 97,
+              "actor": "jingTian",
+              "actorName": "景天",
+              "skill": "lhym_fengMang",
+              "skillName": "锋芒毕露",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": true
+            },
+            {
+              "time": 1789381905575,
+              "phase": 6,
+              "type": "log",
+              "text": "景天 发动了 【被动【锋芒毕露】】",
+              "reportOrder": 98
+            },
+            {
+              "time": 1789381905579,
+              "phase": 6,
+              "type": "skill",
+              "text": "李逍遥（仙风云体术）",
+              "reportOrder": 99,
+              "actor": "liXiaoYao",
+              "actorName": "李逍遥",
+              "skill": "xianFengYunTiShu",
+              "skillName": "仙风云体术",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381905579,
+              "phase": 6,
+              "type": "log",
+              "text": "李逍遥 发动了 【响应【仙风云体术】】",
+              "reportOrder": 100
+            },
+            {
+              "time": 1789381905584,
+              "phase": 6,
+              "type": "log",
+              "text": "李逍遥 展示了 雷刀",
+              "reportOrder": 101
+            },
+            {
+              "time": 1789381905598,
+              "phase": 6,
+              "type": "log",
+              "text": "红方战绩区增加了1个 水晶",
+              "reportOrder": 102
+            },
+            {
+              "time": 1789381905604,
+              "phase": 6,
+              "type": "skill",
+              "text": "李逍遥（御剑术）",
+              "reportOrder": 103,
+              "actor": "liXiaoYao",
+              "actorName": "李逍遥",
+              "skill": "yuJianShu",
+              "skillName": "御剑术",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381905604,
+              "phase": 6,
+              "type": "log",
+              "text": "李逍遥 发动了 【被动【御剑术】】",
+              "reportOrder": 104
+            },
+            {
+              "time": 1789381905608,
+              "phase": 6,
+              "type": "log",
+              "text": "李逍遥 获得了 1 个 【剑】",
+              "reportOrder": 105
+            },
+            {
+              "time": 1789381905614,
+              "phase": 6,
+              "type": "skill",
+              "text": "阿奴（海棠夫人）",
+              "reportOrder": 106,
+              "actor": "aNu",
+              "actorName": "阿奴",
+              "skill": "haiTangFuRen",
+              "skillName": "海棠夫人",
+              "targets": [],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381905614,
+              "phase": 6,
+              "type": "log",
+              "text": "阿奴 发动了 【被动【海棠夫人】】",
+              "reportOrder": 107
+            },
+            {
+              "time": 1789381905618,
+              "phase": 6,
+              "type": "log",
+              "text": "阿奴 将 1 张 【蛊】 置于角色牌上",
+              "reportOrder": 108
+            },
+            {
+              "time": 1789381905724,
+              "phase": 6,
+              "type": "action",
+              "text": "雪见摸2",
+              "reportOrder": 109
+            },
+            {
+              "time": 1789381905829,
+              "phase": 6,
+              "type": "skill",
+              "text": "雪见（花楹护主）→雪见",
+              "reportOrder": 110,
+              "actor": "xueJian",
+              "actorName": "雪见",
+              "skill": "lhym_huZhu",
+              "skillName": "花楹护主",
+              "targets": [
+                "xueJian"
+              ],
+              "source": "logSkill",
+              "suppressBrief": false
+            },
+            {
+              "time": 1789381905830,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 对 雪见 发动了 【响应【花楹护主】】",
+              "reportOrder": 111
+            },
+            {
+              "time": 1789381905833,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 将 1 张 【花露】 置于角色牌上",
+              "reportOrder": 112
+            },
+            {
+              "time": 1789381905937,
+              "phase": 6,
+              "type": "log",
+              "text": "雪见 弃置了 0 张牌",
+              "reportOrder": 113
+            },
+            {
+              "time": 1789381905950,
+              "phase": 6,
+              "type": "attack",
+              "text": "景天（火刀）→李逍遥（雷刀）→雪见（-2）",
+              "reportOrder": 94.75
+            },
+            {
+              "time": 1789381905959,
+              "phase": 6,
+              "type": "log",
+              "text": "Companion fixture FAILED Error: Companion fixture: sword hit moves flower and heals at check (:81:55) at GameEvent.content (:114:3) at async GameEvent.content (http://localhost:8089/noname/library/element/GameEvent/compilers/ArrayCompiler.js:26:19) at async GameEvent.loop (http://localhost:8089/noname/library/element/gameEvent.js:1151:6) at async http://localhost:8089/noname/library/element/gameEvent.js:1123:4 at async http://localhost:8089/noname/library/element/gameEvent.js:1193:5 at async GameEvent.content (http://localhost:8089/noname/library/element/GameEvent/compilers/ArrayCompiler.js:29:24) at async GameEvent.loop (http://localhost:8089/noname/library/element/gameEvent.js:1151:6) at async http://localhost:8089/noname/library/element/gameEvent.js:1123:4 at async http://localhost:8089/noname/library/element/gameEvent.js:1193:5",
+              "reportOrder": 115
+            }
+          ]
+        }
+      ],
+      "diagnosticCounts": {
+        "before": 0,
+        "after": 0,
+        "error": 0
+      },
+      "players": [
+        {
+          "character": "jingTian",
+          "characterName": "景天",
+          "side": "blue",
+          "damage": 0,
+          "damaged": 2,
+          "healing": 0,
+          "morale": 0,
+          "moraleLost": 2,
+          "record": 0
+        },
+        {
+          "character": "liXiaoYao",
+          "characterName": "李逍遥",
+          "side": "red",
+          "damage": 4,
+          "damaged": 2,
+          "healing": 0,
+          "morale": 1,
+          "moraleLost": 0,
+          "record": 1
+        },
+        {
+          "character": "xueJian",
+          "characterName": "雪见",
+          "side": "blue",
+          "damage": 0,
+          "damaged": 2,
+          "healing": 0,
+          "morale": 0,
+          "moraleLost": 0,
+          "record": 2
+        },
+        {
+          "character": "zhaoLingEr",
+          "characterName": "赵灵儿",
+          "side": "red",
+          "damage": 0,
+          "damaged": 0,
+          "healing": 1,
+          "morale": 0,
+          "moraleLost": 0,
+          "record": 0
+        },
+        {
+          "character": "longKui",
+          "characterName": "龙葵",
+          "side": "blue",
+          "damage": 2,
+          "damaged": 0,
+          "healing": 0,
+          "morale": 0,
+          "moraleLost": 0,
+          "record": 1
+        },
+        {
+          "character": "aNu",
+          "characterName": "阿奴",
+          "side": "red",
+          "damage": 0,
+          "damaged": 0,
+          "healing": 0,
+          "morale": 0,
+          "moraleLost": 0,
+          "record": 0
+        }
+      ],
+      "status": "finished"
+    }
+  ],
+  "finishedAt": "2026-09-14T10:31:46.017Z"
+}

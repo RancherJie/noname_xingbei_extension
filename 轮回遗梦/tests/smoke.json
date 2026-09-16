@@ -1,0 +1,10 @@
+{
+  "gamePath":"C:\\Users\\ZhenqiNet\\Downloads\\星杯\\无名杀.exe",
+  "mode":"3v3","randomCharacters":true,"games":100,"turnLimit":90,
+  "allowedPacks":["创世纪","电啸龙吟","宿命挽歌","轮回遗梦","峡谷幻音","永夜残响","bigcowcow"],
+  "simulationDelayMs":1,"pollIntervalMs":250,"timelineConsole":false,
+  "suppressVisualLogs":true,"timeoutSeconds":100,"swapFirst":false,
+  "debugPort":9241,"background":true,"turbo":true,"closeGameWhenFinished":true,
+  "recordHands":true,"red":[],"blue":[],
+  "reportDirectory":"smoke-reports"
+}
