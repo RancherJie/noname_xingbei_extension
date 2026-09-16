@@ -1,6 +1,6 @@
 game.import("extension", function(lib, game, ui, get, ai, _status) {
     // One manager owns both forms; all nested feather operations finish before switching.
-    const oz = {
+    const oz = lib.yongYeZheZhiHelpers = {
         light: 'zheZhiGuangYu', dark: 'zheZhiHeiYu',
         normal: p => [p.name, p.name1, p.name2].includes('yuanYiZheZhi'),
         inverse: p => [p.name, p.name1, p.name2].includes('fanZhuanZheZhi'),
@@ -48,9 +48,42 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
         },
         async choose(p, prompt, candidates, score) {
             if(!candidates.length) return null;
-            const targets = await p.chooseTarget(prompt, true, (card, player, target) => candidates.includes(target))
-                .set('ai', score).forResultTargets();
-            return targets?.[0] || null;
+
+            const ids=candidates
+                .filter(function(target){return target&&target.isIn();})
+                .map(function(target){return target.playerid;});
+            if(!ids.length) return null;
+
+            const scoreMap={};
+            for(const target of candidates) {
+                if(!target||!target.isIn()||!target.playerid) continue;
+                let value=0;
+                try {
+                    value=typeof score==='function' ? score(target) : 0;
+                } catch(err) {}
+                scoreMap[target.playerid]=
+                    typeof value==='number'&&isFinite(value) ? value : 0;
+            }
+
+            const targets=(await p.chooseTarget(
+                prompt,
+                true,
+                function(card,player,target) {
+                    var ids=_status.event.ozCandidateIds||[];
+                    return !!target&&ids.indexOf(target.playerid)!==-1;
+                }
+            )
+            .set('ozCandidateIds',ids)
+            .set('ozScoreMap',scoreMap)
+            .set('ai',function(target) {
+                var map=_status.event.ozScoreMap||{};
+                if(!target||!target.playerid) return 0;
+                var value=map[target.playerid];
+                return typeof value==='number' ? value : 0;
+            })
+            .forResultTargets() || []);
+
+            return targets&&targets.length ? targets[0] : null;
         },
         damageScore(p, t, n) {
             if(!t?.isIn()) return 0;
@@ -199,8 +232,30 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             trigger:{player:['gongJiEnd','faShuEnd']},
             filter:(e,p)=>!!e && !e.yingZhan && get.is.xingDong(e) && oz.count(p,oz.light)>0 && oz.players().some(t=>t.side!==p.side&&oz.room(t,oz.light)),
             cost:async function(e,tr,p) {
-                e.result=await p.chooseTarget('绝灭天使：将1枚光羽放于对手面前', (c,p,t)=>t.side!==p.side&&oz.room(t,oz.light))
-                    .set('ai',t=>oz.deployScore(p,t)).forResult();
+                const candidates=oz.players().filter(function(target){
+                    return target.side!==p.side&&oz.room(target,oz.light);
+                });
+                const ids=candidates.map(function(target){return target.playerid;});
+                const scoreMap={};
+                for(const target of candidates) {
+                    scoreMap[target.playerid]=oz.deployScore(p,target);
+                }
+
+                e.result=await p.chooseTarget(
+                    '绝灭天使：将1枚光羽放于对手面前',
+                    function(card,player,target) {
+                        var ids=_status.event.ozCandidateIds||[];
+                        return !!target&&ids.indexOf(target.playerid)!==-1;
+                    }
+                )
+                .set('ozCandidateIds',ids)
+                .set('ozScoreMap',scoreMap)
+                .set('ai',function(target) {
+                    var map=_status.event.ozScoreMap||{};
+                    return target&&target.playerid&&typeof map[target.playerid]==='number'
+                        ? map[target.playerid] : 0;
+                })
+                .forResult();
             },
             content:async function(e,tr,p) { if(e.targets?.[0]) await oz.move(p,e.targets[0],oz.light); },
         },
@@ -220,7 +275,10 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             filter:(e,p)=>p.countCards('h',c=>get.type(c)==='faShu'&&lib.filter.cardDiscardable(c,p))>0&&
                 game.hasPlayer(t=>t.side!==p.side&&oz.count(t,oz.light)>0),
             filterCard:(c,p)=>get.type(c)==='faShu'&&lib.filter.cardDiscardable(c,p),
-            filterTarget:(c,p,t)=>t.side!==p.side&&oz.count(t,oz.light)>0,
+            filterTarget:function(card,player,target){
+                return target.side!==player.side&&
+                    target.countZhiShiWu('zheZhiGuangYu')>0;
+            },
             loseTo:'discardPile',visible:true,
             content:async function(e,tr,p) {
                 if(e.cards?.length) await p.showCards(e.cards,'光剑：展示费用牌');
@@ -232,17 +290,47 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     if(other) await oz.move(t,other,oz.light);
                 });
             },
-            check:c=>6-get.value(c),ai:{order:4,result:{target:(p,t)=>get.damageEffect(t,oz.count(t,oz.light)===2?2:1)}},
+            check:c=>6-get.value(c),ai:{order:4,result:{target:(p,t)=>{ var oz = lib.yongYeZheZhiHelpers; return get.damageEffect(t,oz.count(t,oz.light)===2?2:1); }}},
         },
         zheZhiTianYi: {
             audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiTianYi.mp3',
             trigger:{player:'chengShouShangHai'},
             filter:(e,p)=>!!e && e.num>0 && oz.count(p,oz.light)>0 && p.countCards('h')>0 && oz.players().some(t=>t!==p&&t.side===p.side&&oz.room(t,oz.light)),
             cost:async function(e,tr,p) {
-                e.result=await p.chooseCardTarget({prompt:'天翼：弃1牌，将1光羽移给队友，伤害-1并对其造成1法术伤害',position:'h',selectCard:1,
-                    filterCard:lib.filter.cardDiscardable,
-                    filterTarget:(c,p,t)=>t!==p&&t.side===p.side&&oz.room(t,oz.light),
-                    ai1:c=>6-get.value(c),ai2:t=>-oz.damageScore(p,p,1)+oz.damageScore(p,t,1)-0.4}).forResult();
+                const candidates=oz.players().filter(function(target){
+                    return target!==p&&target.side===p.side&&oz.room(target,oz.light);
+                });
+                const ids=candidates.map(function(target){return target.playerid;});
+                const scoreMap={};
+                const selfScore=oz.damageScore(p,p,1);
+                for(const target of candidates) {
+                    scoreMap[target.playerid]=
+                        -selfScore+oz.damageScore(p,target,1)-0.4;
+                }
+
+                e.result=await p.chooseCardTarget({
+                    prompt:'天翼：弃1牌，将1光羽移给队友，伤害-1并对其造成1法术伤害',
+                    position:'h',
+                    selectCard:1,
+                    filterCard:function(card,player) {
+                        return lib.filter.cardDiscardable(card,player);
+                    },
+                    filterTarget:function(card,player,target) {
+                        var ids=_status.event.ozCandidateIds||[];
+                        return !!target&&ids.indexOf(target.playerid)!==-1;
+                    },
+                    ai1:function(card) {
+                        return 6-get.value(card,_status.event.player);
+                    },
+                    ai2:function(target) {
+                        var map=_status.event.ozScoreMap||{};
+                        return target&&target.playerid&&typeof map[target.playerid]==='number'
+                            ? map[target.playerid] : 0;
+                    }
+                })
+                .set('ozCandidateIds',ids)
+                .set('ozScoreMap',scoreMap)
+                .forResult();
             },
             content:async function(e,tr,p) {
                 await oz.batch(p,async()=>{
@@ -267,14 +355,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }
                 });
             },
-            ai:{shuiJing:true,order:4.5,result:{player:p=>oz.count(p,oz.light)*0.3-0.7,target:(p,t)=>get.damageEffect(t,1)}},
+            ai:{shuiJing:true,order:4.5,result:{player:p=>{ var oz = lib.yongYeZheZhiHelpers; return oz.count(p,oz.light)*0.3-0.7; },target:(p,t)=>get.damageEffect(t,1)}},
         },
         zheZhiPaoGuan: {
             audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiPaoGuan.mp3',
             type:'faShu',enable:'faShu',selectTarget:-1,filterTarget:(c,p,t)=>p===t,
             filter:(e,p)=>!oz.count(p,oz.light)&&p.canBiShaBaoShi(),
             content:async function(e,tr,p) {await p.removeBiShaBaoShi();await oz.batch(p,()=>oz.cannon(p));},
-            ai:{baoShi:true,order:5,result:{player:p=>oz.blastScore(p,false)}},
+            ai:{baoShi:true,order:5,result:{player:p=>{ var oz = lib.yongYeZheZhiHelpers; return oz.blastScore(p,false); }}},
         },
         zheZhiFanLingZhuang: {
             mod:{maxZhiLiao:(p,n)=>Math.max(0,n-2)},
@@ -290,11 +378,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             filter:(e,p)=>!!e && !e.ozInversion && e.num>0 && e.source && e.source!==p && e.source.isIn(),
             content:async function(e,tr,p) {
                 await oz.batch(p,async()=>{
+                    const sourceHadDark = oz.count(tr.source,oz.dark)>0;
                     await oz.move(p,tr.source,oz.dark);
-                    const friend=await oz.choose(p,'拒绝：选择一名队友承接黑羽与伤害',oz.players().filter(t=>t!==p&&t.side===p.side),t=>oz.damageScore(p,t,1));
+                    const friend=await oz.choose(p,'拒绝：选择一名队友承接黑羽与伤害',oz.players().filter(t=>t!==p&&t.side===p.side),t=>oz.damageScore(p,t,1+(oz.count(t,oz.dark)>0?1:0)));
+                    const friendHadDark = friend && oz.count(friend,oz.dark)>0;
                     if(friend) await oz.move(p,friend,oz.dark);
-                    if(tr.source.isIn()) await tr.source.faShuDamage(1,p,'nocard');
-                    if(friend?.isIn()) await friend.faShuDamage(1,p,'nocard');
+                    if(tr.source.isIn()) await tr.source.faShuDamage(1+(sourceHadDark?1:0),p,'nocard');
+                    if(friend?.isIn()) await friend.faShuDamage(1+(friendHadDark?1:0),p,'nocard');
                 });
             },
         },
@@ -308,14 +398,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 if(e.cards?.length) await p.showCards(e.cards,'黑羽：展示费用牌');
                 await oz.batch(p,async()=>{await oz.hit(p,e.target,oz.count(e.target,oz.dark));await oz.move(p,e.target,oz.dark);});
             },
-            check:c=>6-get.value(c),ai:{order:4,result:{target:(p,t)=>get.damageEffect(t,oz.count(t,oz.dark)+1)}},
+            check:c=>6-get.value(c),ai:{order:4,result:{target:(p,t)=>{ var oz = lib.yongYeZheZhiHelpers; return get.damageEffect(t,oz.count(t,oz.dark)+1); }}},
         },
         zheZhiJueMie: {
             audio:'ext:永夜残响/audio/skill/fanZhuanZheZhi/zheZhiJueMie.mp3',
             type:'faShu',enable:'faShu',selectTarget:-1,filterTarget:(c,p,t)=>p===t,
             filter:(e,p)=>p.canBiShaBaoShi(),
             content:async function(e,tr,p) {await p.removeBiShaBaoShi();await oz.batch(p,()=>oz.annihilate(p));},
-            ai:{baoShi:true,order:5,result:{player:p=>oz.blastScore(p,true)}},
+            ai:{baoShi:true,order:5,result:{player:p=>{ var oz = lib.yongYeZheZhiHelpers; return oz.blastScore(p,true); }}},
         },
         zheZhiYiShiHuiGui: {
             trigger:{player:'changeZhiShiWuAfter'},forced:true,popup:false,
@@ -852,7 +942,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             };
                             return;
                         }
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             '是否发动【灼烂歼鬼】，选择炮击目标？',
                             function(card, player, target) {
                                 var trigger = _status.event.getTrigger();
@@ -865,7 +955,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 2
                             );
-                        }).forResultTargets();
+                        }).forResultTargets() || []);
                         event.result = {
                             bool: targets.length > 0,
                             targets: targets,
@@ -907,7 +997,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         return;
                     }
                     if(control == '灼烂歼鬼·炮') {
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             true,
                             '灼烂歼鬼·炮：指定攻击目标以外的一名对手',
                             function(card, player, target) {
@@ -921,7 +1011,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 2
                             );
-                        }).forResultTargets();
+                        }).forResultTargets() || []);
                         event.result = {
                             bool: targets.length > 0,
                             targets: targets,
@@ -2093,7 +2183,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 },
                         "content": async function(event, trigger, player) {
                     var target = event.target;
-                    var cards = await target.chooseCard(
+                    var cards = (await target.chooseCard(
                         'h',
                         1,
                         '冰之祈愿：选择1张手牌',
@@ -2104,7 +2194,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return 7 - get.value(card);
                         }
                         return 5 - get.value(card);
-                    }).forResultCards();
+                    }).forResultCards() || []);
                     if(!cards.length) return;
                     var card = cards[0];
                     var enhanced = ['shui', 'guang'].includes(get.xiBie(card));
@@ -2186,7 +2276,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             }
                         }
                     } else {
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             [1, 2],
                             true,
                             '极寒风暴：指定1至2名对手',
@@ -2197,7 +2287,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             var count = target.countZhiShiWu('siMiNaiDongJie');
                             return -get.attitude(_status.event.player, target) +
                                 count * 2;
-                        }).forResultTargets();
+                        }).forResultTargets() || []);
                         for(var target of targets) {
                             await lib.skill.siMiNaiDongJie.addDongJie(
                                 player,
@@ -3104,7 +3194,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     }) > 0;
                 },
                         "cost": async function(event, trigger, player) {
-                    var cards = await player.chooseCard(
+                    var cards = (await player.chooseCard(
                         'he',
                         1,
                         '是否弃置1张牌，对' +
@@ -3114,7 +3204,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         return lib.filter.cardDiscardable(card, player);
                     }).set('ai', function(card) {
                         return 6 - get.value(card);
-                    }).forResultCards();
+                    }).forResultCards() || []);
                     cards = Array.isArray(cards) ? cards : [];
                     event.result = {
                         bool: cards.length > 0,
@@ -3163,7 +3253,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "zheZhiFanLingZhuang": "被动【反灵装·一番】",
                     "zheZhiFanLingZhuang_info": "你的治疗上限-2；你造成与承受的所有伤害各额外+1。",
                     "zheZhiJuJue": "被动【救世魔王·拒绝】",
-                    "zheZhiJuJue_info": "<span class='tiaoJian'>（其他角色对你造成实际伤害后⑤）</span>将自身1枚<span class='lan'>【黑羽】</span>移给伤害来源，再将1枚移给另一名队友；然后由你对两者各造成1点法术伤害③。",
+                    "zheZhiJuJue_info": "<span class='tiaoJian'>（其他角色对你造成实际伤害后⑤）</span>将自身1枚<span class='lan'>【黑羽】</span>移给伤害来源，再将1枚移给目标队友；然后由你对两者各造成1点法术伤害③。<span class='tiaoJian'>（该目标在本次转移前已有<span class='lan'>【黑羽】</span>）</span>其本次伤害+1。",
                     "zheZhiHeiYuShu": "法术【救世魔王·黑羽】",
                     "zheZhiHeiYuShu_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对一名对手造成等同于其<span class='lan'>【黑羽】</span>数量的法术伤害③，再将自身1枚<span class='lan'>【黑羽】</span>移给该角色。",
                     "zheZhiJueMie": "法术【救世魔王·绝灭】",

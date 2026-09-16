@@ -12,6 +12,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     var recentSkillFx = new WeakMap();
     var clickFxInstalled = false;
     var targetDoubleClickGuardInstalled = false;
+    var musicPanel = null;
+    var musicTimer = null;
+    var musicLayoutObserver = null;
+    var musicObservedBoard = null;
+    var musicPositionFrame = null;
+    var musicEndedHookInstalled = false;
+    var musicMode = "single";
+    var musicTracks = [];
+    var musicUserPaused = false;
+    var musicCollapsed = true;
     var cardArtMap = {
         anMie: "anMie_xianxia.png",
         shuiLianZhan: "shuiLianZhan_xianxia.png",
@@ -92,6 +102,240 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 }
                 image.classList.add("wmb-starstone");
             });
+        }
+    }
+
+    function battleMusicTracks() {
+        var tracks = [];
+        var players = (game.players || []).filter(function (player) {
+            return player && (!player.isIn || player.isIn());
+        });
+        function hasCharacter(id) {
+            return players.some(function (player) {
+                return [player.name, player.name1, player.name2].includes(id);
+            });
+        }
+        function add(name, path) {
+            if (!tracks.some(function (track) { return track.path === path; }))
+                tracks.push({ name: name, path: path });
+        }
+        if (lib.config.extension_宿命挽歌_enable) {
+            [
+                ["shuiMoShouBaiYueJiaoZhu", "逆天而行2", "niTianErXing2"],
+                ["baiYueJiaoZhu", "逆天而行", "niTianErXing"],
+                ["guiJiangJun", "兵凶战危", "bingXiongZhanWei"],
+                ["sheYaoNan", "心急如焚", "xinJiRuFen"],
+                ["huYaoNv", "心急如焚", "xinJiRuFen"],
+                ["linYueRu", "比武招亲", "biWuZhaoQin"],
+                ["aNu", "桃花幻梦", "taoHuaHuanMeng"],
+                ["zhaoLingEr", "情怨", "qingYuan"],
+                ["liXiaoYao", "御剑伏魔", "yuJianFuMo"],
+                ["zhaoFuQueJi", "杠杠姬姬", "gangGangJiJi"],
+                ["tongGuHeRen", "Swordland", "swordland"],
+                ["shiDiFu", "Pigstep", "pigstep"],
+                ["xiaoYan", "斗破苍穹", "douPoCangQiong"]
+            ].forEach(function (entry) {
+                if (hasCharacter(entry[0]))
+                    add(entry[1], "ext:宿命挽歌/audio/bgm/" + entry[2] + ".mp3");
+            });
+        }
+        if (lib.config.extension_轮回遗梦_enable) {
+            if (hasCharacter("jingTian")) add("玉满堂", "ext:轮回遗梦/audio/bgm/yuManTang.mp3");
+            if (hasCharacter("longKui")) {
+                var red = players.some(function (player) {
+                    return [player.name, player.name1, player.name2].includes("longKui") &&
+                        player.storage && player.storage.lhym_red === true;
+                });
+                var longKuiSongs = red ? [
+                    ["朱砂变", "zhuShaBian"], ["青玉案", "qingYuAn"]
+                ] : [
+                    ["青玉案", "qingYuAn"], ["朱砂变", "zhuShaBian"]
+                ];
+                longKuiSongs.forEach(function (song) {
+                    add(song[0], "ext:轮回遗梦/audio/bgm/" + song[1] + ".mp3");
+                });
+            }
+            if (hasCharacter("xueJian")) add("还魂草", "ext:轮回遗梦/audio/bgm/huanHunCao.mp3");
+        }
+        if (lib.config.extension_宿命挽歌_enable) {
+            add("ending", "ext:宿命挽歌/audio/bgm/ending.mp3");
+            add("Date a Live", "ext:宿命挽歌/audio/bgm/dateALive.mp3");
+            add("风一样的勇士", "ext:宿命挽歌/audio/bgm/fengYiYangDeYongShi.mp3");
+        }
+        return tracks;
+    }
+
+    function musicPath(source) {
+        var path = String(source || "");
+        var marker = "/extension/";
+        var index = path.indexOf(marker);
+        return index >= 0 ? "ext:" + decodeURI(path.slice(index + marker.length)) : path;
+    }
+
+    function positionMusicPanel() {
+        if (!musicPanel) return;
+        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        if (!isXianJianTheme() || _status.over || !board || !board.isConnected ||
+            !ui.window || !ui.window.isConnected) {
+            musicPanel.hidden = true;
+            if (_status.over) musicUserPaused = false;
+            return;
+        }
+        var rect = board.getBoundingClientRect();
+        var windowRect = ui.window.getBoundingClientRect();
+        var width = musicCollapsed ? 38 : Math.min(264, rect.width);
+        if (musicPanel.style.width !== width + "px") musicPanel.style.width = width + "px";
+        musicPanel.hidden = false;
+        if (rect.top - windowRect.top < musicPanel.offsetHeight + 18) {
+            musicPanel.hidden = true;
+            return;
+        }
+        var right = Math.max(8, windowRect.right - rect.right) + "px";
+        var bottom = windowRect.bottom - rect.top + 10 + "px";
+        if (musicPanel.style.right !== right) musicPanel.style.right = right;
+        if (musicPanel.style.bottom !== bottom) musicPanel.style.bottom = bottom;
+    }
+
+    function scheduleMusicPosition() {
+        if (musicPositionFrame !== null) return;
+        musicPositionFrame = requestAnimationFrame(function () {
+            musicPositionFrame = null;
+            positionMusicPanel();
+        });
+    }
+
+    function syncMusicPanel() {
+        if (!musicPanel || musicPanel.hidden) return;
+        function setText(selector, value) {
+            var node = musicPanel.querySelector(selector);
+            if (node && node.textContent !== value) node.textContent = value;
+            return node;
+        }
+        musicTracks = battleMusicTracks();
+        var audio = ui.backgroundMusic;
+        if (musicUserPaused && audio && !audio.paused) audio.pause();
+        var source = audio && musicPath(audio.currentSrc || audio.src);
+        var track = musicTracks.find(function (entry) { return entry.path === source; });
+        var title = track ? track.name : source ? decodeURI(source.split("/").pop()).replace(/\.mp3$/i, "") :
+            lib.config.background_music === "music_off" ? "音乐已关闭" : "暂无音乐";
+        var titleNode = setText(".wmb-bgm-title", title);
+        if (titleNode) titleNode.title = title;
+        var playButton = musicPanel.querySelector(".wmb-bgm-play");
+        var playingNow = !!(audio && !audio.paused);
+        if (playButton.dataset.playing !== String(playingNow))
+            playButton.dataset.playing = String(playingNow);
+        var playTitle = playingNow ? "暂停" : "播放";
+        if (playButton.title !== playTitle) playButton.title = playTitle;
+        if (playButton.getAttribute("aria-label") !== playTitle)
+            playButton.setAttribute("aria-label", playTitle);
+        var modeButton = musicPanel.querySelector(".wmb-bgm-mode");
+        setText(".wmb-bgm-mode", musicMode === "single" ? "↻¹" : "↻");
+        modeButton.title = musicMode === "single" ? "单曲循环，点击切换列表循环" : "列表循环，点击切换单曲循环";
+        modeButton.setAttribute("aria-label", modeButton.title);
+        if (audio && audio.src) audio.loop = musicMode === "single";
+    }
+
+    function selectMusicTrack(offset) {
+        if (lib.config.background_music === "music_off") return;
+        musicTracks = battleMusicTracks();
+        if (!musicTracks.length) return;
+        var audio = ui.backgroundMusic;
+        var source = audio && musicPath(audio.currentSrc || audio.src);
+        var index = musicTracks.findIndex(function (entry) { return entry.path === source; });
+        index = index < 0 ? (offset < 0 ? 0 : -1) : index;
+        var track = musicTracks[(index + offset + musicTracks.length) % musicTracks.length];
+        _status.tempMusic = track.path;
+        musicUserPaused = false;
+        game.playBackgroundMusic();
+        if (audio) {
+            audio.loop = musicMode === "single";
+            audio.currentTime = 0;
+            var playing = audio.play();
+            if (playing && playing.catch) playing.catch(function () {});
+        }
+        syncMusicPanel();
+    }
+
+    function ensureMusicPanel() {
+        if (!isXianJianTheme()) return;
+        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        if (!board || !board.isConnected) return;
+        if (!musicPanel) {
+            musicPanel = document.createElement("section");
+            musicPanel.className = "wmb-bgm-panel wmb-bgm-collapsed";
+            musicPanel.setAttribute("aria-label", "战局背景音乐控制");
+            var previousIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 7v18"/><path d="M23 8 11 16l12 8z"/></svg>';
+            var playIcon = '<svg class="wmb-bgm-icon-play" viewBox="0 0 32 32" aria-hidden="true"><path d="M11 7.5 25 16 11 24.5z"/></svg>';
+            var pauseIcon = '<svg class="wmb-bgm-icon-pause" viewBox="0 0 32 32" aria-hidden="true"><path d="M11 8v16M21 8v16"/></svg>';
+            var nextIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M24 7v18"/><path d="m9 8 12 8-12 8z"/></svg>';
+            var collapseIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 10h16"/><path d="m10 16 6 6 6-6"/></svg>';
+            var restoreIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M13 7H7v6M19 7h6v6M7 19v6h6M25 19v6h-6"/><path d="m12 12-5-5m13 5 5-5m-13 13-5 5m13-5 5 5"/></svg>';
+            musicPanel.innerHTML =
+                '<div class="wmb-bgm-heading"><span class="wmb-bgm-title" title="当前播放音乐">暂无音乐</span></div>' +
+                '<div class="wmb-bgm-controls">' +
+                '<button type="button" class="wmb-bgm-prev" title="上一首" aria-label="上一首">' + previousIcon + '</button>' +
+                '<button type="button" class="wmb-bgm-play" title="播放" aria-label="播放">' + playIcon + pauseIcon + '</button>' +
+                '<button type="button" class="wmb-bgm-next" title="下一首" aria-label="下一首">' + nextIcon + '</button>' +
+                '<button type="button" class="wmb-bgm-mode" title="单曲循环" aria-label="单曲循环">↻¹</button>' +
+                '<button type="button" class="wmb-bgm-collapse" title="收起音乐窗" aria-label="收起音乐窗">' + collapseIcon + '</button>' +
+                '</div>' +
+                '<button type="button" class="wmb-bgm-restore" title="展开音乐窗" aria-label="展开音乐窗">' + restoreIcon + '</button>';
+            ui.window.appendChild(musicPanel);
+            musicPanel.querySelector(".wmb-bgm-prev").addEventListener("click", function () { selectMusicTrack(-1); });
+            musicPanel.querySelector(".wmb-bgm-next").addEventListener("click", function () { selectMusicTrack(1); });
+            musicPanel.querySelector(".wmb-bgm-play").addEventListener("click", function () {
+                var audio = ui.backgroundMusic;
+                if (!audio || lib.config.background_music === "music_off") return;
+                if (audio.paused) {
+                    musicUserPaused = false;
+                    if (!audio.src) selectMusicTrack(1);
+                    else {
+                        var playing = audio.play();
+                        if (playing && playing.catch) playing.catch(function () {});
+                    }
+                } else {
+                    musicUserPaused = true;
+                    audio.pause();
+                }
+                syncMusicPanel();
+            });
+            musicPanel.querySelector(".wmb-bgm-mode").addEventListener("click", function () {
+                musicMode = musicMode === "single" ? "list" : "single";
+                syncMusicPanel();
+            });
+            musicPanel.querySelector(".wmb-bgm-collapse").addEventListener("click", function () {
+                musicCollapsed = true;
+                musicPanel.classList.add("wmb-bgm-collapsed");
+                scheduleMusicPosition();
+            });
+            musicPanel.querySelector(".wmb-bgm-restore").addEventListener("click", function () {
+                musicCollapsed = false;
+                musicPanel.classList.remove("wmb-bgm-collapsed");
+                scheduleMusicPosition();
+            });
+        }
+        if (musicPanel.parentNode !== ui.window) ui.window.appendChild(musicPanel);
+        if (typeof ResizeObserver !== "undefined" && musicObservedBoard !== board) {
+            if (musicLayoutObserver) musicLayoutObserver.disconnect();
+            musicLayoutObserver = new ResizeObserver(scheduleMusicPosition);
+            musicLayoutObserver.observe(board);
+            musicLayoutObserver.observe(ui.window);
+            musicObservedBoard = board;
+        }
+        scheduleMusicPosition();
+        syncMusicPanel();
+        if (!musicTimer) {
+            musicTimer = setInterval(syncMusicPanel, 700);
+            window.addEventListener("resize", scheduleMusicPosition);
+        }
+        if (ui.backgroundMusic && !musicEndedHookInstalled) {
+            musicEndedHookInstalled = true;
+            ui.backgroundMusic.addEventListener("ended", function (event) {
+                if (musicMode !== "list" || !musicPanel || musicPanel.hidden ||
+                    lib.config.background_music === "music_off") return;
+                event.stopImmediatePropagation();
+                selectMusicTrack(1);
+            }, true);
         }
     }
 
@@ -581,6 +825,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         applyCardDefinitions();
         decorateGlobalUi();
         decorateScoreboard();
+        ensureMusicPanel();
         decorateCards();
         decorateLightMarks();
         decorateTeamIdentities();
@@ -624,16 +869,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     return {
         name: extensionName,
         version: "2.2",
-        connect: true,
         editable: false,
         precontent: function () {
             loadStyle();
-            // 基础皮肤必须先启用；后续可选钩子即使异常，也不能阻断整个 UI 扩展。
-            startDecoration();
             applyCardDefinitions();
             installSkillFx();
             installCombatLineHook();
             installCombatFx();
+            // 联机大厅先于 arenaReady 创建，必须从预加载阶段启用全局皮肤。
+            startDecoration();
         },
         arenaReady: function () {
             applyCardDefinitions();

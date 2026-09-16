@@ -1,4 +1,12 @@
 game.import("extension", function(lib, game, ui, get, ai, _status) {
+    // 临时效果牌：创建时不带destroyed标记；必须在效果结算(挂到目标面前)完成后再打标记，
+    // 否则addToExpansion会把带destroyed的牌从结算中剔除，导致效果不触发。
+    lib.chuangShiJiUseTemporaryEffectCard = async function(player, name, target, nolog) {
+        const card = game.createCard(name);
+        await player.useCard(card, target, nolog);
+        card.destroyed = 'discardPile';
+        return card;
+    };
     return {
         "name": "创世纪",
         "arenaReady": function(){
@@ -67,9 +75,17 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             var proto = lib.element && lib.element.Player &&
                 lib.element.Player.prototype;
             if(!proto ||
-                proto._tianQiZheBaoShiPatchedVersion == '1.8') return;
+                proto._tianQiZheBaoShiPatchedVersion == '1.9') return;
             proto._tianQiZheBaoShiPatched = true;
-            proto._tianQiZheBaoShiPatchedVersion = '1.8';
+            proto._tianQiZheBaoShiPatchedVersion = '1.9';
+            if(!proto._tianQiZheOriginalCanBiShaShuiJing) {
+                proto._tianQiZheOriginalCanBiShaShuiJing =
+                    proto.canBiShaShuiJing;
+            }
+            if(!proto._tianQiZheOriginalRemoveBiShaShuiJing) {
+                proto._tianQiZheOriginalRemoveBiShaShuiJing =
+                    proto.removeBiShaShuiJing;
+            }
             if(!proto._tianQiZheOriginalCanBiShaBaoShi) {
                 proto._tianQiZheOriginalCanBiShaBaoShi =
                     proto.canBiShaBaoShi;
@@ -85,6 +101,12 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 return this.getExpansions(
                     'tianQiZheTianShiZhuFu'
                 ).length > 0;
+            };
+            proto.canBiShaShuiJing = function() {
+                return proto._tianQiZheOriginalCanBiShaShuiJing
+                    .call(this) || this.getExpansions(
+                        'tianQiZheTianShiZhuFu'
+                    ).length > 0;
             };
             proto.removeBiShaBaoShi = function() {
                 var player = this;
@@ -102,7 +124,8 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                 );
                 next.player = player;
                 next.setContent(async function(event, trigger, player) {
-                    var useBlessing = !player.hasNengLiang('baoShi');
+                    var useBlessing = !!player._tianQiZheForceBlessingPay ||
+                        !player.hasNengLiang('baoShi');
                     if(!useBlessing) {
                         var control = await player.chooseControl([
                             '支付1【宝石】',
@@ -146,6 +169,54 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         '以【天使祝福】视为支付了1个',
                         '#g【宝石】'
                     );
+                });
+                return next;
+            };
+            proto.removeBiShaShuiJing = function() {
+                var player = this;
+                if(!player.getExpansions(
+                    'tianQiZheTianShiZhuFu'
+                ).length) {
+                    return proto._tianQiZheOriginalRemoveBiShaShuiJing
+                        .call(player);
+                }
+                var next = game.createEvent('tianShiZhuFuPayShuiJing', false);
+                next.player = player;
+                next.setContent(async function(event, trigger, player) {
+                    var useBlessing = !proto
+                        ._tianQiZheOriginalCanBiShaShuiJing.call(player);
+                    if(!useBlessing) {
+                        var control = await player.chooseControl([
+                            '按原规则支付1【水晶】',
+                            '发动【天使祝福】',
+                        ]).set('prompt', '请选择本次1【水晶】费用的支付方式')
+                            .set('ai', function() {
+                                var player = _status.event.player;
+                                var cards = player.getExpansions(
+                                    'tianQiZheTianShiZhuFu'
+                                );
+                                var expires = cards.some(function(card) {
+                                    return card.storage &&
+                                        card.storage.tianQiZhiZhuToken;
+                                });
+                                return expires ||
+                                    !player.hasNengLiang('shuiJing') ?
+                                    '发动【天使祝福】' :
+                                    '按原规则支付1【水晶】';
+                            }).forResultControl();
+                        useBlessing = control == '发动【天使祝福】';
+                    }
+                    if(useBlessing) {
+                        player._tianQiZheForceBlessingPay = true;
+                        try {
+                            await proto.removeBiShaBaoShi.call(player);
+                        } finally {
+                            delete player._tianQiZheForceBlessingPay;
+                        }
+                    } else {
+                        await proto._tianQiZheOriginalRemoveBiShaShuiJing
+                            .call(player);
+                    }
                 });
                 return next;
             };
@@ -308,7 +379,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "tianQiZheWuQiZhuFuKa": "(专)【武器祝福】",
                     "tianQiZheWuQiZhuFuKa_info": "响应【武器祝福】：<span class='tiaoJian'>（拥有者的应战攻击命中时②）</span>移除此卡，本次攻击伤害+2。",
                     "tianQiZheTianShiZhuFuKa": "(专)【天使祝福】",
-                    "tianQiZheTianShiZhuFuKa_info": "<span class='tiaoJian'>（响应【天使祝福】：拥有者支付技能的1【宝石】时）</span>可以移除此卡，视为已支付该【宝石】。无需移除战绩区资源，没有【宝石】也可发动。",
+                    "tianQiZheTianShiZhuFuKa_info": "<span class='tiaoJian'>（拥有者支付技能的1【宝石】或1【水晶】时）</span>可以移除此卡，视为已支付该费用。没有真实星石也可发动。",
                 },
                 "list": [],
             },
@@ -430,18 +501,18 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var target;
                     switch(xuanWenFaShe_xiBie){
                         case 'huo':
-                            target = await player.chooseTarget(
+                            target = (await player.chooseTarget(
                                 '火系炫纹：对目标角色造成1点法术伤害③',
                                 true
                             ).set('ai',function(target){
                                 var player=_status.event.player;
                                 return get.damageEffect2(target,player,1);
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             target = target[0];
                             if(target) await target.faShuDamage(1,player);
                             break;
                         case'shui':
-                            target = await player.chooseTarget(
+                            target = (await player.chooseTarget(
                                 '水系炫纹：令一名有手牌的角色弃1张牌',
                                 true,
                                 function(card,player,target){
@@ -451,20 +522,20 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 var player = _status.event.player;
                                 if(target.side != player.side) return 0;
                                 return get.attitude(player, target);
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             target = target[0];
                             if(target) {
                                 await target.chooseToDiscard('h',true);
                             }
                             break;
                         case 'an':
-                            target = await player.chooseTarget(
+                            target = (await player.chooseTarget(
                                 '暗系炫纹：对目标角色造成2点法术伤害③',
                                 true
                             ).set('ai',function(target){
                                 var player=_status.event.player;
                                 return get.damageEffect2(target,player,2);
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             target = target[0];
                             if(target) await target.faShuDamage(2,player);
                             break;
@@ -1650,7 +1721,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     } else {
                         var max = experiment.result == '大成功' ? 2 : 1;
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             [0, max],
                             '旋转扫把：指定至多' + max +
                                 '名其他目标对手',
@@ -1666,7 +1737,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 _status.event.amount
                             );
-                        }).set('amount', amount).forResultTargets();
+                        }).set('amount', amount).forResultTargets() || []);
                         for(var target of targets.sortBySeat(player)) {
                             if(amount > 0 && target.isIn()) {
                                 await target.damage(
@@ -1718,7 +1789,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     } else {
                         var damage =
                             experiment.result == '大成功' ? 3 : 2;
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             true,
                             '熔岩药瓶：指定任意一名角色',
                             function() {
@@ -1730,7 +1801,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 _status.event.damage
                             );
-                        }).set('damage', damage).forResultTargets();
+                        }).set('damage', damage).forResultTargets() || []);
                         if(targets[0] && targets[0].isIn()) {
                             await targets[0].faShuDamage(
                                 damage,
@@ -1801,7 +1872,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         );
                         if(candidates.length) {
                             var range = max == 1 ? 1 : [0, 2];
-                            var targets = await player.chooseTarget(
+                            var targets = (await player.chooseTarget(
                                 range,
                                 max == 1,
                                 '酸雨云：指定' +
@@ -1824,7 +1895,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     _status.event.player,
                                     target
                                 );
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             for(var target of targets.sortBySeat(player)) {
                                 var canDiscard = target.isIn() &&
                                     target.countCards(
@@ -1968,7 +2039,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return !current.hasJiChuXiaoGuo('_xuRuo');
                         });
                         if(canUse) {
-                            var targets = await player.chooseTarget(
+                            var targets = (await player.chooseTarget(
                                 true,
                                 '反重力装置：指定任意一名没有【虚弱】的角色',
                                 function(card, player, target) {
@@ -1981,16 +2052,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     _status.event.player,
                                     target
                                 );
-                            }).forResultTargets();
+                            }).forResultTargets() || []);
                             if(targets[0] && targets[0].isIn()) {
-                                await player.useCard(
-                                    game.createCard2('xuRuo'),
-                                    targets[0]
-                                );
+                                await lib.chuangShiJiUseTemporaryEffectCard(player, 'xuRuo', targets[0]);
                             }
                         }
                     } else {
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             true,
                             '反重力装置：指定任意一名角色摸3张牌',
                             function() {
@@ -2007,7 +2075,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 player,
                                 target
                             );
-                        }).forResultTargets();
+                        }).forResultTargets() || []);
                         if(targets[0] && targets[0].isIn()) {
                             await targets[0].draw(3);
                         }
@@ -2373,7 +2441,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         });
                 },
                         "cost": async function(event, trigger, player) {
-                    var targets = await player.chooseTarget(
+                    var targets = (await player.chooseTarget(
                         '是否发动【灵魂牺牲】，指定一名目标队友？',
                         function(card, player, target) {
                             return target != player &&
@@ -2392,7 +2460,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             target.countCards('h')) * 0.15;
                         return get.attitude(player, target) > 0 ?
                             score : -score;
-                    }).forResultTargets();
+                    }).forResultTargets() || []);
                     event.result = {
                         bool: targets.length > 0,
                         targets: targets,
@@ -3296,7 +3364,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         }
                     );
                     if(candidates.length) {
-                        var targets = await player.chooseTarget(
+                        var targets = (await player.chooseTarget(
                             '怒气爆发：可以再指定另一名对手',
                             function(card, player, target) {
                                 return target.isIn() &&
@@ -3312,7 +3380,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     1
                                 );
                             }
-                        ).forResultTargets();
+                        ).forResultTargets() || []);
                         if(targets.length && targets[0].isIn()) {
                             await targets[0].faShuDamage(
                                 1,
@@ -3628,7 +3696,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     removed
                                 );
                             }
-                            var targets = await player.chooseTarget(
+                            var targets = (await player.chooseTarget(
                                 '魔狱血刹：指定一名对手',
                                 true,
                                 function(card, player, target) {
@@ -3648,7 +3716,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             }).set(
                                 'removed',
                                 removed
-                            ).forResultTargets();
+                            ).forResultTargets() || []);
                             var primary = targets[0];
                             var others = game.players.slice();
                             try {
@@ -3794,7 +3862,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "wuQiZhuFu": "武器祝福",
                     "wuQiZhuFu_info": "<span class='tiaoJian'>（拥有者的应战攻击命中时②）</span>移除此卡，本次攻击伤害+2。",
                     "tianQiZheTianShiZhuFu": "天使祝福",
-                    "tianQiZheTianShiZhuFu_info": "<span class='tiaoJian'>（拥有者支付技能的1【宝石】时）</span>可以移除此卡，视为已支付该【宝石】。无需移除战绩区资源，没有【宝石】也可发动。",
+                    "tianQiZheTianShiZhuFu_info": "<span class='tiaoJian'>（拥有者支付技能的1【宝石】或1【水晶】时）</span>可以移除此卡，视为已支付该费用。没有真实星石也可发动。",
                     "yuXueMoShenXueQi": "血气",
                     "yuXueMoShenXueQi_info": "<span class='hong'>【血气】</span>为狱血魔神的专属指示物，上限为8。",
                     "xueQiWangSheng": "被动【血气旺盛】",
@@ -3823,7 +3891,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.4",
+            "version": "2.5",
         },
         "files": {
             "character": [

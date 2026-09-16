@@ -1,9 +1,9 @@
 extension["十周年-噩梦人机"] = {
-    intro: "继承十周年-AI优化版，为70名电脑角色添加140项噩梦强化；支持原版、高清与Q版三档头像，并允许联机玩家独立选择。",
+    intro: "继承十周年-AI优化版，为70名电脑角色添加140项噩梦强化；新增最多三名玩家的联机合作 PvE 模式。",
     author: "蒙牛 / Codex",
     netdisk: "",
     forum: "",
-    version: "1.5",
+    version: "1.8",
     files: [
         "info.json",
         "README.md",

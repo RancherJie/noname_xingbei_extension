@@ -799,8 +799,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     event.result = await player.chooseBool(
                         '破阵回枪：是否移除1【水晶】和1【枪势】，令本次攻击伤害+1？'
                     ).set('ai', function() {
-                        return get.attitude(player, trigger.target) < 0;
-                    }).forResult();
+                        var player = _status.event["online_38675_player"];
+                        var target = _status.event.onlineCounterTarget;
+
+                        return !!target && get.attitude(player, target) < 0;
+                    }).set("online_38675_player", player).set('onlineCounterTarget', trigger.target).forResult();
                 },
                         "content": async function(event, trigger, player) {
                     await player.removeBiShaShuiJing();
@@ -918,7 +921,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 hasFriendlyPreciseTarget
                             ).forResultControl();
                             if(control == '精准开采') {
-                                var targets = await player.chooseTarget(
+                                var targets = (await player.chooseTarget(
                                     true,
                                     '精准开采：选择一名有可弃置牌的角色',
                                     function(card, player, target) {
@@ -930,15 +933,15 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     var player = _status.event.player;
                                     if(target.side != player.side) return 0;
                                     return get.attitude(player, target);
-                                }).forResultTargets();
+                                }).forResultTargets() || []);
                                 var target = targets[0];
                                 if(target) {
-                                    var discarded = await target.chooseToDiscard(
+                                    var discarded = (await target.chooseToDiscard(
                                         'he',
                                         1,
                                         true,
                                         '精准开采：弃置1张牌作为史蒂夫的【素材】'
-                                    ).forResultCards();
+                                    ).forResultCards() || []);
                                     var preciseCard = discarded[0];
                                     if(preciseCard && !preciseCard.destroyed &&
                                         player.countGaiPai('shiDiFuSuCai') < 5) {
@@ -973,7 +976,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         var topCards = get.cards(deckCollect.count);
                         if(!topCards.length) return false;
                         await game.cardsGotoOrdering(topCards);
-                        var links = await player.chooseCardButton(
+                        var links = (await player.chooseCardButton(
                             topCards,
                             true,
                             deckCollect.name + '：查看牌堆顶' +
@@ -981,7 +984,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 '张牌，选择1张作为【素材】'
                         ).set('ai', function(button) {
                             return get.value(button.link);
-                        }).forResultLinks();
+                        }).forResultLinks() || []);
                         var selected = links[0] || topCards[0];
                         var discardedCards = topCards.filter(function(card) {
                             return card != selected;
@@ -1074,32 +1077,32 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var materials = player.getGaiPai('shiDiFuSuCai').slice();
                     var recipeCards = [];
                     if(sword == 'muJian') {
-                        recipeCards = await player.chooseCardButton(
+                        recipeCards = (await player.chooseCardButton(
                             materials,
                             1,
                             true,
                             '工作台：展示并弃置任意1张【素材】制作【木剑】'
-                        ).forResultLinks();
+                        ).forResultLinks() || []);
                     } else if(sword == 'jinJian') {
-                        recipeCards = await player.chooseCardButton(
+                        recipeCards = (await player.chooseCardButton(
                             materials,
                             1,
                             true,
                             '工作台：展示并弃置1张光系【素材】制作【金剑】'
                         ).set('filterButton', function(button) {
                             return get.xiBie(button.link) == 'guang';
-                        }).forResultLinks();
+                        }).forResultLinks() || []);
                     } else if(sword == 'shiJian') {
-                        recipeCards = await player.chooseCardButton(
+                        recipeCards = (await player.chooseCardButton(
                             materials,
                             1,
                             true,
                             '工作台：展示并弃置1张地系【素材】制作【石剑】'
                         ).set('filterButton', function(button) {
                             return get.xiBie(button.link) == 'di';
-                        }).forResultLinks();
+                        }).forResultLinks() || []);
                     } else if(sword == 'tieJian') {
-                        recipeCards = await player.chooseCardButton(
+                        recipeCards = (await player.chooseCardButton(
                             materials,
                             2,
                             true,
@@ -1108,18 +1111,18 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             if(!ui.selected.buttons.length) return true;
                             return get.xiBie(button.link) ==
                                 get.xiBie(ui.selected.buttons[0].link);
-                        }).set('complexSelect', true).forResultLinks();
+                        }).set('complexSelect', true).forResultLinks() || []);
                     } else if(sword == 'zuanShiJian') {
-                        recipeCards = await player.chooseCardButton(
+                        recipeCards = (await player.chooseCardButton(
                             materials,
                             3,
                             true,
                             '工作台：展示并弃置3张水系【素材】制作【钻石剑】'
                         ).set('filterButton', function(button) {
                             return get.xiBie(button.link) == 'shui';
-                        }).forResultLinks();
+                        }).forResultLinks() || []);
                     } else if(sword == 'xiaJieHeJinJian') {
-                        recipeCards = await player.chooseCardButton(
+                        recipeCards = (await player.chooseCardButton(
                             materials,
                             2,
                             true,
@@ -1129,7 +1132,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             if(!['huo', 'an'].includes(xiBie)) return false;
                             if(!ui.selected.buttons.length) return true;
                             return xiBie != get.xiBie(ui.selected.buttons[0].link);
-                        }).set('complexSelect', true).forResultLinks();
+                        }).set('complexSelect', true).forResultLinks() || []);
                     }
                     if(!recipeCards.length) return;
 
@@ -1256,7 +1259,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         });
                         var targetCount = Math.min(counts.di, candidates.length);
                         if(targetCount > 0) {
-                            var sweepTargets = await player.chooseTarget(
+                            var sweepTargets = (await player.chooseTarget(
                                 [targetCount, targetCount],
                                 true,
                                 '横扫之刃：选择' + targetCount +
@@ -1273,7 +1276,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     _status.event.damageNum
                                 );
                             }).set('damageNum', trigger.damageNum || 0)
-                            .forResultTargets();
+                            .forResultTargets() || []);
                             var sweepDamage = Math.max(0, trigger.damageNum || 0);
                             for(var sweepTarget of sweepTargets.sortBySeat(player)) {
                                 if(sweepDamage > 0 && sweepTarget.isIn()) {
@@ -1295,7 +1298,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return current.isIn() && current.countCards('h') > 0;
                         });
                         if(windCandidates.length > 0) {
-                            var windTargets = await player.chooseTarget(
+                            var windTargets = (await player.chooseTarget(
                                 1,
                                 true,
                                 '击退：选择1名角色弃置至多' + counts.feng + '张手牌',
@@ -1316,7 +1319,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                     target.countCards('h') - target.getHandcardLimit()
                                 );
                                 return overflow > 0 ? overflow : -8;
-                            }).set('discardNum', counts.feng).forResultTargets();
+                            }).set('discardNum', counts.feng).forResultTargets() || []);
                             var windTarget = windTargets[0];
                             if(windTarget && windTarget.isIn()) {
                                 var discardNum = Math.min(
@@ -1794,7 +1797,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             return get.type(card) == 'gongJi' &&
                                 get.xiBie(card) != currentXiBie;
                         }) > 0) {
-                        cards = await player.chooseCard(
+                        cards = (await player.chooseCard(
                             'h',
                             [0, removed],
                             '星爆气流斩：可以展示并弃置至多' +
@@ -1815,7 +1818,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             .set('currentXiBie', currentXiBie)
                             .set('ai', function(card) {
                                 return 6 - get.value(card);
-                            }).forResultCards();
+                            }).forResultCards() || []);
                     }
                     if(cards.length) {
                         await player.discard(cards)
@@ -2060,13 +2063,13 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         await lib.skill.yiJiBaoPai.add(player, card, true);
                         return;
                     }
-                    var links = await player.chooseCardButton(
+                    var links = (await player.chooseCardButton(
                         baoPai,
                         true,
                         '【对对胡喵】：选择1张【宝牌】移除'
                     ).set('ai', function(button) {
                         return -get.value(button.link, _status.event.player);
-                    }).forResultLinks();
+                    }).forResultLinks() || []);
                     var oldCard = links[0] || baoPai[0];
                     await lib.skill.yiJiBaoPai.discard(player, [oldCard]);
                     await lib.skill.yiJiBaoPai.add(player, card, true);
@@ -2110,7 +2113,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         await player.addZhiShiWu('miaoYun', 1);
                         return;
                     }
-                    var links = await player.chooseCardButton(
+                    var links = (await player.chooseCardButton(
                         baoPai,
                         [0, 1],
                         '可以选择1张【宝牌】与展示的牌交换'
@@ -2123,7 +2126,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.newCard,
                                 _status.event.player
                             );
-                        }).forResultLinks();
+                        }).forResultLinks() || []);
                     if(links.length && get.position(card, true) == 'h') {
                         var oldBaoPai = links[0];
                         await player.lose(card);
@@ -2183,7 +2186,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             .matches(player, card);
                     }).length;
                     await game.cardsDiscard(cards);
-                    var targets = await player.chooseTarget(
+                    var targets = (await player.chooseTarget(
                         '役满时间喵：选择一名对手，造成' +
                             x + '点法术伤害',
                         true,
@@ -2197,7 +2200,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 _status.event.damage
                             );
-                        }).forResultTargets();
+                        }).forResultTargets() || []);
                     var target = targets[0];
                     if(x > 0 && target && target.isIn()) {
                         await target.faShuDamage(x, player);
@@ -3064,17 +3067,19 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var manager = lib.skill.xiaoYanYiHuoManager;
                     var cards = manager.getDimCards(player);
                     if(!cards.length) return;
-                    var links = await player.chooseCardButton(
+                    var links = (await player.chooseCardButton(
                         cards,
                         true,
                         '【焚决】：选择1张黯淡的【异火】翻至明亮面'
                     ).set('ai', function(button) {
+                        var manager = lib.skill.xiaoYanYiHuoManager;
+
                         var fire = manager.getFireByCard(button.link);
                         return manager.aiFireKeepValue(
                             _status.event.player,
                             fire
                         );
-                    }).forResultLinks();
+                    }).forResultLinks() || []);
                     var fire = manager.getFireByCard(links[0]);
                     if(fire) await manager.setForm(player, fire, 'bright');
                 },
@@ -3195,7 +3200,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 game.xingBeiMax));
                 },
                         "getAiExtraValue": function(player) {
-                    var value = player.countZhiShiWu('xiaoYanDouQi') < 5 ?
+                    var value = player.countZhiShiWu('xiaoYanDouQi') < lib.skill.xiaoYanDouQi.intro.max ?
                         1.1 : 0;
                     var attacks = player.countCards('h', function(card) {
                         return get.type(card, player) == 'gongJi';
@@ -3246,7 +3251,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "check": function(card) {
                     var player = _status.event.player;
                     var missing = Math.max(0,
-                        5 - player.countZhiShiWu('xiaoYanDouQi'));
+                        lib.skill.xiaoYanDouQi.intro.max - player.countZhiShiWu('xiaoYanDouQi'));
                     var extra = lib.skill.lianQiHuaDan
                         .shouldPayExtra(_status.event, player);
                     var desired = Math.max(1, missing - (extra ? 1 : 0));
@@ -3258,7 +3263,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "ai": {
                             "order": function(item, player) {
                         var missing = Math.max(0,
-                            5 - player.countZhiShiWu('xiaoYanDouQi'));
+                            lib.skill.xiaoYanDouQi.intro.max - player.countZhiShiWu('xiaoYanDouQi'));
                         var extra = lib.skill.lianQiHuaDan
                             .shouldPayExtra(_status.event, player);
                         return missing > 0 || extra ? 5.2 : 0;
@@ -3266,7 +3271,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             "result": {
                                 "player": function(player) {
                             var missing = Math.max(0,
-                                5 - player.countZhiShiWu('xiaoYanDouQi'));
+                                lib.skill.xiaoYanDouQi.intro.max - player.countZhiShiWu('xiaoYanDouQi'));
                             return missing + lib.skill.lianQiHuaDan
                                 .getAiExtraValue(player) * 0.5;
                         },
@@ -3340,7 +3345,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     value -= manager.aiSelfDamageRisk(player, info.damage);
                     value -= info.cost * 0.3;
                     value -= info.energy == 'baoShi' ? 1.4 : 0.75;
-                    if(player.countZhiShiWu('xiaoYanDouQi') >= 5) {
+                    if(player.countZhiShiWu('xiaoYanDouQi') >= lib.skill.xiaoYanDouQi.intro.max) {
                         value += 0.7;
                     }
                     return value > 0.45;
@@ -3667,7 +3672,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     var fires = manager.getBright(player);
                     var plan = manager.aiFoNuPlan(player);
                     var desired = plan ? plan.count : 2;
-                    var links = await player.chooseButton(
+                    var links = (await player.chooseButton(
                         [
                             '【佛怒火莲】：选择2张或3张明亮【异火】',
                             [fires, 'textbutton'],
@@ -3681,9 +3686,9 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             .includes(button.link)) return 10;
                         return ui.selected.buttons.length <
                             _status.event.desiredCount ? 1 : -10;
-                    }).forResultLinks();
+                    }).forResultLinks() || []);
                     if(!links || links.length < 2) return;
-                    var targets = await player.chooseTarget(
+                    var targets = (await player.chooseTarget(
                         true,
                         '【佛怒火莲】：选择一名目标对手',
                         function(card, player, target) {
@@ -3698,7 +3703,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                             _status.event.player,
                             3
                         );
-                    }).forResultTargets();
+                    }).forResultTargets() || []);
                     if(!targets || !targets.length) return;
                     fires = links.slice();
                     var target = targets[0];
@@ -3745,7 +3750,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         "intro": {
                             "name": "斗气",
                             "content": "mark",
-                            "max": 5,
+                            "max": 6,
                         },
                         "onremove": "storage",
                         "markimage": "extension/bigcowcow/mark_douQi.png",
@@ -4152,13 +4157,14 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         await player.faShuDamage(1, 'nosource');
                     }
                     if(source && source.isIn() &&
+                        source.side != player.side &&
                         get.shiQi(player.side) < oldMorale) {
-                        await source.changeZhanJi('shuiJing', 1);
+                        await source.addNengLiang('shuiJing', 1);
                     }
                 },
                         "intro": {
                             "name": "暗劲",
-                            "content": "拥有者回合开始时，先移除【暗劲】，再由萧炎对其造成1点法术伤害③；若因此造成对方士气下降，萧炎令己方战绩区+1【水晶】。",
+                            "content": "拥有者回合开始时，先移除【暗劲】，再由萧炎对其造成1点法术伤害③；若因此造成对方士气下降，萧炎自身能量区+1【水晶】。",
                             "max": 1,
                         },
                         "markimage": "extension/bigcowcow/mark_anJin.png",
@@ -4319,7 +4325,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         await player.addZhiShiWu('xiaoYanDouQi', 1);
                         return;
                     }
-                    var links = await player.chooseButton(
+                    var links = (await player.chooseButton(
                         [
                             '【心火重燃】：选择另一张黯淡异火',
                             [dim, 'textbutton'],
@@ -4331,7 +4337,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 _status.event.player,
                                 button.link
                             );
-                    }).forResultLinks();
+                    }).forResultLinks() || []);
                     if(links.length) {
                         await lib.skill.xiaoYanYiHuoManager.setForm(
                             player,
@@ -4649,11 +4655,11 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                     "foNuHuoLian": "法术【佛怒火莲】",
                     "foNuHuoLian_info": "【宝石】<span class='tiaoJian'>（选择2或3张明亮【异火】）</span>结算后翻暗：<br>2张：对一名对手造成2点法术伤害③，再对自己造成1点法术伤害③。<br>3张：对一名对手造成3点法术伤害③，对其他对手各造成1点法术伤害③。",
                     "xiaoYanDouQi": "斗气",
-                    "xiaoYanDouQi_info": "<span class='lan'>【斗气】</span>为萧炎专属指示物，上限为5。",
+                    "xiaoYanDouQi_info": "<span class='lan'>【斗气】</span>为萧炎专属指示物，上限为6。",
                     "xiaoYanYiHuoManager": "异火管理",
                     "xiaoYanYiHuoManager_info": "【异火】炼化前位于场外；炼化后以明亮面放置。翻暗时失去对应技能，翻亮后恢复。",
                     "xiaoYanAnJin": "(专)【暗劲】",
-                    "xiaoYanAnJin_info": "<span class='tiaoJian'>（拥有者回合开始时）</span>移除【暗劲】，萧炎对其造成1点法术伤害③；若因此令对方士气下降，己方+1【水晶】。每名角色上限为1。",
+                    "xiaoYanAnJin_info": "<span class='tiaoJian'>（拥有者回合开始时）</span>移除【暗劲】，萧炎对其造成1点法术伤害③；若因此令对方士气下降，萧炎自身能量区+1【水晶】。每名角色上限为1。",
                     "qingLianDiXinHuo": "(专)【青莲地心火】",
                     "qingLianDiXinHuo_info": "【地火焚身】：<span class='tiaoJian'>（对目标造成实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。翻面后变为黯淡。",
                     "yunLuoXinYan": "(专)【陨落心炎】",

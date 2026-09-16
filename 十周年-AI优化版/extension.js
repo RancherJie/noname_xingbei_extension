@@ -288,20 +288,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         skill.content = async function (event, trigger, player) {
             var cards = [];
             if (event.bool) {
-                var allies = await player.chooseTarget("我方2名角色各弃置1张牌", 2, true, function (card, player, target) {
+                var allies = (await player.chooseTarget("我方2名角色各弃置1张牌", 2, true, function (card, player, target) {
                     return player.side == target.side;
-                }).set("ai", function () { return Math.random(); }).forResultTargets();
+                }).set("ai", function () { return Math.random(); }).forResultTargets() || []);
                 allies = allies.sortBySeat(player);
                 game.log(player, "选择了", allies);
                 event.targets = allies.slice();
                 for (var ally of allies) {
-                    var discarded = await ally.chooseToDiscard("h", true, "showCards").set("ai", function (card) {
+                    var discarded = (await ally.chooseToDiscard("h", true, "showCards").set("ai", function (card) {
                         var num = 0;
                         if (get.type(card) == "faShu") num++;
                         if (get.mingGe(card) == "yong") num++;
                         if (get.xiBie(card) == "shui") num++;
                         return num;
-                    }).forResultCards();
+                    }).forResultCards() || []);
                     if (discarded.length) cards.push(discarded[0]);
                 }
             } else {
@@ -325,24 +325,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     return lib.xingBeiShiZhouNianAi.damagePressure(target, owner, _status.event.magicDamage);
                 };
                 if (event.faShu) {
-                    var spellTargets = await player.chooseTarget("对2名目标对手各造成1点法术伤害③", 2, true, function (card, player, target) {
+                    var spellTargets = (await player.chooseTarget("对2名目标对手各造成1点法术伤害③", 2, true, function (card, player, target) {
                         return target.side != player.side;
-                    }).set("magicDamage", damage).set("ai", damageAi).forResultTargets();
+                    }).set("magicDamage", damage).set("ai", damageAi).forResultTargets() || []);
                     spellTargets = spellTargets.sortBySeat(player);
                     game.log(player, "选择了", spellTargets);
                     for (var spellTarget of spellTargets) await spellTarget.faShuDamage(1, player);
                 }
                 if (event.yong > 0) {
-                    var chantTargets = await player.chooseTarget("对" + event.yong + "名目标角色各造成1点法术伤害③", true, event.yong)
-                        .set("magicDamage", damage).set("ai", damageAi).forResultTargets();
+                    var chantTargets = (await player.chooseTarget("对" + event.yong + "名目标角色各造成1点法术伤害③", true, event.yong)
+                        .set("magicDamage", damage).set("ai", damageAi).forResultTargets() || []);
                     chantTargets = chantTargets.sortBySeat(player);
                     game.log(player, "选择了", chantTargets);
                     for (var chantTarget of chantTargets) await chantTarget.faShuDamage(1, player);
                 }
                 if (event.shui > 0) {
-                    var healTargets = await player.chooseTarget(event.shui + "名目标角色各+1点[治疗]", true, event.shui).set("ai", function (target) {
+                    var healTargets = (await player.chooseTarget(event.shui + "名目标角色各+1点[治疗]", true, event.shui).set("ai", function (target) {
                         return get.zhiLiaoEffect2(target, _status.event.player, 1);
-                    }).forResultTargets();
+                    }).forResultTargets() || []);
                     healTargets = healTargets.sortBySeat(player);
                     game.log(player, "选择了", healTargets);
                     for (var healTarget of healTargets) healTarget.changeZhiLiao(1, player);
@@ -358,7 +358,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     function bindPhysicalCostTargetAi(skill) {
         if (!skill || !skill.ai || !skill.ai.result || skill.ai.result.target == null) return;
         if (!markPatched(skill, "physicalCostTargetAi")) return;
-        skill.ai2 = function (target) {
+        skill.onlinePhysicalCostScore = function (target) {
             var player = _status.event.player;
             if (!player || !target) return 0;
             var scorer = skill.ai.result.target;
@@ -368,6 +368,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (!attitude) attitude = target.side == player.side ? 1 : -1;
             return value * (attitude > 0 ? 1 : -1);
         };
+        var skillId = Object.keys(lib.skill).find(function(id) { return lib.skill[id] === skill; });
+        if (skillId) skill.ai2 = new Function('target',
+            'return lib.skill[' + JSON.stringify(skillId) + '].onlinePhysicalCostScore(target);');
     }
 
     function patchPhysicalCostTargetAi() {
@@ -573,6 +576,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (target.hasSkill && target.hasSkill("moFaHuDun")) score += 0.35;
                 return score >= 1.15 ? score : 0;
             }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_shieldTargetScore_31107"] = shieldTargetScore;
+
             shield.ai.order = function (item, player) {
                 var best = 0;
                 game.countPlayer(function (target) { best = Math.max(best, shieldTargetScore(player, target)); });
@@ -588,6 +594,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 return shieldTargetScore(player, target);
             };
             shield.ai2 = function (target) {
+                        var shieldTargetScore = lib["十周年-AI优化版_callbacks"]["online_shieldTargetScore_31107"];
+
                 var player = _status.event && _status.event.player;
                 if (!player || !target || target.side != player.side) return -100;
                 return shieldTargetScore(player, target);
@@ -678,6 +686,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (length == 2) {
                 var list = ["shui", "huo", "feng", "lei", "di"];
                 var control = await player.chooseControl(list).set("prompt", "选择攻击系别").set("target", event.target).set("ai", function () {
+                        var list = _status.event["online_37108_list"];
+                        var attackNames = _status.event["online_37108_attackNames"];
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var target = _status.event.target;
                     var player = _status.event.player;
                     var best = "shui";
@@ -694,7 +706,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         }
                     }
                     return best;
-                }).forResult("control");
+                }).set("online_37108_list", list).set("online_37108_attackNames", attackNames).forResult("control");
                 xiBie = control || "shui";
                 name = attackNames[xiBie];
             } else if (length == 3) {
@@ -833,6 +845,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 .set("target", target)
                 .set("baseDamage", trigger.damageNum || 2)
                 .set("ai", function () {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var player = _status.event.player;
                     var target = _status.event.target;
                     if (!target || target.side == player.side) return "cancel2";
@@ -1003,6 +1017,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }
             return best;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_bestRadiancePlan_53593"] = bestRadiancePlan;
+
 
         function punishPlan(player, costCard, target) {
             if (!target || target.side == player.side || target.zhiLiao <= 0) return null;
@@ -1020,6 +1037,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (!attack && ownGain == 0) score -= 0.55;
             return { attack: attack, score: score };
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_punishPlan_54045"] = punishPlan;
+
 
         function bestPunishPlan(player, costCard) {
             var best = null;
@@ -1055,6 +1075,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (gain <= 0 && (!attack.di || attack.di.score < 1.2)) score -= 1;
             return { score: score, gain: gain, attack: attack };
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_prayerPlan_56009"] = prayerPlan;
+
 
         var radiance = lib.skill && lib.skill.huiYao;
         if (radiance && markPatched(radiance, "fullActionChain")) {
@@ -1070,6 +1093,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
             radiance.ai.result = {
                 player: function (player) {
+                        var bestRadiancePlan = lib["十周年-AI优化版_callbacks"]["online_bestRadiancePlan_53593"];
+
                     var plan = bestRadiancePlan(player);
                     return plan && plan.score >= 0.7 ? plan.score : -8;
                 },
@@ -1095,6 +1120,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             punish.ai.result = {
                 player: 0,
                 target: function (player, target) {
+                        var punishPlan = lib["十周年-AI优化版_callbacks"]["online_punishPlan_54045"];
+
                     if (target.side == player.side) return 0;
                     var plan = punishPlan(player, null, target);
                     return plan && plan.score >= 0.75 ? -plan.score : 0;
@@ -1139,6 +1166,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
             prayer.ai.result = {
                 player: function (player) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+                        var prayerPlan = lib["十周年-AI优化版_callbacks"]["online_prayerPlan_56009"];
+
                     if (helper.shouldReserveSpecial(_status.event, player)) return -10;
                     var plan = prayerPlan(player);
                     return plan.score >= 0.8 ? plan.score : -10;
@@ -1186,6 +1216,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 var records = get.zhanJi(player.side) || [];
                 if (records.length >= 1) choices.push("选项二");
                 player.chooseControl(choices).set("prompt", "军神威光：选择一项").set("choiceList", choiceList).set("ai", function () {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var player = _status.event.player;
                     var records = get.zhanJi(player.side) || [];
                     var bestHeal = 0;
@@ -1207,6 +1239,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     var listx = [];
                     for (var i = 0; i < records.length; i++) listx.push([records[i], get.translation(records[i])]);
                     player.chooseButton(["移除X个星石，X<3", [listx, "tdnodes"]]).set("forced", true).set("selectButton", [1, 2]).set("ai", function (button) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                         var player = _status.event.player;
                         if (ui.selected.buttons.length >= 1) {
                             var bestNeed = 0;
@@ -1236,6 +1270,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 }
                 "step 3"
                 player.chooseTarget(1, true, "选择一个目标角色+" + event.number + "点[治疗]").set("ai", function (target) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     return helper.healScore(target, _status.event.player, _status.event.number);
                 }).set("number", event.number);
                 "step 4"
@@ -1269,6 +1305,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         return 7 - get.value(card, _status.event.player);
                     },
                     ai2: function (target) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                         var player = _status.event.player;
                         if (target.side != player.side) return 0;
                         return helper.healScore(target, player, 1);
@@ -1481,11 +1519,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         skill.content = async function (event, trigger, player) {
             if (event.cost_data == "选项一") {
                 var anYue = player.getGaiPai("anYue");
-                var links = await player.chooseCardButton(anYue, true, "移除1个【暗月】目标角色+1[治疗]").forResult("links");
+                var links = (await player.chooseCardButton(anYue, true, "移除1个【暗月】目标角色+1[治疗]").forResult("links") || []);
                 await player.discard(links, "anYue");
-                var targets = await player.chooseTarget(1, "月之轮回：选择1名目标角色+1[治疗]", true).set("ai", function (target) {
+                var targets = (await player.chooseTarget(1, "月之轮回：选择1名目标角色+1[治疗]", true).set("ai", function (target) {
+                        var player = _status.event["online_78107_player"];
+
                     return get.zhiLiaoEffect2(target, player, 1);
-                }).forResult("targets");
+                }).set("online_78107_player", player).forResult("targets") || []);
                 if (targets && targets.length) targets[0].changeZhiLiao(1, player);
             } else if (event.cost_data == "选项二") {
                 await player.changeZhiLiao(-1);
@@ -1518,6 +1558,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (sameSuit <= 1) value += 0.25;
             return value;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_moonValue_78914"] = moonValue;
+
 
         function lowestDiscardCost(player) {
             var cards = player.getCards("h");
@@ -1573,6 +1616,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }
             return score;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_medusaCardScore_81330"] = medusaCardScore;
+
 
         function attackHitChance(target, card, cannotRespond) {
             if (!target || !card) return 0;
@@ -1658,6 +1704,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }
             return best;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_paleMoonPlan_85593"] = paleMoonPlan;
+
 
         var medusa = lib.skill && lib.skill.meiDuShaZhiYan;
         if (medusa && markPatched(medusa, "fullActionChain")) {
@@ -1668,6 +1717,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     })
                     .set("xiBie", get.xiBie(trigger.card))
                     .set("ai", function (button) {
+                        var medusaCardScore = lib["十周年-AI优化版_callbacks"]["online_medusaCardScore_81330"];
+
                         var player = _status.event.player;
                         var score = medusaCardScore(player, button.link);
                         return score >= 0.25 ? 10 + score : -20;
@@ -1689,11 +1740,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         return 8 - get.value(discard, _status.event.player);
                     });
                 }
-                var targets = await player.chooseTarget(1, "美杜莎之眼：对目标对手造成1点法术伤害③", true, function (card, player, target) {
+                var targets = (await player.chooseTarget(1, "美杜莎之眼：对目标对手造成1点法术伤害③", true, function (card, player, target) {
                     return target.side != player.side;
                 }).set("ai", function (target) {
                     return lib.xingBeiShiZhouNianAi.damagePressure(target, _status.event.player, 1);
-                }).forResult("targets");
+                }).forResult("targets") || []);
                 if (targets && targets.length) await targets[0].faShuDamage(1, player);
             };
         }
@@ -1723,17 +1774,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
             cycle.content = async function (event, trigger, player) {
                 if (event.cost_data == "选项一") {
-                    var links = await player.chooseCardButton(darkMoons(player), true, "移除1个【暗月】，令目标角色+1[治疗]")
+                    var links = (await player.chooseCardButton(darkMoons(player), true, "移除1个【暗月】，令目标角色+1[治疗]")
                         .set("ai", function (button) {
+                        var moonValue = lib["十周年-AI优化版_callbacks"]["online_moonValue_78914"];
+
                             return 8 - moonValue(_status.event.player, button.link);
-                        }).forResult("links");
+                        }).forResult("links") || []);
                     if (!links || !links.length) return;
                     await player.discard(links, "anYue");
-                    var targets = await player.chooseTarget(1, "月之轮回：选择1名目标角色+1[治疗]", true)
+                    var targets = (await player.chooseTarget(1, "月之轮回：选择1名目标角色+1[治疗]", true)
                         .set("ai", function (target) {
                             if (target.side != _status.event.player.side) return -10;
                             return get.zhiLiaoEffect2(target, _status.event.player, 1);
-                        }).forResult("targets");
+                        }).forResult("targets") || []);
                     if (targets && targets.length) await targets[0].changeZhiLiao(1, player);
                 } else if (event.cost_data == "选项二") {
                     await player.changeZhiLiao(-1);
@@ -1752,11 +1805,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
             profanation.content = async function (event, trigger, player) {
                 await player.changeZhiLiao(-1);
-                var targets = await player.chooseTarget(1, true, "对目标对手造成1点法术伤害③", function (card, player, target) {
+                var targets = (await player.chooseTarget(1, true, "对目标对手造成1点法术伤害③", function (card, player, target) {
                     return target.side != player.side;
                 }).set("ai", function (target) {
                     return lib.xingBeiShiZhouNianAi.damagePressure(target, _status.event.player, 1);
-                }).forResult("targets");
+                }).forResult("targets") || []);
                 if (targets && targets.length) await targets[0].faShuDamage(1, player);
             };
         }
@@ -1768,6 +1821,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 var result = await player.chooseCardButton(darkMoons(player), "是否发动【暗月斩】<br>" + lib.translate.anYueZhan_info, [1, 2])
                     .set("desired", plan.score >= 0.45 ? plan.amount : 0)
                     .set("ai", function (button) {
+                        var moonValue = lib["十周年-AI优化版_callbacks"]["online_moonValue_78914"];
+
                         var desired = _status.event.desired;
                         if (!desired || ui.selected.buttons.length >= desired) return -20;
                         return 9 - moonValue(_status.event.player, button.link);
@@ -1820,11 +1875,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         return 8 - get.value(card, _status.event.player);
                     });
                 }
-                var targets = await player.chooseTarget(1, "对目标对手造成" + (amount + 1) + "点法术伤害③", true, function (card, player, target) {
+                var targets = (await player.chooseTarget(1, "对目标对手造成" + (amount + 1) + "点法术伤害③", true, function (card, player, target) {
                     return target.side != player.side;
                 }).set("damage", amount + 1).set("ai", function (target) {
                     return lib.xingBeiShiZhouNianAi.damagePressure(target, _status.event.player, _status.event.damage);
-                }).forResult("targets");
+                }).forResult("targets") || []);
                 if (targets && targets.length) await targets[0].faShuDamage(amount + 1, player);
             };
             if (!pale.ai) pale.ai = {};
@@ -1834,6 +1889,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
             pale.ai.result = {
                 player: function (player) {
+                        var paleMoonPlan = lib["十周年-AI优化版_callbacks"]["online_paleMoonPlan_85593"];
+
                     var plan = paleMoonPlan(player);
                     return plan.score >= 0.75 ? plan.score : -10;
                 }
@@ -1847,12 +1904,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         skill.content = async function (event, trigger, player) {
             await player.removeZhiShiWu("huangSeLingHun");
             await player.removeZhiShiWu("lanSeLingHun");
-            var targets = await player.chooseTarget("将【灵魂链接】放置于一名队友面前", true, function (card, player, target) {
+            var targets = (await player.chooseTarget("将【灵魂链接】放置于一名队友面前", true, function (card, player, target) {
                 return target != player && target.side == player.side;
             }).set("ai", function (target) {
+                        var player = _status.event["online_97960_player"];
+
                 var room = target.getHandcardLimit() - target.countCards("h");
                 return get.attitude(player, target) + (target.zhiLiao || 0) * 0.8 + Math.max(0, room) * 0.35;
-            }).forResultTargets();
+            }).set("online_97960_player", player).forResultTargets() || []);
             if (!targets || !targets.length) return;
             var target = targets[0];
             player.storage.lingHunLianJieTarget = target;
@@ -2024,6 +2083,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 prompt: get.prompt("moNengFanZhuan"),
                 prompt2: lib.translate.moNengFanZhuan_info,
                 ai1: function (card) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var player = _status.event.player;
                     var selected = ui.selected.cards.length;
                     var score = 8 - get.value(card, player);
@@ -2039,6 +2100,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     return score - selected * 0.8;
                 },
                 ai2: function (target) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var player = _status.event.player;
                     var amount = Math.max(1, ui.selected.cards.length - 1);
                     return helper.damagePressure(target, player, amount);
@@ -2150,6 +2213,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 var choices = ["选项一"];
                 if (player.canBiShaBaoShi()) choices.push("选项二");
                 var control = await player.chooseControl(choices).set("choiceList", choiceList).set("ai", function () {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var player = _status.event.player;
                     var blood = player.countZhiShiWu("xianXue");
                     if (!player.canBiShaBaoShi()) return "选项一";
@@ -2334,19 +2399,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             });
             var targets;
             if (holders.length > 0) {
-                targets = await player.chooseTarget("将【永恒乐章】转移给我方另一名目标角色", true, function (card, player, target) {
+                targets = (await player.chooseTarget("将【永恒乐章】转移给我方另一名目标角色", true, function (card, player, target) {
                     return target.side == player.side && _status.event.targetx != target;
                 }).set("targetx", holders[0]).set("ai", function (target) {
+                        var player = _status.event["online_122185_player"];
+
                     var room = target.getHandcardLimit() - target.countCards("h");
                     return get.attitude(player, target) + Math.max(0, room) * 0.4 + (target.zhiLiao || 0) * 0.25;
-                }).forResultTargets();
+                }).set("online_122185_player", player).forResultTargets() || []);
             } else {
-                targets = await player.chooseTarget("将【永恒乐章】放置于目标队友面前", true, function (card, player, target) {
+                targets = (await player.chooseTarget("将【永恒乐章】放置于目标队友面前", true, function (card, player, target) {
                     return target.side == player.side && target != player;
                 }).set("ai", function (target) {
+                        var player = _status.event["online_122723_player"];
+
                     var room = target.getHandcardLimit() - target.countCards("h");
                     return get.attitude(player, target) + Math.max(0, room) * 0.4 + (target.zhiLiao || 0) * 0.25;
-                }).forResultTargets();
+                }).set("online_122723_player", player).forResultTargets() || []);
             }
             if (!targets || !targets.length) return;
             if (holders.length > 0) await holders[0].removeZhiShiWu("yongHengYueZhang");
@@ -2500,6 +2569,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var paymentList = ["选项一"];
             if (player.canBiShaBaoShi()) paymentList.push("选项二");
             var control = await player.chooseControl(paymentList).set("choiceList", choiceList).set("ai", function () {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                 var player = _status.event.player;
                 if (!player.canBiShaBaoShi()) return "选项一";
                 if (helper.shouldReserveSpecial(_status.event, player)) return "选项一";
@@ -2823,6 +2894,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             });
             return best;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_bestBurst_150370"] = bestBurst;
+
 
         function elementGainDamage(player, target, skillName, baseDamage, suit) {
             if (!skillName || !target || player.countMark("yuanSu") >= 3) return 0;
@@ -2877,6 +2951,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }
             return score;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_targetScore_152435"] = targetScore;
+
 
         var ignition = lib.skill && lib.skill.yuanSuDianRan;
         if (ignition && markPatched(ignition, "burstChain")) {
@@ -2899,6 +2976,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             // 【元素点燃】没有实体费用牌，也需要显式提供直接选人分数。
             // 否则本体会把上面的负面效果语义再次用于最终选人并取消技能。
             ignition.ai2 = function (target) {
+                        var bestBurst = lib["十周年-AI优化版_callbacks"]["online_bestBurst_150370"];
+                        var targetScore = lib["十周年-AI优化版_callbacks"]["online_targetScore_152435"];
+
                 var player = _status.event.player;
                 var plan = bestBurst(player);
                 if (!plan || !plan.ignition) return 0;
@@ -2925,6 +3005,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             // 本技能先选择实体牌；备份技能后必须直接替换选人AI，
             // 否则本体会按该实体攻击牌而不是【陨石】的法术效果评价目标。
             meteor.ai2 = function (target) {
+                        var bestBurst = lib["十周年-AI优化版_callbacks"]["online_bestBurst_150370"];
+                        var targetScore = lib["十周年-AI优化版_callbacks"]["online_targetScore_152435"];
+
                 var player = _status.event.player;
                 var plan = bestBurst(player);
                 if (!plan || !plan.meteor) return 0;
@@ -2963,9 +3046,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
             // 带实体牌费用的技能在选牌后由event.ai2负责选人；
             // 显式使用技能评分，避免退回实体攻击牌的普通目标评价。
-            skill.ai2 = function (target) {
+            skill.onlineElementTargetScore = function (target) {
+                        var targetScore = lib["十周年-AI优化版_callbacks"]["online_targetScore_152435"];
+
                 return targetScore(_status.event.player, target, data.damage, name, data.suit);
             };
+            skill.ai2 = new Function('target',
+                'return lib.skill[' + JSON.stringify(name) + '].onlineElementTargetScore(target);');
         });
 
         var moonlight = lib.skill && lib.skill.yueGuang;
@@ -3044,12 +3131,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 await event.trigger("dongWuHuoBan");
                 var target = player;
                 if (event.chongWuQiangHua) {
-                    var targets = await player.chooseTarget("目标角色摸1张牌【强制】，弃1张牌", true).set("ai", function (current) {
+                    var targets = (await player.chooseTarget("目标角色摸1张牌【强制】，弃1张牌", true).set("ai", function (current) {
                         var player = _status.event.player;
                         var pressure = current.countCards("h") - current.getHandcardLimit();
                         if (current.side == player.side) return pressure >= 0 ? -20 - pressure * 5 : -5;
                         return pressure >= 0 ? 10 + pressure * 3 : -1;
-                    }).forResult("targets");
+                    }).forResult("targets") || []);
                     if (targets && targets.length) target = targets[0];
                 }
                 await target.draw(1);
@@ -3213,6 +3300,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 player.chooseTarget(true, function (card, player, target) {
                     return target != _status.event.triggerTarget && player.canUse("anMie", target);
                 }).set("triggerTarget", trigger.oriTarget).set("ai", function (target) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var player = _status.event.player;
                     if (player.storage._shiZhouNianAiMoGongWindTarget == target) return 100;
                     return helper.damagePressure(target, player, 1);
@@ -3242,6 +3331,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 player.removeBiShaBaoShi();
                 "step 1"
                 player.chooseControl().set("choiceList", ["目标角色弃1张牌", "你摸3张牌【强制】"]).set("ai", function () {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                     var player = _status.event.player;
                     if (helper.wouldOverflow(player, 3, 0)) return "选项一";
                     if (!(player.canGongJi() || player.canFaShu())) return "选项二";
@@ -3266,12 +3357,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 "step 6"
                 if (player.countCards("h") > 0) {
                     player.chooseCard("h", 1, true).set("prompt", "将自己1张手牌作为充能").set("ai", function (card) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+                        var player = _status.event["online_171837_player"];
+
                         if (typeof helper.moGongChargeCardScore == "function") {
                             return helper.moGongChargeCardScore(player, card);
                         }
                         var suit = get.xiBie(card);
                         return (suit == "lei" || suit == "huo" || suit == "feng" ? 8 : 5) - get.value(card);
-                    });
+                    }).set("online_171837_player", player);
                 } else event.goto(8);
                 "step 7"
                 if (result.bool && result.cards && result.cards.length) player.addGaiPai("chongNengPai", result.cards);
@@ -3539,6 +3633,53 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         };
     }
 
+    function patchShenMiXueZheActionChain(helper) {
+        var suppression = lib.skill && lib.skill.zhenYanYaZhi;
+        if (!suppression || !markPatched(suppression, "overflowResponsePriority")) return;
+
+        // 【真言压制】和【妖精秘术】共用 trigger.selected。提高前者的响应优先级，
+        // 让AI先判断能否压迫接近满手的对手；若放弃，后续仍可正常选择【妖精秘术】。
+        suppression.priority = Math.max(typeof suppression.priority == "number" ? suppression.priority : 0, 1);
+        suppression.check = function (event, player) {
+            return game.hasPlayer(function (target) {
+                return target.side != player.side &&
+                    target.countCards("h") >= target.getHandcardLimit() - 1;
+            });
+        };
+        suppression.content = function () {
+            "step 0"
+            trigger.selected = true;
+            player.removeBiShaShuiJing();
+            player.chooseTarget(true, '对目标角色造成1点法术伤害③ ').set('ai', function (target) {
+                var hand = target.countCards('h');
+                var limit = target.getHandcardLimit();
+                var score = lib.xingBeiShiZhouNianAi.damagePressure(target, _status.event.player, 1);
+                if (hand > limit) score += 60 + (hand - limit) * 8;
+                else if (hand == limit) score += 40;
+                else if (hand == limit - 1) score += 15;
+                if ((target.zhiLiao || 0) > 0) score += 3;
+                return score;
+            });
+            "step 1"
+            var target = result.targets[0];
+            target.faShuDamage(1, player);
+            "step 2"
+            var yanLing = player.getGaiPai('yanLing');
+            var cards = [];
+            for (var i = 0; i < yanLing.length; i++) {
+                if (get.xiBie(yanLing[i]) != 'guang') cards.push(yanLing[i]);
+            }
+            var list = ['是', '否'];
+            if (cards.length > 0) {
+                player.chooseControl(list).set('prompt', '是否立即执行一次【真言术】');
+            } else {
+                event.finish();
+            }
+            "step 3"
+            if (result.control == '是') player.useSkill('zhenYanShu');
+        };
+    }
+
     function patchResidualChoiceSafety(helper) {
         var judgment = lib.skill && lib.skill.panJueTianPing;
         if (judgment && markPatched(judgment, "drawOption")) {
@@ -3657,6 +3798,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (actualLoss < 2) return null;
             return { spend: lightning, target: bestTarget, moraleLoss: actualLoss, rawMoraleLoss: bestRawLoss };
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_scatterPlan_194285"] = scatterPlan;
+
 
         function windChainPlan(player, previousTarget) {
             var wind = chargeCount(player, "feng");
@@ -3853,6 +3997,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             };
             scatter.ai.result = {
                 player: function (player) {
+                        var scatterPlan = lib["十周年-AI优化版_callbacks"]["online_scatterPlan_194285"];
+
                     var plan = scatterPlan(player);
                     return plan ? 2 + plan.moraleLoss : 0;
                 }
@@ -3875,6 +4021,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     player.chooseTarget("对其造成的伤害额外+" + event.num, true, function (card, player, target) {
                         return target.side != player.side;
                     }).set("amount", event.num + 1).set("ai", function (target) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                         var baseLoss = helper.overflowAfterDamage(target, 1);
                         var boostedLoss = helper.overflowAfterDamage(target, _status.event.amount);
                         return (boostedLoss - baseLoss) * 12 + helper.damagePressure(target, _status.event.player, _status.event.amount);
@@ -4053,6 +4201,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var forcedDiscard = Math.max(0, actual - room);
             return amount * 0.18 + treatment * 1.15 + forcedDiscard * 0.38 - safeDraw * 0.42;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_noMoraleDamagePressure_217840"] = noMoraleDamagePressure;
+
 
         helper.yingLingRunePlan = function (player, chooseAllocation, forcedCard, forcedTarget) {
             var best = { score: -Infinity, bonus: 0, war: player.countZhiShiWu("zhanWen"), card: null, target: null };
@@ -4257,13 +4408,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             echo.content = async function (event, trigger, player) {
                 await player.removeBiShaShuiJing();
                 var amount = Math.min(3, Math.max(0, trigger.num || 0));
-                var targets = await player.chooseTarget("对另一名目标角色造成" + amount + "点法术伤害", true, function (card, player, target) {
+                var targets = (await player.chooseTarget("对另一名目标角色造成" + amount + "点法术伤害", true, function (card, player, target) {
                     return target != _status.event.excludedTarget;
                 }).set("excludedTarget", trigger.player).set("amount", amount).set("ai", function (target) {
+                        var noMoraleDamagePressure = lib["十周年-AI优化版_callbacks"]["online_noMoraleDamagePressure_217840"];
+
                     var player = _status.event.player;
                     if (target.side == player.side) return -10;
                     return noMoraleDamagePressure(target, player, _status.event.amount);
-                }).forResultTargets();
+                }).forResultTargets() || []);
                 if (targets && targets.length) await targets[0].faShuDamage(amount, player).set("shiQiXiaJiang", false);
             };
         }
@@ -4882,6 +5035,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (target.side == player.side) return -Infinity;
                 return 5 + Math.max(0, target.countCards("h") - target.getHandcardLimit() + 2) * 2;
             }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_linkTargetValue_267062"] = linkTargetValue;
+
             sorrow.check = function (event, player) {
                 var current = player.storage.tongShengGongSi_target;
                 if (!current || !(player.canGongJi() || player.canFaShu())) return false;
@@ -4899,6 +5055,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 var result = await player.chooseTarget("转移【同生共死】目标，取消则移除【同生共死】", function (card, player, target) {
                     return target != _status.event.currentTarget;
                 }).set("currentTarget", current).set("ai", function (target) {
+                        var linkTargetValue = lib["十周年-AI优化版_callbacks"]["online_linkTargetValue_267062"];
+
                     return linkTargetValue(_status.event.player, target);
                 }).forResult();
                 if (result.bool && result.targets && result.targets.length) {
@@ -5080,6 +5238,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }
             return best;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_responseAttackTargetValue_277085"] = responseAttackTargetValue;
+
 
         function hasLegalMatchingResponse(event, player, incomingCard, excludedCard) {
             if (!event || !player || !incomingCard) return false;
@@ -5093,6 +5254,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 return responseAttackTargetValue(event, player, card) != -Infinity;
             });
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_hasLegalMatchingResponse_277943"] = hasLegalMatchingResponse;
+
 
         function responseTargetChoice(target) {
             var event = _status.event;
@@ -5125,6 +5289,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (overflow >= get.shiQi(player.side) && overflow > 0) value += 500;
             return value - Math.max(0, get.value(card, player)) * 0.08;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_responseDefensePriority_279709"] = responseDefensePriority;
+
 
         function incomingAttackDamage(event) {
             var candidates = [];
@@ -5198,6 +5365,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
             return preparation >= 1.15;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_shouldTakeAttackForCodices_282146"] = shouldTakeAttackForCodices;
+
 
         function canLeaveKnownReboundPair(player, count) {
             var groups = {};
@@ -5558,6 +5728,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     .set("canZhiLiao", trigger.canZhiLiao)
                     .set("incomingDamage", event.incomingDamage)
                     .set("ai1", function (item) {
+                        var responseAttackTargetValue = lib["十周年-AI优化版_callbacks"]["online_responseAttackTargetValue_277085"];
+                        var hasLegalMatchingResponse = lib["十周年-AI优化版_callbacks"]["online_hasLegalMatchingResponse_277943"];
+                        var shouldTakeAttackForCodices = lib["十周年-AI优化版_callbacks"]["online_shouldTakeAttackForCodices_282146"];
+                        var responseDefensePriority = lib["十周年-AI优化版_callbacks"]["online_responseDefensePriority_279709"];
+
                         var player = _status.event.player;
                         if (item && typeof item == "object" && get.type(item, player) == "gongJi") {
                             // 应战首先是防住当前伤害：只要存在合法反击目标就应当出牌，
@@ -5634,11 +5809,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     selectCard: [2, Infinity], filterTarget: true, complexCard: true,
                     prompt: get.prompt("faShuFanTan"), prompt2: lib.translate.faShuFanTan_info,
                     ai1: function (card) {
+                        var plan = _status.event["online_307993_plan"];
+                        var bestSuit = _status.event["online_307993_bestSuit"];
+                        var desired = _status.event["online_307993_desired"];
+
                         if (!plan || get.xiBie(card) != bestSuit || ui.selected.cards.length >= desired || !plan.cards.includes(card)) return 0;
                         return 20 - plan.cards.indexOf(card);
                     },
-                    ai2: function (target) { return target == bestTarget ? 10 : 0; }
-                }).forResult();
+                    ai2: function (target) {
+                        var bestTarget = _status.event["online_307993_bestTarget"];
+ return target == bestTarget ? 10 : 0; }
+                }).set("online_307993_plan", plan).set("online_307993_bestSuit", bestSuit).set("online_307993_desired", desired).set("online_307993_bestTarget", bestTarget).forResult();
             };
         }
 
@@ -5698,6 +5879,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         function cappedSelfRisk(player, amount, cardsLeaving) {
             return helper.selfDamageRisk(player, cappedDamage(amount), cardsLeaving || 0);
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_cappedSelfRisk_311630"] = cappedSelfRisk;
+
 
         function lockedDragonTarget(player) {
             var storage = player.storage && player.storage.baiShiHuanLongQuan;
@@ -5773,14 +5957,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             bullet.content = async function (event, trigger, player) {
                 await player.addZhiShiWu("douQi");
                 var qiAfter = player.countZhiShiWu("douQi");
-                var targets = await player.chooseTarget("对目标对手造成1点法术伤害③", true, function (card, player, target) {
+                var targets = (await player.chooseTarget("对目标对手造成1点法术伤害③", true, function (card, player, target) {
                     return target.side != player.side;
                 }).set("qiAfter", qiAfter).set("ai", function (target) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+                        var cappedSelfRisk = lib["十周年-AI优化版_callbacks"]["online_cappedSelfRisk_311630"];
+
                     var player = _status.event.player;
                     var score = helper.damagePressure(target, player, 1);
                     if ((target.zhiLiao || 0) > 0) return score + 3;
                     return score - cappedSelfRisk(player, _status.event.qiAfter);
-                }).forResultTargets();
+                }).forResultTargets() || []);
                 if (!targets || !targets.length) return;
                 var target = targets[0];
                 var recoil = target.zhiLiao == 0;
@@ -5975,6 +6162,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }
             return score;
         }
+        lib["十周年-AI优化版_callbacks"] = lib["十周年-AI优化版_callbacks"] || {};
+        lib["十周年-AI优化版_callbacks"]["online_witherTargetPressure_325071"] = witherTargetPressure;
+
 
         function bestWitherTarget(player, count) {
             return helper.bestEnemy(player, function (target) {
@@ -6116,12 +6306,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 await player.showHiddenCards(event.cost_data);
                 for (var i = 0; i < event.cost_data.length; i++) {
                     var plan = bestWitherTarget(player, 1);
-                    var targets = await player.chooseTarget("对目标角色造成1点法术伤害", true)
+                    var targets = (await player.chooseTarget("对目标角色造成1点法术伤害", true)
                         .set("bestTarget", plan.target).set("ai", function (target) {
+                        var witherTargetPressure = lib["十周年-AI优化版_callbacks"]["online_witherTargetPressure_325071"];
+
                             if (target.side == _status.event.player.side) return -100;
                             if (target == _status.event.bestTarget) return 20;
                             return witherTargetPressure(target, _status.event.player, 1);
-                        }).forResultTargets();
+                        }).forResultTargets() || []);
                     if (targets && targets.length) await targets[0].faShuDamage(1, player);
                     await player.faShuDamage(2, player);
                 }
@@ -6187,11 +6379,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 }).forResultControl();
 
                 if (control == "选项一") {
-                    var targets = await player.chooseTarget("对目标角色造成1点法术伤害③，该伤害不能用[治疗]抵御", true).set("ai", function (target) {
+                    var targets = (await player.chooseTarget("对目标角色造成1点法术伤害③，该伤害不能用[治疗]抵御", true).set("ai", function (target) {
+                        var helper = lib.xingBeiShiZhouNianAi;
+
                         var player = _status.event.player;
                         if (target.side == player.side) return -10;
                         return helper.damagePressure(target, player, 1, false);
-                    }).forResultTargets();
+                    }).forResultTargets() || []);
                     if (targets && targets.length) await targets[0].faShuDamage(1, player).set("canZhiLiao", false);
                 } else if (control == "选项二") {
                     var cards = cocoons(player);
@@ -7073,8 +7267,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             ]).set("preferred", preferred).set("ai", function () { return _status.event.preferred; }).forResultControl();
 
             if (choice == "选项一") {
-                var added = await player.chooseCard("h", true, "将1张手牌面朝下放置在你角色旁，作为【卢恩】")
-                    .set("ai", function (card) { return 8 - get.value(card, _status.event.player); }).forResultCards();
+                var added = (await player.chooseCard("h", true, "将1张手牌面朝下放置在你角色旁，作为【卢恩】")
+                    .set("ai", function (card) { return 8 - get.value(card, _status.event.player); }).forResultCards() || []);
                 await player.addGaiPai(added, "luEn");
                 var available = [];
                 if (!player.hasZhiShiWu("fanXing")) available.push("繁星");
@@ -7092,10 +7286,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 return;
             }
 
-            var removed = await player.chooseCardButton(runes, true, [1, Infinity], "移除X张【卢恩】")
+            var removed = (await player.chooseCardButton(runes, true, [1, Infinity], "移除X张【卢恩】")
                 .set("plannedCards", best.cards).set("ai", function (button) {
                     return _status.event.plannedCards.includes(button.link) ? 10 : -1;
-                }).forResultLinks();
+                }).forResultLinks() || []);
             await player.discard(removed, "luEn", "showHiddenCards");
             event.cards = removed;
             player.$throw(removed, null);
@@ -7136,18 +7330,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var damage = Object.keys(suits).reduce(function (sum, key) { return sum + Math.floor(suits[key] / 2); }, 0);
             var healing = Object.keys(destinies).reduce(function (sum, key) { return sum + Math.floor(destinies[key] / 2); }, 0);
             if (damage > 1) {
-                var targets = await player.chooseTarget("对目标角色造成" + damage + "点法术伤害③", true)
+                var targets = (await player.chooseTarget("对目标角色造成" + damage + "点法术伤害③", true)
                     .set("damage", damage).set("ai", function (target) {
                         var player = _status.event.player;
                         if (target.side == player.side) return -100;
                         return lib.xingBeiShiZhouNianAi.damagePressure(target, player, _status.event.damage);
-                    }).forResultTargets();
+                    }).forResultTargets() || []);
                 if (targets.length) await targets[0].faShuDamage(damage, player);
             }
             if (healing > 1) {
-                var healTargets = await player.chooseTarget([1, 2], "任意分配" + healing + "点【治疗】给1~2位我方角色", true, function (card, player, target) {
+                var healTargets = (await player.chooseTarget([1, 2], "任意分配" + healing + "点【治疗】给1~2位我方角色", true, function (card, player, target) {
                     return target.side == player.side;
-                }).set("ai", function (target) { return get.zhiLiaoEffect2(target, _status.event.player, 1); }).forResultTargets();
+                }).set("ai", function (target) { return get.zhiLiaoEffect2(target, _status.event.player, 1); }).forResultTargets() || []);
                 if (healTargets.length == 1) await healTargets[0].changeZhiLiao(healing);
                 else if (healTargets.length == 2) {
                     var first = healing == 2 ? 1 : await player.chooseControl(Array.from({ length: healing - 1 }, function (_, i) { return i + 1; }))
@@ -7266,6 +7460,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         patchShengGong(helper);
         patchProactiveDrawSkills(helper);
         patchLowHandActionSafety();
+        patchShenMiXueZheActionChain(helper);
         patchResidualChoiceSafety(helper);
         patchFengZhiJianSheng(helper);
         patchKuangZhanShi(helper);

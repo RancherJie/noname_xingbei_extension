@@ -534,7 +534,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                         });
                 },
                         "cost": async function(event, trigger, player) {
-                    var targets = await player.chooseTarget(
+                    var targets = (await player.chooseTarget(
                         '是否发动【电棍圣经】，指定一名对手？',
                         function(card, player, target) {
                             return target.side != player.side;
@@ -548,7 +548,7 @@ game.import("extension", function(lib, game, ui, get, ai, _status) {
                                 -_status.event.getTrigger().num
                             )
                         );
-                    }).forResultTargets();
+                    }).forResultTargets() || []);
                     event.result = {
                         bool: targets.length > 0,
                         targets: targets,

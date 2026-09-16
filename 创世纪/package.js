@@ -3,7 +3,7 @@ extension["创世纪"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"2.4",
+    version:"2.5",
     files:[
     "info.json",
     "README.md",
