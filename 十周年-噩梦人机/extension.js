@@ -2,6 +2,36 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     "use strict";
 
     var extensionName = "十周年-噩梦人机";
+    // 启用扩展时替换模式选择页插画；不修改本体图片或持久化界面配置。
+    function installNightmareSplashImages() {
+        var portraits = {
+            connect: 'xingZhuiNvWu',
+            illustration: 'jiLuZhe',
+            leaderboard: 'sheng_zhongCaiZhe',
+            offlineChoose: 'daiDuoShaoNv',
+            tutorial: 'fengZhiJianSheng',
+            xingBei: 'zhanDouFaShi'
+        };
+        if(!document.getElementById('nightmare-splash-portraits')) {
+            var style = document.createElement('style');
+            style.id = 'nightmare-splash-portraits';
+            style.textContent = '#splash[data-splash_style="style1"] > div > .avatar,' +
+                '#splash[data-splash_style="style2"] > div > .avatar {' +
+                'background-position:center center !important;}';
+            document.head.appendChild(style);
+        }
+        (lib.onloadSplashes || []).forEach(function(splash) {
+            if(!['style1', 'style2'].includes(splash.id) || splash._nightmarePortraits) return;
+            var original = splash.handle;
+            if(typeof original != 'function') return;
+            splash.handle = function(mode) {
+                if(mode == 'boss') return 'extension/' + extensionName + '/image/splash/xieLing.png';
+                if(portraits[mode]) return 'extension/' + extensionName + '/image/character/chibi/default/' + portraits[mode] + '.png';
+                return original.apply(this, arguments);
+            };
+            splash._nightmarePortraits = true;
+        });
+    }
     var startupSkills = [
         "lianMin", "qianXing", "yiShiZhongDuan", "zhongCaiYiShi",
         "jingLingMiYi", "anYingNingJu", "sanHuaLunWu", "qiDao",
@@ -10871,7 +10901,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     function registerPveMode() {
         if (lib.mode && lib.mode.nightmarePve) return;
         game.addMode("nightmarePve", {
-            splash: "ext:十周年-噩梦人机/image/character/nightmare/yongZhe.png",
+            splash: "ext:十周年-噩梦人机/image/character/chibi/nightmare/yongZhe.png",
             start: function () {
                 "step 0";
                 _status.mode = "coop";
@@ -10943,8 +10973,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         "step 0";
                         var list = get.characters();
                         var boss = get.config('fixedBoss') ? get.config('bossCharacter') || 'baiYueJiaoZhu' : null;
-                        if (boss && (!['baiYueJiaoZhu', 'sheYaoNan', 'guiJiangJun'].includes(boss) || !list.includes(boss))) {
-                            game.over('固定Boss不可用：请启用宿命挽歌角色包并取消禁选');
+                        if (boss && (!['baiYueJiaoZhu', 'sheYaoNan', 'guiJiangJun', 'xieJianXian'].includes(boss) || !list.includes(boss))) {
+                            game.over('固定Boss不可用：请启用对应角色包并取消禁选');
                             event.finish(); return;
                         }
                         if (boss) list.remove(boss);
@@ -11006,8 +11036,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                         }, map);
                         var list = get.charactersOL();
                         var boss = lib.configOL.fixedBoss ? lib.configOL.bossCharacter || 'baiYueJiaoZhu' : null;
-                        if (boss && (!['baiYueJiaoZhu', 'sheYaoNan', 'guiJiangJun'].includes(boss) || !list.includes(boss))) {
-                            game.over('固定Boss不可用：请启用宿命挽歌角色包并取消禁选');
+                        if (boss && (!['baiYueJiaoZhu', 'sheYaoNan', 'guiJiangJun', 'xieJianXian'].includes(boss) || !list.includes(boss))) {
+                            game.over('固定Boss不可用：请启用对应角色包并取消禁选');
                             event.finish(); return;
                         }
                         if (boss) list.remove(boss);
@@ -11065,7 +11095,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 connect_bossCharacter: {
                     name: "固定Boss角色",
                     init: "baiYueJiaoZhu",
-                    item: { baiYueJiaoZhu: "拜月教主", sheYaoNan: "蛇妖男", guiJiangJun: "鬼将军" },
+                    item: { baiYueJiaoZhu: "拜月教主", sheYaoNan: "蛇妖男", guiJiangJun: "鬼将军", xieJianXian: "邪剑仙" },
                     frequent: true
                 },
                 connect_shiQiMax: {
@@ -11096,7 +11126,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 bossCharacter: {
                     name: "固定Boss角色",
                     init: "baiYueJiaoZhu",
-                    item: { baiYueJiaoZhu: "拜月教主", sheYaoNan: "蛇妖男", guiJiangJun: "鬼将军" },
+                    item: { baiYueJiaoZhu: "拜月教主", sheYaoNan: "蛇妖男", guiJiangJun: "鬼将军", xieJianXian: "邪剑仙" },
                     frequent: true
                 },
                 shiQiMax: {
@@ -11115,7 +11145,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "1.8",
+        version: "1.9",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();
@@ -11124,6 +11154,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             applyShiZhouNianAiPatch();
         },
         precontent: function () {
+            installNightmareSplashImages();
             registerPveMode();
             applyShiZhouNianAiPatch();
         },
