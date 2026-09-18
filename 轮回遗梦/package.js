@@ -1,13 +1,15 @@
 extension['轮回遗梦']={
-    intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵。',
-    author:'蒙牛',version:'1.2',netdisk:'',forum:'',
+    intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',
+    author:'蒙牛',version:'1.3',netdisk:'',forum:'',
     files: [
     "README.md",
     "audio-data/manifest.json",
-    "audio-data/pack-39b2f1cdb28cd709ee80abce0d7e9536ebaa1b66cf6bd6cbfd7587067a030228.json",
-    "audio-data/pack-ad8c71e8ff0da2e2b73f795cd960927be54aa47a4a25045b89841f67d6eeedb9.json",
-    "audio-data/pack-df29f146515d0dbbd558861a1d169b8400b4f871be77be24bce01a94339f16d3.json",
-    "audio-data/pack-eb995abacc83a06329a27fc38bdc2615572bf859f1de520e59541b8b650fbb8f.json",
+    "audio-data/pack-81ad9002c12deb9b0640dfc820a552c0c4a1e71f2a50f0953f956be37330b4ae.json",
+    "audio-data/pack-847f9293ab4106cb04a72b9db1fcf59dfe1d08ca879df0eaf55eb33faf4f9df7.json",
+    "audio-data/pack-99033493d6cb660f44a2790c01c655daee16e61fb3a66978e953568bc8c879ff.json",
+    "audio-data/pack-b31dd4a7c8b47b244b774ac6d829760dbd0679e35d1deb9efd47d1a71dc0dd84.json",
+    "audio-data/pack-b8759f92f72ce3bcc7d4a9a7c06bf198da143bc05e21249b16c514d419bf761f.json",
+    "audio-data/pack-f736c13c23840d43062b9cbc3f4b18d8351bdc39d8701e2f6f1f698d18816979.json",
     "extension.js",
     "info.json",
     "jingTian.svg",
@@ -42,8 +44,11 @@ extension['轮回遗梦']={
     "mark_wuLing_tu_empty.png",
     "mark_wuLing_tu_yang.png",
     "mark_wuLing_tu_yin.png",
+    "mark_xieNian.png",
     "mark_zhenYaoJian.png",
     "package.js",
+    "xieJianXian.png",
+    "xieLing.png",
     "xueJian.png"
 ],
 };
