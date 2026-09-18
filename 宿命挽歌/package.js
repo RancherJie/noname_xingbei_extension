@@ -3,7 +3,7 @@ extension["宿命挽歌"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"2.30",
+    version:"2.31",
     files: [
     "LICENSE",
     "README.md",
@@ -48,5 +48,5 @@ extension["宿命挽歌"]={
     "zhaoLingEr.jpg",
     "zhaoLingEr_mengShe.png"
 ],
-    size: "79.25MB"
+    size: "79.27MB"
 };

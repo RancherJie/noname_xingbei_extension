@@ -217,14 +217,14 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
         },
         // 估算拜月教主剩余仍可发动的法术技能数（含【腥风血雨】）
         usableSpellCount: function(player) {
-            var names = ['anMie', 'shengGuang', 'xuRuo', 'zhongDou', 'shengDun'];
+            var names = ['anMie', 'shengGuang', 'xuRuo', 'zhongDu', 'shengDun'];
             var count = 0;
             for(var i = 0; i < names.length; i++) {
                 if(player.countCards('h', function(card) {
                     return get.name(card, player) == names[i];
                 }) > 0) count++;
             }
-            if(player.canBiShaBaoShi && player.canBiShaBaoShi()) count++;
+            if(lib.suMingBaiYueAi.canSpendBloodGem(player)) count++;
             return count;
         },
         // 转化进度奖励：释放尚未计入【水魔兽合体】的新类型法术时的额外收益
@@ -253,9 +253,200 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
             player.name1 == 'baiYueJiaoZhu' ||
             player.name1 == 'shuiMoShouBaiYueJiaoZhu';
     };
+    lib.suMingBaiYueAi.nearTransformation = function(player) {
+        if(!player || (player.name != 'baiYueJiaoZhu' && player.name1 != 'baiYueJiaoZhu')) return false;
+        var recorded = player.storage.shuiMoShouHeTi;
+        var count = Array.isArray(recorded) ? new Set(recorded).size : 0;
+        return get.shiQi(player.side) <= 8 || count >= 3;
+    };
+    lib.suMingBaiYueAi.canSpendBloodGem = function(player) {
+        return player.canBiShaBaoShi() &&
+            (!this.nearTransformation(player) || player.countNengLiang('baoShi') >= 2);
+    };
+    lib.suMingBaiYueAi.hasEffectiveDaZhouSheFollow = function(player) {
+        if(!player || !(typeof player.storage.faShu == 'number' &&
+            player.storage.faShu > 0)) return false;
+        var recorded = player.storage.shuiMoShouHeTi;
+        var transforms = Array.isArray(recorded) && recorded.length >= 4 &&
+            !recorded.includes('daZhouShe');
+        if(transforms) {
+            // 作为第5种法术时会立即转化，只认可转化后确实可发动且有收益的【风雪冰天】。
+            if(!(player.canBiShaBaoShi && player.canBiShaBaoShi())) return false;
+            var spellCount = player.countCards('h', function(card) {
+                return get.type(card, player) == 'faShu';
+            }) - 1;
+            if(spellCount <= 0) return false;
+            return lib.suMingBaiYueAi.groupMoraleGain(player, 'fengXueBingTian', 1) >= 2;
+        }
+        var has = function(name) {
+            return player.countCards('h', function(card) {
+                return get.name(card, player) == name;
+            }) > 0;
+        };
+        // 三者都对应AI会立即发动的后续角色法术。
+        if(has('shengGuang') || has('zhongDu') || has('shengDun')) return true;
+        // 【大咒蛇】先弃1张【虚弱】；此后低于3手才符合【灭绝一击】策略。
+        if(has('anMie') && player.countCards('h') - 1 < 3) return true;
+        // 【腥风血雨】即使不再重复施加虚弱，伤害与追加中毒仍可能是有效后续。
+        if(lib.suMingBaiYueAi.canSpendBloodGem(player)) {
+            var net = lib.suMingBaiYueAi.transformBonus(player, 'xingFengXueYu');
+            game.countPlayer(function(current) {
+                if(!current.isIn()) return;
+                net += get.damageEffect2(current, player, 2);
+                if((current.zhiLiao || 0) < 2) {
+                    net += current.side == player.side ? -0.6 : 0.6;
+                }
+            });
+            if(net > 0.5) return true;
+        }
+        return false;
+    };
+    lib.suMingBaiYueAi.isManual = function(player) {
+        if(!player) return false;
+        // 模拟器在首个行动选择创建后才打开托管，不能把该阶段误判为真人。
+        if(typeof window != 'undefined' && window.__xingbeiSimulator) return false;
+        if(_status.playback || (player.isOnline && player.isOnline())) return true;
+        return !_status.auto && (player == game.me || player._trueMe && player._trueMe == game.me ||
+            player.isUnderControl && player.isUnderControl(true));
+    };
+    lib.suMingBaiYueAi.reserveForAlly = function(player) {
+        var helper = this;
+        return !!player && !helper.isManual(player) && !helper.isBaiYue(player) &&
+            game.hasPlayer(function(other) {
+                return other != player && other.isIn() && other.side == player.side && helper.isBaiYue(other);
+            });
+    };
+    lib.suMingBaiYueAi.spendableGems = function(player) {
+        return Math.max(0, get.zhanJi(player.side).filter(function(x) { return x == 'baoShi'; }).length - 2);
+    };
+    lib.suMingBaiYueAi.applyTeamReserve = function() {
+        var helper = this;
+        ['_tiLian', '_heCheng'].forEach(function(name) {
+            var skill = lib.skill[name];
+            if(!skill || !skill.chooseButton) return;
+            function wrap(object, key, fn) {
+                var old = object[key];
+                if(old && old.__suMingReserve) return;
+                var next = fn(old);
+                next.__suMingReserve = true;
+                object[key] = next;
+            }
+            wrap(skill, 'filter', function(old) { return function(event, player) {
+                if(old && !old.apply(this, arguments)) return false;
+                if(!helper.reserveForAlly(player)) return true;
+                var usable = helper.spendableGems(player) + get.zhanJi(player.side).filter(function(x) {
+                    return x != 'baoShi';
+                }).length;
+                // 噩梦/独立AI的通用提炼要求一次取满2颗，保留该约束。
+                var minimum = name == '_heCheng' ? 3 : skill._shiZhouNianAi_requireTwoResourcesHard ? 2 : 1;
+                return usable >= minimum;
+            }; });
+            wrap(skill.chooseButton, 'filter', function(old) { return function(button, player) {
+                player = player || _status.event.player;
+                if(old && !old.apply(this, arguments)) return false;
+                if(!helper.reserveForAlly(player) || button.link != 'baoShi') return true;
+                var selected = ui.selected.buttons.filter(function(b) { return b.link == 'baoShi'; }).length;
+                return selected < helper.spendableGems(player);
+            }; });
+            wrap(skill.chooseButton, 'filterOk', function(old) { return function() {
+                if(old && !old.apply(this, arguments)) return false;
+                var player = _status.event.player;
+                return !helper.reserveForAlly(player) || ui.selected.buttons.filter(function(b) {
+                    return b.link == 'baoShi';
+                }).length <= helper.spendableGems(player);
+            }; });
+        });
+    };
+    lib.suMingBaiYueAi.wantsGemBackedWave = function(player) {
+        return (player.name == 'shuiMoShouBaiYueJiaoZhu' || player.name1 == 'shuiMoShouBaiYueJiaoZhu') &&
+            player.countNengLiang('baoShi') >= 2 &&
+            (player.countCards('h') > 5 || player.countZhiShiWu('hongShui') < 4);
+    };
+    lib.suMingBaiYueAi.earthIceWouldKillAllies = function(player) {
+        var targets = game.filterPlayer(function(target) { return target.isIn(); }).sortBySeat(player);
+        var spells = player.countCards('h', function(card) { return get.type(card, player) == 'faShu'; });
+        var draws = Math.max(0, player.getHandcardLimit() - player.countCards('h') + 1);
+        // 未知补牌不保证获得洪水；检查可能的冰天费用数量，避免赌牌库救命。
+        for(var fee = Math.max(1, spells); fee <= spells + draws; fee++) {
+            var friendly = get.shiQi(player.side), enemy = get.shiQi(!player.side);
+            var flood = player.countZhiShiWu('hongShui');
+            for(var i = 0; i < targets.length; i++) {
+                var target = targets[i], ours = target.side == player.side;
+                var body = target.hasSkill('shuiMoShouZhiQu');
+                var healing = Math.min(game.zhiLiaoMax || 2, (target.zhiLiao || 0) + (target == player && body ? 2 : 0));
+                var damage = Math.max(0, Math.ceil(fee / 2) + 1 - (body ? 1 : 0) - healing);
+                var loss = Math.max(0, damage - (target == player ? fee : 0));
+                if(target.hasSkillTag && target.hasSkillTag('noShiQiXiaJiang')) continue;
+                if(ours) {
+                    if(flood > 0 && friendly - loss < 1) {
+                        // 同一次伤害即使耗尽洪水也保底1；下一目标才可能致死。
+                        if(friendly == 1) flood = Math.max(0, flood - loss);
+                        friendly = 1;
+                    }
+                    else friendly -= loss;
+                    if(friendly <= 0) return true;
+                }
+                else {
+                    enemy -= loss;
+                    if(enemy <= 0) break;
+                }
+            }
+        }
+        return false;
+    };
+    lib.suMingBaiYueAi.canStartEarthIce = function(player) {
+        if(player.hasSkill('suMingBaiYueIceFollow') || !player.canBiShaBaoShi()) return false;
+        if(this.earthIceWouldKillAllies(player)) return false;
+        // 不把即将消耗的暗灭或预期摸到的牌算作后续费用。
+        return player.countCards('h', function(card) {
+            return get.name(card, player) != 'anMie' && get.type(card, player) == 'faShu' &&
+                lib.filter.cardDiscardable(card, player, 'fengXueBingTian');
+        }) > 0;
+    };
+    // 实际士气点数的保守估计，不使用 damageEffect 的混合价值分数。
+    lib.suMingBaiYueAi.groupMoraleGain = function(player, skill, beforeIceDiscard) {
+        var poison = skill == 'duTunTianXia', ice = skill == 'fengXueBingTian', net = 0;
+        var spentBefore = beforeIceDiscard || 0;
+        var cost = ice ? player.countCards('h', function(card) {
+            return get.type(card, player) == 'faShu';
+        }) - spentBefore : 1;
+        if(ice && cost <= 0) return -Infinity;
+        var damage = ice ? Math.ceil(cost / 2) + 1 : 2;
+        game.countPlayer(function(target) {
+            if(!target.isIn()) return;
+            if(target.hasSkillTag && target.hasSkillTag('noShiQiXiaJiang')) return;
+            if(!poison && !ice && target.hasJiChuXiaoGuo('_shengDun')) return;
+            var hand = target.countCards('h') - (target == player ? cost + spentBefore : 0);
+            var room = Math.max(0, target.getHandcardLimit() - hand);
+            var healing = Math.max(0, target.zhiLiao || 0);
+            var actualDamage = damage;
+            if(ice && (target.hasSkill && target.hasSkill('shuiMoShouZhiQu') || target == player && spentBefore > 0)) {
+                actualDamage = Math.max(0, damage - 1);
+                // 支付全部法术牌是一次弃牌事件，水魔兽之躯获得一次治疗。
+                if(target == player) healing++;
+            }
+            var existing = poison && target.getExpansions ? target.getExpansions('_zhongDu').length : 0;
+            var loss = Math.max(0, existing + actualDamage - healing - room) -
+                Math.max(0, existing - healing - room);
+            net += target.side == player.side ? -loss : loss;
+        });
+        return net;
+    };
+    lib.suMingBaiYueAi.canUseIce = function(player) {
+        return player.hasSkill('suMingBaiYueIceFollow') ||
+            this.groupMoraleGain(player, 'fengXueBingTian') >= 2;
+    };
+    lib.suMingBaiYueAi.canUseGroup = function(player, skill) {
+        return player.hasSkill('suMingBaiYueSnakeFollow') || this.groupMoraleGain(player, skill) >= 2;
+    };
+    lib.suMingBaiYueAi.lowHandSealTarget = function(player, target) {
+        return target.isIn() && target.side != player.side && target.countCards('h') <= 2 &&
+            !target.hasJiChuXiaoGuo('fengMo') && !target.hasJiChuXiaoGuo('_shengDun');
+    };
     lib.suMingBaiYueAi.needsGem = function(player) {
         if(!player || (player.canBiShaBaoShi && player.canBiShaBaoShi())) return false;
         var self = lib.suMingBaiYueAi;
+        if(self.nearTransformation(player)) return true;
         if(player.name == 'shuiMoShouBaiYueJiaoZhu' ||
             player.name1 == 'shuiMoShouBaiYueJiaoZhu') return true;
         return player.countCards('h', function(card) {
@@ -267,6 +458,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
     };
     lib.suMingBaiYueAi.applyActionPatch = function() {
         var helper = this;
+        helper.applyTeamReserve();
         if(typeof lib == 'undefined' || !lib.skill) return;
         function wrapAction(skillId, orderFn, resultFn) {
             var skill = lib.skill[skillId];
@@ -308,21 +500,49 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
         wrapAction('_tiLian',
             function(item, player) { return 3.5; },
             function(player) { return 1; });
-        // 主动攻击牌：行动顺序压到最低（不影响应战与响应判断）
-        if(lib.card && !lib.__suMingBaiYueAttackPatched) {
+        var refine = lib.skill._tiLian;
+        if(refine && refine.chooseButton && !helper.isWrapped(refine.chooseButton.check)) {
+            var oldCheck = refine.chooseButton.check;
+            var refineCheck = function(button) {
+                var player = _status.event.player;
+                var base = typeof oldCheck == 'function' ? oldCheck.apply(this, arguments) : 1;
+                if(base > 0 && helper.isBaiYue(player) && helper.needsGem(player) &&
+                    button.link == 'baoShi' && !ui.selected.buttons.some(function(b) { return b.link == 'baoShi'; })) return 20;
+                return base;
+            };
+            refineCheck.__suMingBaiYueWrap = true;
+            refine.chooseButton.check = refineCheck;
+        }
+        // 优先攻击低手牌且未封魔的对手；缺宝石时保留提炼优先。
+        if(lib.card) {
             for(var name in lib.card) {
                 (function(cardName) {
                     var info = lib.card[cardName];
-                    if(!info || info.type != 'gongJi') return;
+                    if(!info || info.type != 'gongJi' || helper.isWrapped(info.ai && info.ai.order)) return;
                     info.ai = info.ai || {};
                     var oldCardOrder = info.ai.order;
                     var cardOrder = function(item, player) {
-                        if(helper.isBaiYue(player)) return 0.5;
+                        if(helper.isBaiYue(player)) {
+                            return !helper.needsGem(player) && game.hasPlayer(function(target) {
+                                return helper.lowHandSealTarget(player, target);
+                            }) ? 5.5 : 0.5;
+                        }
                         if(typeof oldCardOrder == 'function') return oldCardOrder.apply(this, arguments);
                         return oldCardOrder;
                     };
                     cardOrder.__suMingBaiYueWrap = true;
                     info.ai.order = cardOrder;
+                    info.ai.result = info.ai.result || {};
+                    if(!helper.isWrapped(info.ai.result.target)) {
+                        var oldTarget = info.ai.result.target;
+                        var targetResult = function(player, target) {
+                            var base = typeof oldTarget == 'function' ? oldTarget.apply(this, arguments) : oldTarget || 0;
+                            if(helper.isBaiYue(player) && helper.lowHandSealTarget(player, target)) return base - 3;
+                            return base;
+                        };
+                        targetResult.__suMingBaiYueWrap = true;
+                        info.ai.result.target = targetResult;
+                    }
                 })(name);
             }
             lib.__suMingBaiYueAttackPatched = true;
@@ -336,7 +556,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                     var cardName = get.name(card, player);
                     var keep = cardName == 'moDan' || cardName == 'anMie' ||
                         cardName == 'shengGuang' || cardName == 'xuRuo' ||
-                        cardName == 'zhongDou' || cardName == 'shengDun' ||
+                        cardName == 'zhongDu' || cardName == 'shengDun' ||
                         get.type(card, player) == 'faShu';
                     if(keep) return 50;
                     if(get.type(card, player) == 'gongJi') return -50;
@@ -344,7 +564,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                 return origValue.apply(this, arguments);
             };
         }
-    };;
+    };
     // characterReplace只负责显示/随机切换形态；共享名额必须在抽样、分发之前处理。
     lib.suMingWanGeInstallHiddenDragonSelection = function() {
         const forms = ['sheYaoNan', 'huYaoNv'];
@@ -470,6 +690,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
     return {
         "name": "宿命挽歌",
         "arenaReady": function(){
+            lib.suMingBaiYueAi.applyActionPatch();
             game.addGlobalSkill("suMingWanGeBgm");
             game.addGlobalSkill("suMingWanGeCharacterActionAudio");
             game.addGlobalSkill("shiDuRuTi");
@@ -483,6 +704,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
 
 },
         "precontent": function(){
+            lib.suMingBaiYueAi.applyActionPatch();
             // 与本体红衣主教／铸律者相同：选将、禁将同时移除两种形态。
             Object.assign(lib.characterReplace, {
                 sheYaoNan: ['sheYaoNan', 'huYaoNv'],
@@ -543,17 +765,14 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                 });
             }
 },
-        "precontent": function() {
-            if(lib.suMingBaiYueAi) lib.suMingBaiYueAi.applyActionPatch();
-        },
         "help": {},
         "config": {},
         "package": {
             "character": {
                 "connect": true,
                 "character": {
-                    "sheYaoNan": [null, "jiGroup", 3, ["yinLongCangZhen", "kuangSheLianZhan", "suMingXianYueZhan", "yinLongXiangYi"], ["des:隐龙窟蛇妖男，与狐妖女互相切换。", "ext:宿命挽歌/sheYaoNan.png"]],
-                    "huYaoNv": [null, "yongGroup", 3, ["yinLongCangZhen", "meiYingLianXi", "suMingHuiMeng", "suMingLeiZhou", "suMingWuLeiZhou", "yinLongXiangYi"], ["des:隐龙窟狐妖女，与蛇妖男互相切换。", "ext:宿命挽歌/huYaoNv.png"]],
+                    "sheYaoNan": [null, "jiGroup", 3, ["yinLongCangZhen", "kuangSheLianZhan", "suMingXianYueZhan", "yinLongXiangYi"], ["des:盘踞隐龙窟的蛇妖洞主，粗豪凶悍，却把珍宝与娘子看得比性命更重。他藏珍蓄势、连续挥刀，并与狐妖女相依换位追杀来敌。", "ext:宿命挽歌/sheYaoNan.png"]],
+                    "huYaoNv": [null, "yongGroup", 3, ["yinLongCangZhen", "meiYingLianXi", "suMingHuiMeng", "suMingLeiZhou", "suMingWuLeiZhou", "yinLongXiangYi"], ["des:镇守隐龙窟的狐妖女，柔媚言笑之下藏着雷咒与杀机。她以魅影、梦境和五雷扰乱敌阵，并与蛇妖男相依换位守护洞府。", "ext:宿命挽歌/huYaoNv.png"]],
                     "zhaoLingEr": [
                         null,
                         "shengGroup",
@@ -575,7 +794,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "suMingWanGeBgm",
                         ],
                         [
-                            "des:受天命眷顾，女娲族裔与人类共生之女。外柔内刚、聪慧有主见、胆识过人。",
+                            "des:承继女娲血脉的南诏公主，温柔之中怀有守护苍生的坚定。她以灵力治疗同伴、承接伤势，并在命运逼迫下唤醒女娲神力。",
                             "ext:宿命挽歌/zhaoLingEr.jpg",
                             "die:ext:宿命挽歌/audio/die/zhaoLingEr.mp3",
                         ],
@@ -600,7 +819,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "suMingWanGeBgm",
                         ],
                         [
-                            "des:悟性极高，聪明绝顶，富有强烈的正义感。历经爱恨情仇与家国大义的淬炼，最终成长为心怀苍生、情义无双的蜀山仙剑派掌门。",
+                            "des:从余杭小店踏上仙途的蜀山掌门，洒脱机敏，更重情义与苍生。他御剑积势、借酒催锋，在飞剑往返与逍遥神剑间展开连绵攻势。",
                             "ext:宿命挽歌/liXiaoYao.jpg",
                             "die:ext:宿命挽歌/audio/die/liXiaoYao.mp3",
                         ],
@@ -624,7 +843,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "suMingWanGeBgm",
                         ],
                         [
-                            "des:南武林盟主林天南独女，后为蜀山派掌门李逍遥的妻子。天资灵秀，聪敏慧黠，情深义重。",
+                            "des:南武林盟主之女，性情爽利、敢爱敢恨的林家千金。她以鞭法牵制敌人、为同伴挡下危局，并用不服输的锋芒延续攻势。",
                             "ext:宿命挽歌/linYueRu.jpg",
                             "die:ext:宿命挽歌/audio/die/linYueRu.mp3",
                         ],
@@ -650,7 +869,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "suMingWanGeBgm",
                         ],
                         [
-                            "des:个性刁钻伶俐，活泼可爱，年纪小却很精明；口快心直，却不失俏皮；虽然外表天真烂漫，但巫术毒蛊却运用自如。",
+                            "des:来自苗疆的白苗圣女，天真俏皮，却精通巫术与毒蛊。她驱使灵虫、播撒蛊毒，在削弱敌人与支援同伴之间灵活穿梭。",
                             "ext:宿命挽歌/aNu.jpg",
                             "die:ext:宿命挽歌/audio/die/aNu.mp3",
                         ],
@@ -673,7 +892,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "suMingWanGeBgm",
                         ],
                         [
-                            "des:南诏国拜月教教主，精通黑暗法术，以冷静而偏执的方式追问天地与人心。",
+                            "des:以理性否定人心的拜月教主，冷静地把众生视作验证真理的祭品。他操纵咒术与洪水侵蚀战场，并与水魔兽合体迈向灭世结论。",
                             "ext:宿命挽歌/baiYueJiaoZhu.png",
                         ],
                     ],
@@ -695,7 +914,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "suMingWanGeBgm",
                         ],
                         [
-                            "des:拜月教主与水魔兽合体后的形态，仅能由【水魔兽合体】转化而来。",
+                            "des:拜月教主与水魔兽融为一体的灭世形态，以无尽洪水吞没反抗者。他积累水患、压迫全场，在伤害与士气崩塌中维持永生。",
                             "ext:宿命挽歌/shuiMoShouBaiYueJiaoZhu.png",
                             "unseen",
                             "forbidai",
@@ -715,7 +934,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "suMingWanGeBgm",
                         ],
                         [
-                            "des:镇守将军冢的尸骸鬼将，操纵阴气与尸毒，令生者化为行尸。",
+                            "des:镇守将军冢的尸骸鬼将，以阴气统御不肯安息的亡军。他播撒尸毒、转移创伤，并让倒下的生者化作继续征战的僵尸。",
                             "ext:宿命挽歌/guiJiangJun.png",
                         ],
                     ],
@@ -731,7 +950,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "shiDu",
                         ],
                         [
-                            "des:【尸化】产生的临时僵尸形态，不进入常规选将池。",
+                            "des:被尸毒夺去神智的临时僵尸，只能由鬼将军的【尸化】产生。它以腐朽躯体承受伤害，在有限行动中传播尸毒与死亡。",
                             "ext:宿命挽歌/suMingJiangShi.png",
                             "unseen",
                             "forbidai",
@@ -1118,6 +1337,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             ).set('prompt', '【尸毒入体】选择一项')
                                 .set('ai', function() {
                                     var player = _status.event.player;
+                                    if(lib.suMingBaiYueAi.isBaiYue(player)) return 1;
                                     var num = player.countZhiShiWu('shiDu');
                                     return num >= 2 ? 1 : 0;
                                 }).forResult('control');
@@ -1706,6 +1926,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             return !_status.suMingWanGeBgmStarted;
                         },
                         content: function(){
+                            var pool=[];
+                            var add=function(src){if(src&&!pool.includes(src))pool.push(src);};
                             var tracks=[
                                 ["shuiMoShouBaiYueJiaoZhu","ext:宿命挽歌/audio/bgm/niTianErXing2.mp3"],
                                 ["baiYueJiaoZhu","ext:宿命挽歌/audio/bgm/niTianErXing.mp3"],
@@ -1717,19 +1939,16 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                                 ["zhaoLingEr","ext:宿命挽歌/audio/bgm/qingYuan.mp3"],
                                 ["liXiaoYao","ext:宿命挽歌/audio/bgm/yuJianFuMo.mp3"],
                             ];
-                            var music;
                             for(var i=0;i<tracks.length;i++){
                                 if(game.hasPlayer(function(current){
                                     return lib.skill.suMingWanGeLianDong
                                         .isCharacter(current,tracks[i][0]);
                                 })){
-                                    music=tracks[i][1];
-                                    break;
+                                    add(tracks[i][1]);
                                 }
                             }
-                            if(!music && lib.config.extension_轮回遗梦_enable &&
-                                lib.lhymBattleMusic && lib.lhymBattleMusic.chooseTrack){
-                                music=lib.lhymBattleMusic.chooseTrack();
+                            if(lib.lhymBattleMusic && lib.lhymBattleMusic.tracks){
+                                lib.lhymBattleMusic.tracks().forEach(add);
                             }
                             var bigCowTracks=[
                                 ["zhaoFuQueJi","ext:宿命挽歌/audio/bgm/gangGangJiJi.mp3"],
@@ -1737,32 +1956,31 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                                 ["shiDiFu","ext:宿命挽歌/audio/bgm/pigstep.mp3"],
                                 ["xiaoYan","ext:宿命挽歌/audio/bgm/douPoCangQiong.mp3"],
                             ];
-                            if(!music){
-                                for(var j=0;j<bigCowTracks.length;j++){
-                                    if(game.hasPlayer(function(current){
-                                        return lib.skill.suMingWanGeLianDong
-                                            .isCharacter(current,bigCowTracks[j][0]);
-                                    })){
-                                        music=bigCowTracks[j][1];
-                                        break;
-                                    }
+                            for(var j=0;j<bigCowTracks.length;j++){
+                                if(game.hasPlayer(function(current){
+                                    return lib.skill.suMingWanGeLianDong
+                                        .isCharacter(current,bigCowTracks[j][0]);
+                                })){
+                                    add(bigCowTracks[j][1]);
                                 }
                             }
-                            if(!music&&lib.skill.suMingWanGeBgm.hasPackCharacter(
+                            if(lib.skill.suMingWanGeBgm.hasPackCharacter(
                                 "永夜残响",
                                 ["wuHeQinLi","yeDaoShenShiXiang","siMiNai","shiQiKuangSan"]
                             )){
-                                music="ext:宿命挽歌/audio/bgm/dateALive.mp3";
+                                add("ext:宿命挽歌/audio/bgm/dateALive.mp3");
                             }
-                            if(!music&&lib.skill.suMingWanGeBgm.hasPackCharacter(
+                            if(lib.skill.suMingWanGeBgm.hasPackCharacter(
                                 "创世纪",
                                 ["beiyanadopushen","baiHuaLiaoLuan","luMiYa","tianQiZhe","yuXueMoShen"]
                             )){
-                                music="ext:宿命挽歌/audio/bgm/fengYiYangDeYongShi.mp3";
+                                add("ext:宿命挽歌/audio/bgm/fengYiYangDeYongShi.mp3");
                             }
-                            if(!music){
-                                music="ext:宿命挽歌/audio/bgm/ending.mp3";
-                            }
+                            // 与战局留声的歌曲列表保持一致：三首默认战斗曲始终参与随机。
+                            add("ext:宿命挽歌/audio/bgm/ending.mp3");
+                            add("ext:宿命挽歌/audio/bgm/dateALive.mp3");
+                            add("ext:宿命挽歌/audio/bgm/fengYiYangDeYongShi.mp3");
+                            var music=pool[Math.floor(Math.random()*pool.length)];
                             lib.skill.suMingWanGeBgm.playTrack(music);
                         },
                     },
@@ -4649,7 +4867,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                     },
                     "niTianWenDao": {
                         "forced": true,
-                        "group": ["niTianWenDao_zhuCe"],
+                        "group": ["niTianWenDao_zhuCe", "niTianWenDao_qiangChiXuRuo"],
                         "subSkill": {
                             "zhuCe": {
                                 "trigger": {"global": "gameStart"},
@@ -4667,6 +4885,31 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                                             onError: function() {},
                                         });
                                     }, 'ext:宿命挽歌/audio/skill/niTianWenDao.mp3', player);
+                                },
+                            },
+                            "qiangChiXuRuo": {
+                                "trigger": {"player": "xingDongBefore"},
+                                "forced": true,
+                                "firstDo": true,
+                                "priority": 100,
+                                "popup": false,
+                                "filter": function(event, player) {
+                                    if(!player.hasExpansions('_xuRuo')) return false;
+                                    var manual = player.isOnline() ||
+                                        (player.isUnderControl(true) && !_status.auto);
+                                    return !manual;
+                                },
+                                "content": async function(event, trigger, player) {
+                                    game.broadcastAll(function() {
+                                        if(lib.config.background_audio) {
+                                            game.playAudio('card', 'male', 'xuRuo');
+                                        }
+                                    });
+                                    game.log(player, '选择了', '摸三张牌');
+                                    await player.draw(3);
+                                    await player.discard(
+                                        player.getExpansions('_xuRuo'), '_xuRuo'
+                                    ).set('visible', true);
                                 },
                             },
                         },
@@ -4795,12 +5038,17 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                         "audio": "ext:宿命挽歌/audio/skill/mieJueYiJi.mp3",
                         "type": "faShu", "enable": "faShu",
                         "filter": function(event, player) {
+                            if(!lib.suMingBaiYueAi.isManual(player) && player.countCards('h') >= 3) return false;
                             return player.countCards('h', function(card) {
                                 return get.name(card, player) == 'anMie';
                             }) > 0;
                         },
-                        "filterCard": function(card) { return get.name(card) == 'anMie'; },
-                        "check": function(card) { return 8 - get.value(card); },
+                        "filterCard": function(card, player) {
+                            // 本体缓存 _skillChoice；切换托管后仍须在实际选牌时重新检查。
+                            return (lib.suMingBaiYueAi.isManual(player) || player.countCards('h') < 3) &&
+                                get.name(card) == 'anMie';
+                        },
+                        "check": function(card) { return 1; },
                         "position": "h", "selectCard": 1, "discard": true,
                         "visible": true, "filterTarget": function(card, player, target) {
                             return target.side != player.side;
@@ -4813,11 +5061,11 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             await player.addNengLiang('shuiJing', 1);
                         },
                         "ai": {
-    "order": 2.5,
+    "order": function(item, player) { return player.countCards('h') < 3 ? 2.5 : 0; },
     "result": {
         "player": function(player) {
             // 只有手牌小于3时才发动，保留高手牌数量换取更高伤害
-            return player.countCards('h') < 3 ? 1 : -1;
+            return player.countCards('h') < 3 ? 1 : -100;
         },
         "target": function(player, target) {
             var num = Math.min(4, Math.max(1,
@@ -4839,7 +5087,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             }) > 0;
                         },
                         "filterCard": function(card) { return get.name(card) == 'shengGuang'; },
-                        "check": function(card) { return 8 - get.value(card); },
+                        "check": function(card) { return 1; },
                         "position": "h", "selectCard": 1, "discard": true,
                         "visible": true, "selectTarget": -1,
                         "filterTarget": function(card, player, target) {
@@ -4877,16 +5125,22 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
     },
 },
                     },
+                    "suMingBaiYueSnakeFollow": { charlotte: true },
                     "daZhouShe": {
                         "audio": "ext:宿命挽歌/audio/skill/daZhouShe.mp3",
                         "type": "faShu", "enable": "faShu",
                         "filter": function(event, player) {
-                            return player.countCards('h', function(card) {
+                            var hasCost = player.countCards('h', function(card) {
                                 return get.name(card, player) == 'xuRuo';
                             }) > 0;
+                            if(!hasCost) return false;
+                            var manual = player.isOnline() ||
+                                (player.isUnderControl(true) && !_status.auto);
+                            return manual ||
+                                lib.suMingBaiYueAi.hasEffectiveDaZhouSheFollow(player);
                         },
                         "filterCard": function(card) { return get.name(card) == 'xuRuo'; },
-                        "check": function(card) { return 8 - get.value(card); },
+                        "check": function(card) { return 1; },
                         "position": "h", "selectCard": 1, "discard": true,
                         "visible": true, "selectTarget": -1,
                         "filterTarget": function() { return true; },
@@ -4895,35 +5149,21 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             await lib.suMingUseTemporaryEffectCard(player, 'xuRuo', event.target, false);
                         },
                         "contentAfter": async function(event, trigger, player) {
+                            player.addTempSkill('suMingBaiYueSnakeFollow', 'phaseAfter');
                             await player.addFaShu();
                         },
                         "ai": {
-    "order": 8.5,
+    "order": function(item, player) {
+        return lib.suMingBaiYueAi.hasEffectiveDaZhouSheFollow(player) ? 8.5 : 0;
+    },
     "result": {
         "target": function(player, target) {
+            if(!lib.suMingBaiYueAi.hasEffectiveDaZhouSheFollow(player)) return 0;
             if(target.hasJiChuXiaoGuo('_xuRuo')) return 0;
             return target.side == player.side ? -1.5 : 2;
         },
         "player": function(player) {
-            // 不空放：必须有后续法术可衔接且仍剩法术行动
-            if(!(typeof player.storage.faShu == 'number' && player.storage.faShu > 0)) return -1;
-                        var gemFollow = player.canBiShaBaoShi && player.canBiShaBaoShi();
-            var hasShengDun = player.countCards('h', function(card) {
-                return get.name(card, player) == 'shengDun';
-            }) > 0;
-            var hasZhongDou = player.countCards('h', function(card) {
-                return get.name(card, player) == 'zhongDou';
-            }) > 0;
-            var names = ['anMie', 'shengGuang', 'zhongDou', 'shengDun'];
-            var follow = false;
-            for(var i = 0; i < names.length; i++) {
-                if(player.countCards('h', function(card) {
-                    return get.name(card, player) == names[i];
-                }) > 0) { follow = true; break; }
-            }
-            // 单独用宝石接腥风血雨会与虚弱重复，仅当另有圣盾或中毒时才允许
-            if(!follow && gemFollow && (hasShengDun || hasZhongDou)) follow = true;
-return follow ? 1 : -1;
+            return lib.suMingBaiYueAi.hasEffectiveDaZhouSheFollow(player) ? 1 : -100;
         },
     },
 },
@@ -4932,12 +5172,14 @@ return follow ? 1 : -1;
                         "audio": "ext:宿命挽歌/audio/skill/duTunTianXia.mp3",
                         "type": "faShu", "enable": "faShu",
                         "filter": function(event, player) {
+                            if(!lib.suMingBaiYueAi.isManual(player) &&
+                                !lib.suMingBaiYueAi.canUseGroup(player, "duTunTianXia")) return false;
                             return player.countCards('h', function(card) {
                                 return get.name(card, player) == 'zhongDu';
                             }) > 0;
                         },
                         "filterCard": function(card) { return get.name(card) == 'zhongDu'; },
-                        "check": function(card) { return 8 - get.value(card); },
+                        "check": function(card) { return 1; },
                         "position": "h", "selectCard": 1, "discard": true,
                         "visible": true, "selectTarget": -1,
                         "filterTarget": function() { return true; },
@@ -4947,34 +5189,28 @@ return follow ? 1 : -1;
                             }
                         },
                         "ai": {
-    "order": 4.5,
-    "result": {
-        "target": function(player, target) {
-            return target.side == player.side ? -2 : 2.5;
-        },
-        "player": function(player) {
-            // 全场（含自己与己方）施加2层中毒：按敌我净和评估
-            var net = lib.suMingBaiYueAi.transformBonus(player, 'duTunTianXia');
-            for(var i = 0; i < game.players.length; i++) {
-                var cur = game.players[i];
-                if(!cur.isIn()) continue;
-                net += cur.side == player.side ? -2 : 2.5;
-            }
-            return net > 0 ? net : -1;
-        },
-    },
-},
+                            "order": function(item, player) {
+                                if(!lib.suMingBaiYueAi.canUseGroup(player, 'duTunTianXia')) return 0;
+                                return player.hasSkill('suMingBaiYueSnakeFollow') ? 7.5 : 4.5;
+                            },
+                            "result": {"player": function(player) {
+                                if(!lib.suMingBaiYueAi.canUseGroup(player, 'duTunTianXia')) return -100;
+                                return Math.max(1, lib.suMingBaiYueAi.groupMoraleGain(player, 'duTunTianXia'));
+                            }},
+                        },
                     },
                     "qunMoLuanWu": {
                         "audio": "ext:宿命挽歌/audio/skill/qunMoLuanWu.mp3",
                         "type": "faShu", "enable": "faShu",
                         "filter": function(event, player) {
+                            if(!lib.suMingBaiYueAi.isManual(player) &&
+                                !lib.suMingBaiYueAi.canUseGroup(player, "qunMoLuanWu")) return false;
                             return player.countCards('h', function(card) {
                                 return get.name(card, player) == 'shengDun';
                             }) > 0;
                         },
                         "filterCard": function(card) { return get.name(card) == 'shengDun'; },
-                        "check": function(card) { return 8 - get.value(card); },
+                        "check": function(card) { return 1; },
                         "position": "h", "selectCard": 1, "discard": true,
                         "visible": true, "selectTarget": -1,
                         "filterTarget": function(card, player, target) {
@@ -4986,21 +5222,21 @@ return follow ? 1 : -1;
                             );
                         },
                         "ai": {
-    "order": 7.5,
-    "result": {
-        "player": 1,
-        "target": function(player, target) {
-            return get.damageEffect2(target, player, 2) +
-                lib.suMingBaiYueAi.fengMoValue(player, target);
-        },
-    },
-},
+                            "order": function(item, player) {
+                                if(!lib.suMingBaiYueAi.canUseGroup(player, 'qunMoLuanWu')) return 0;
+                                return player.hasSkill('suMingBaiYueSnakeFollow') ? 7.5 : 4.5;
+                            },
+                            "result": {"player": function(player) {
+                                if(!lib.suMingBaiYueAi.canUseGroup(player, 'qunMoLuanWu')) return -100;
+                                return Math.max(1, lib.suMingBaiYueAi.groupMoraleGain(player, 'qunMoLuanWu'));
+                            }},
+                        },
                     },
                     "guiJiang": {
                         "audio": "ext:宿命挽歌/audio/skill/guiJiang.mp3",
                         "trigger": {"player": "chengShouShangHaiBefore"},
                         "filter": function(event, player) {
-                            return event.num >= 4 && player.countCards('h', function(card) {
+                            return event.num > 0 && player.countCards('h', function(card) {
                                 return get.name(card) == 'moDan';
                             }) > 0 && game.hasPlayer(function(current) {
                                 return current.side != player.side;
@@ -5010,8 +5246,8 @@ return follow ? 1 : -1;
                             var cards = await player.chooseToDiscard(
                                 'h', 1, '【鬼降】：弃置1张【魔弹】转移此次伤害',
                                 function(card) { return get.name(card) == 'moDan'; }
-                            ).set('visible', true).set('ai', function(card) {
-                                return 8 - get.value(card);
+                            ).set('visible', true).set('baiYueTransferDamage', trigger.num).set('ai', function(card) {
+                                return _status.event.baiYueTransferDamage >= 4 ? 1 : -1;
                             }).forResultCards() || [];
                             if(!cards.length) { event.result = {bool:false}; return; }
                             var targets = (await player.chooseTarget(
@@ -5036,6 +5272,11 @@ return follow ? 1 : -1;
                         "audio": "ext:宿命挽歌/audio/skill/shuiMoShouHuTi.mp3",
                         "trigger": {"player": "phaseBefore"},
                         "filter": function(event, player) {
+                            var manual = player.isOnline() ||
+                                (player.isUnderControl(true) && !_status.auto);
+                            if(!manual && player.countNengLiang('shuiJing') <= 0) {
+                                return false;
+                            }
                             return player.canBiShaShuiJing() &&
                                 player.countCards('h') >= 2;
                         },
@@ -5043,13 +5284,24 @@ return follow ? 1 : -1;
                             var cards = await player.chooseToDiscard(
                                 'h', 2, get.prompt('shuiMoShouHuTi')
                             ).set('prompt2', lib.translate.shuiMoShouHuTi_info)
+                                .set('baiYueCleanse', lib.skill.shuiMoShouHuTi.check(trigger, player))
                                 .set('ai', function(card) {
-                                    return 7 - get.value(card, _status.event.player);
+                                    var player = _status.event.player;
+                                    if(!_status.event.baiYueCleanse || get.type(card, player) != 'gongJi') return -1;
+                                    return get.name(card, player) == 'anMie' ? 1 : 10;
                                 }).forResultCards() || [];
                             event.result = {bool: cards.length == 2};
                         },
                         "content": async function(event, trigger, player) {
-                            await player.removeBiShaShuiJing();
+                            var manual = player.isOnline() ||
+                                (player.isUnderControl(true) && !_status.auto);
+                            if(manual) {
+                                await player.removeBiShaShuiJing();
+                            }
+                            else {
+                                if(player.countNengLiang('shuiJing') <= 0) return;
+                                await player.removeNengLiang('shuiJing', 1);
+                            }
                             var list = player.jiChuXiaoGuoList().slice(0);
                             for(var xiaoGuo of list) {
                                 var cards = player.getJiChuXiaoGuo(xiaoGuo);
@@ -5063,18 +5315,22 @@ return follow ? 1 : -1;
                             }
                         },
                         "check": function(event, player) {
-                            // 只在满手牌且被挂虚弱时考虑，星石达3颗或有多余水晶才允许消耗
-                            return player.hasJiChuXiaoGuo('_xuRuo') &&
-                                player.countCards('h') >= player.getHandcardLimit() &&
-                                (lib.suMingBaiYueAi.xingShiTotal(player) >= 3 ||
-                                    lib.suMingBaiYueAi.hasSpareShuiJing(player));
+                            // AI只允许用【水晶】发动，绝不拿【宝石】代替支付。
+                            if(player.countNengLiang('shuiJing') <= 0) return false;
+                            // 至少3张攻击牌即可开，腾出能量位置；不要求满手或基础效果。
+                            return player.countCards('h', function(card) {
+                                return get.type(card, player) == 'gongJi';
+                            }) > 2;
                         },
                         "ai": {"shuiJing": true},
                     },
                     "xingFengXueYu": {
                         "audio": "ext:宿命挽歌/audio/skill/xingFengXueYu.mp3",
                         "type": "faShu", "enable": "faShu",
-                        "filter": function(event, player) { return player.canBiShaBaoShi(); },
+                        "filter": function(event, player) {
+                            return player.canBiShaBaoShi() && (lib.suMingBaiYueAi.isManual(player) ||
+                                lib.suMingBaiYueAi.canSpendBloodGem(player));
+                        },
                         "selectTarget": -1, "filterTarget": function() { return true; },
                         "contentBefore": async function(event, trigger, player) {
                             await player.removeBiShaBaoShi();
@@ -5091,7 +5347,7 @@ return follow ? 1 : -1;
                         },
                         "ai": {
     "baoShi": true,
-    "order": 6.5,
+    "order": function(item, player) { return lib.suMingBaiYueAi.canSpendBloodGem(player) ? 6.5 : 0; },
     "result": {
         "target": function(player, target) {
             var effect = get.damageEffect2(target, player, 2);
@@ -5100,6 +5356,7 @@ return follow ? 1 : -1;
             return effect;
         },
         "player": function(player) {
+            if(!lib.suMingBaiYueAi.canSpendBloodGem(player)) return -100;
             // 全场2点法术伤害：掉士气者追加中毒，未掉士气者被施加虚弱
             var net = lib.suMingBaiYueAi.transformBonus(player, 'xingFengXueYu');
             for(var i = 0; i < game.players.length; i++) {
@@ -5289,18 +5546,23 @@ return follow ? 1 : -1;
                         "type": "faShu",
                         "enable": "faShu",
                         "filter": function(event, player) {
+                            if(!lib.suMingBaiYueAi.isManual(player) &&
+                                !lib.suMingBaiYueAi.canStartEarthIce(player)) return false;
                             return player.countCards('h', function(card) {
                                 return get.name(card, player) == 'anMie';
                             }) > 0;
                         },
                         "filterCard": function(card) { return get.name(card) == 'anMie'; },
-                        "check": function(card) { return 8 - get.value(card); },
+                        "check": function(card) { return 1; },
                         "position": "h",
                         "selectCard": 1,
                         "discard": true,
                         "visible": true,
                         "selectTarget": -1,
                         "filterTarget": function() { return true; },
+                        "contentBefore": function(event, trigger, player) {
+                            player.addTempSkill('suMingBaiYueIceFollow', 'phaseAfter');
+                        },
                         "content": async function(event) {
                             await event.target.drawTo(event.target.getHandcardLimit());
                         },
@@ -5309,28 +5571,19 @@ return follow ? 1 : -1;
                         },
                         "ai": {
                             "order": function(item, player) {
-                                var score = 0;
-                                game.countPlayer(function(current) {
-                                    var lack = Math.max(0,
-                                        current.getHandcardLimit() -
-                                        current.countCards('h'));
-                                    score += get.attitude(player, current) * lack;
-                                });
-                                return score > 0 ? 5.6 : 1.8;
+                                if(!lib.suMingBaiYueAi.canStartEarthIce(player)) return 0;
+                                return 7.8;
                             },
                             "result": {
                                 "player": function(player) {
                                     // 地裂天崩后永远接风雪冰天：没有宝石时改为提炼，不空放
-                                    return (player.canBiShaBaoShi && player.canBiShaBaoShi()) ? 0.8 : -1;
+                                    return lib.suMingBaiYueAi.canStartEarthIce(player) ? 1 : -100;
                                 },
-                                "target": function(player, target) {
-                                    return Math.max(0,
-                                        target.getHandcardLimit() -
-                                        target.countCards('h')) * 0.8;
-                                },
+
                             },
                         },
                     },
+                    "suMingBaiYueIceFollow": {charlotte: true},
                     "taoTianJuLang": {
                         aiCostPlan: function(player) {
                             var hand=player.getCards('h'),best=[],score=-Infinity;
@@ -5343,8 +5596,13 @@ return follow ? 1 : -1;
                                             return target.side!==player.side&&player.canUseXingBei(card,target);
                                         });
                                 });
-                                if(!safe) continue;
+                                if(!safe && !lib.suMingBaiYueAi.wantsGemBackedWave(player)) continue;
                                 var value=14-get.value(hand[i],player)-get.value(hand[j],player);
+                                if(lib.suMingBaiYueAi.wantsGemBackedWave(player)) {
+                                    var left=hand.filter(function(card,k) { return k!==i && k!==j; });
+                                    if(left.some(function(card) { return get.name(card,player)==='anMie'; })) value+=200;
+                                    if(left.some(function(card) { return get.type(card,player)==='faShu'; })) value+=200;
+                                }
                                 if(value>score){score=value;best=[hand[i],hand[j]];}
                             }
                             return best;
@@ -5353,24 +5611,48 @@ return follow ? 1 : -1;
                         "type": "qiDong",
                         "trigger": {"player": "qiDong"},
                         "filter": function(event, player) {
-                            return player.canBiShaShuiJing() && player.countCards('h') >= 2;
+                            var manual = lib.suMingBaiYueAi.isManual(player);
+                            if(!manual && player.countNengLiang('shuiJing') <= 0 &&
+                                !lib.suMingBaiYueAi.wantsGemBackedWave(player)) {
+                                return false;
+                            }
+                            return player.canBiShaShuiJing() &&
+                                player.countCards('h') >= 2;
                         },
                         "cost": async function(event, trigger, player) {
+                            var gemPayment = lib.suMingBaiYueAi.wantsGemBackedWave(player);
                             var cards = await player.chooseToDiscard(
                                 'h', 2, get.prompt('taoTianJuLang')
                             ).set('prompt2', lib.translate.taoTianJuLang_info)
-                                .set('taoTianSafeCost',lib.skill.taoTianJuLang.aiCostPlan(player))
+                                .set('taoTianSafeCost',lib.skill.taoTianJuLang.check(trigger, player) ? lib.skill.taoTianJuLang.aiCostPlan(player) : [])
                                 .set('visible', true)
                                 .set('ai', function(card) {
                                     return _status.event.taoTianSafeCost.includes(card)?100:-10000;
                                 }).forResultCards() || [];
-                            event.result = {bool: cards.length == 2};
+                            event.result = {bool: cards.length == 2, cost_data: {gemPayment: gemPayment}};
                         },
                         "content": async function(event, trigger, player) {
-                            await player.removeBiShaShuiJing();
+                            var manual = lib.suMingBaiYueAi.isManual(player);
+                            if(manual) {
+                                await player.removeBiShaShuiJing();
+                            }
+                            else {
+                                if(player.countNengLiang('shuiJing') > 0) {
+                                    await player.removeNengLiang('shuiJing', 1);
+                                }
+                                else if(event.cost_data && event.cost_data.gemPayment && player.countNengLiang('baoShi') >= 2) {
+                                    await player.removeNengLiang('baoShi', 1);
+                                }
+                                else return;
+                            }
                             await player.addZhiShiWu('hongShui', 2, 8);
                         },
                         "check": function(event, player) {
+
+                            if(lib.suMingBaiYueAi.wantsGemBackedWave(player)) {
+                                return lib.skill.taoTianJuLang.aiCostPlan(player).length === 2;
+                            }
+                            if(player.countNengLiang('shuiJing') <= 0) return false;
                             // 启动技发动后当回合无法提炼：星石不足3颗不放；
                             // 多余水晶放宽时要求宝石至少1颗，保证后续【风雪冰天】费用
                             var xingShi = lib.suMingBaiYueAi.xingShiTotal(player);
@@ -5402,6 +5684,7 @@ return follow ? 1 : -1;
                         "type": "faShu",
                         "enable": "faShu",
                         "filter": function(event, player) {
+                            if(!lib.suMingBaiYueAi.isManual(player) && !lib.suMingBaiYueAi.canUseIce(player)) return false;
                             return player.canBiShaBaoShi() && player.countCards('h', function(card) {
                                 return get.type(card, player) == 'faShu';
                             }) > 0;
@@ -5427,24 +5710,13 @@ return follow ? 1 : -1;
                         "ai": {
                             "baoShi": true,
                             "order": function(item, player) {
-                                var num = player.countCards('h', function(card) {
-                                    return get.type(card, player) == 'faShu';
-                                });
-                                var damage = Math.ceil(num / 2) + 1;
-                                var score = 0;
-                                game.countPlayer(function(current) {
-                                    score += get.damageEffect2(
-                                        current, player, damage
-                                    );
-                                });
-                                return score > 0 ? 6.8 : 1.2;
+                                if(player.hasSkill('suMingBaiYueIceFollow')) return 20;
+                                return lib.suMingBaiYueAi.canUseIce(player) ? 6.8 : 0;
                             },
-                            "result": {"target": function(player, target) {
-                                var num = player.countCards('h', function(card) {
-                                    return get.type(card, player) == 'faShu';
-                                });
-                                return get.damageEffect2(target, player,
-                                    Math.ceil(num / 2) + 1);
+                            "result": {"player": function(player) {
+                                if(player.hasSkill('suMingBaiYueIceFollow')) return 100;
+                                if(!lib.suMingBaiYueAi.canUseIce(player)) return -100;
+                                return 1;
                             }},
                         },
                     },
@@ -5721,7 +5993,7 @@ return follow ? 1 : -1;
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-			"version": "2.30",
+			"version": "2.31",
         },
         "files": {
             "character": [
