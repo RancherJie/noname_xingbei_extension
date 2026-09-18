@@ -748,6 +748,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
 
         game._shiZhouNianSpatialTrySkillAudioOriginal = game.trySkillAudio;
         game.trySkillAudio = function (skill, player) {
+            if (typeof game._shiZhouNianSpatialTrySkillAudioOriginal !== "function") return;
             var previous = game._shiZhouNianSpatialSpeaker;
             game._shiZhouNianSpatialSpeaker = player;
             try {
@@ -800,6 +801,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
         if (!game.trySkillAudio._shiZhouNianKuangHuaAudioWrapped) {
             game._shiZhouNianKuangHuaTrySkillAudioOriginal = game.trySkillAudio;
             game.trySkillAudio = function (skill, player, directaudio, nobroadcast, skillInfo, args) {
+                if (typeof game._shiZhouNianKuangHuaTrySkillAudioOriginal !== "function") return;
                 if (skill === "kuangHua" && args && args[0]) {
                     var roots = [args[0]];
                     if (typeof args[0].getTrigger === "function") roots.push(args[0].getTrigger());
@@ -837,6 +839,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
                 jianYing: true
             };
             game.trySkillAudio = function (skill, player, directaudio, nobroadcast, skillInfo, args) {
+                if (typeof game._shiZhouNianJianZhiZiTrySkillAudioOriginal !== "function") return;
                 var isJianZhiZi = player && (
                     player.name === "jianZhiZi" ||
                     player.name1 === "jianZhiZi" ||
@@ -1169,7 +1172,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
 
     return {
         name: extensionName,
-        version: "6.10",
+        version: "6.11",
         connect: true,
         editable: false,
         config: {
@@ -1190,7 +1193,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "6.10"
+            version: "6.11"
         },
         files: {
             character: [],
