@@ -784,8 +784,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
             "character": {
                 "connect": true,
                 "character": {
-                    "yuanYiZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiLingZhuang","zheZhiJueMieTianShi","zheZhiJueWang","zheZhiGuangJian","zheZhiTianYi","zheZhiRiLun","zheZhiPaoGuan","zheZhiGuangYu"],["des:操纵绝灭天使的光羽布阵，绝望时化为反转折纸。","ext:永夜残响/yuanYiZheZhi.png"]],
-                    "fanZhuanZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiFanLingZhuang","zheZhiJuJue","zheZhiHeiYuShu","zheZhiJueMie","zheZhiYiShiHuiGui","zheZhiHeiYu"],["unseen","forbidai","des:仅由绝望反转进入，黑羽耗尽时强制绝灭并回归。","ext:永夜残响/fanZhuanZheZhi.png"]],
+                    "yuanYiZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiLingZhuang","zheZhiJueMieTianShi","zheZhiJueWang","zheZhiGuangJian","zheZhiTianYi","zheZhiRiLun","zheZhiPaoGuan","zheZhiGuangYu"],["des:驾驭绝灭天使的冷静术师，以光羽编织精密火力网。她不断分散与回收羽翼；当希望耗尽，绝望将令灵装彻底反转。","ext:永夜残响/yuanYiZheZhi.png"]],
+                    "fanZhuanZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiFanLingZhuang","zheZhiJuJue","zheZhiHeiYuShu","zheZhiJueMie","zheZhiYiShiHuiGui","zheZhiHeiYu"],["unseen","forbidai","des:绝望侵蚀后的鸢一折纸，以救世魔王散布象征拒绝的黑羽。她在伤害中转移灾厄，待黑羽耗尽便强制绝灭一切，唤回原本意识。","ext:永夜残响/fanZhuanZheZhi.png"]],
                     "wuHeQinLi": [
                         null,
                         "huanGroup",
@@ -799,7 +799,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "qinLiLingLi",
                         ],
                         [
-                            "des:统率空中舰队的炎之精灵。五河琴里通过双色发带在妹妹与司令形态间切换，并以灼烂歼鬼释放积蓄的灵力。",
+                            "des:统率空中舰队的炎之精灵，以双色发带切换妹妹与司令姿态。她积蓄灵力驾驭灼烂歼鬼，在治疗重生与炽烈炮击之间掌控节奏。",
                             "ext:永夜残响/wHeQingLi.jpg",
                         ],
                     ],
@@ -820,7 +820,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "fanZhuanLingLi",
                         ],
                         [
-                            "des:持有鏖杀公的公主。夜刀神十香在王座与剑刃形态之间切换，以灵力强化守御、斩击与最后之剑。",
+                            "des:持有鏖杀公的精灵公主，以纯粹意志守护珍视之人。她在王座与剑刃形态间转换，积蓄灵力强化防御、斩击与最后之剑。",
                             "ext:永夜残响/shiXiang.jpg",
                         ],
                     ],
@@ -837,7 +837,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "shiXiangLingLi",
                         ],
                         [
-                            "des:灵力彻底反转后的夜刀神十香。反灵装令她在伤害与自伤之间不断追击，直至意识回归。",
+                            "des:灵力彻底反转后的夜刀神十香，手中鏖杀公亦化为暴虐公。她以反转灵力换取毁灭性连击，在伤敌与自伤的边缘追击，直至意识回归。",
                             "ext:永夜残响/fanZhuanShiXiang.png",
                             "unseen",
                             "forbidai",
@@ -858,7 +858,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "siMiNaiDongJie",
                         ],
                         [
-                            "des:以冰霜与灵装守护同伴的精灵少女。四糸乃能够借助手偶四糸奈与冰结傀儡·撒旦操纵寒气，在治疗队友、削弱攻击与冻结对手的额外行动之间切换。",
+                            "des:温柔而胆怯的冰之精灵，借助手偶四糸奈传达勇气。她召唤冰结傀儡·撒旦守护同伴，在治疗、减伤与冻结额外行动之间调度寒气。",
                             "ext:永夜残响/siMiNai.jpg",
                         ],
                     ],
@@ -878,7 +878,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "shiJianJingZhi",
                         ],
                         [
-                            "des:操纵时间之力的梦魇。时崎狂三以刻刻帝的十二种能力夺取、积蓄并支配时间，在伤害、支援与时间静止之间不断转换。",
+                            "des:游走于无数时间线的梦魇，以刻刻帝夺取并支配时间。她把伤害化为时差，在治疗、增伤与时间静止之间精密交换每一秒。",
                             "ext:永夜残响/shiQiKuangSan.jpg",
                         ],
                     ],
@@ -3553,7 +3553,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.4",
+            "version": "2.5",
         },
         "files": {
             "character": [
