@@ -871,7 +871,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音"
             "character": {
                 "connect": true,
                 "character": {
-                    "baDe": [null, "yongGroup", 5, ["baDeManager", "lvZheDeZhaoHuan", "muLingSuiXing", "muLingZhuiJi", "xingJieShuFu", "youShenShengTan", "shenQiLvCheng", "tiaoHeMingYun", "muLing", "tiaoHeZhiYin", "baDeChiHuanInfo", "youShenShengTanInfo", "shenQiLvChengInfo", "baDeNingZhiInfo"], ["des:循钟声收集调和之音的星界游神，以木灵、圣坛、通道与凝滞维护星界秩序。"]],
+                    "baDe": [null, "yongGroup", 5, ["baDeManager", "lvZheDeZhaoHuan", "muLingSuiXing", "muLingZhuiJi", "xingJieShuFu", "youShenShengTan", "shenQiLvCheng", "tiaoHeMingYun", "muLing", "tiaoHeZhiYin", "baDeChiHuanInfo", "youShenShengTanInfo", "shenQiLvChengInfo", "baDeNingZhiInfo"], ["des:穿行诸界、维护宇宙和谐的星界游神，循钟声收集散落的调和之音。他召集木灵、布置圣坛与通道，并以凝滞平息失序的战场。"]],
                     "tiMo": [
                         null,
                         "huanGroup",
@@ -890,7 +890,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音"
                             "tiMoZhongMoGuPai",
                         ],
                         [
-                            "des:班德尔城的迅捷斥候。提莫擅长隐蔽行动、致盲吹箭与蘑菇陷阱，总能在对手最意想不到的位置发起袭击。",
+                            "des:班德尔城最机敏的迅捷斥候，以笑容掩藏致命伏击。他隐身侦察、吹箭致盲，并把蘑菇埋在对手最意想不到的落脚处。",
                             "ext:峡谷幻音/tiMo.jpg",
                         ],
                     ],
@@ -909,7 +909,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音"
                             "suoNaHeXian",
                         ],
                         [
-                            "des:以琴音连接队友心灵的琴瑟仙女。娑娜轮换演奏三种乐章积累和弦，并将对应余音分享给队友。",
+                            "des:以琴音连接众人心灵的琴瑟仙女，让旋律成为无声的号令。她轮换三种乐章积累和弦，将余音分享给队友，并以终曲左右战局。",
                             "ext:峡谷幻音/suoNa.jpg",
                         ],
                     ],
@@ -928,7 +928,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音"
                             "xueJi",
                         ],
                         [
-                            "des:以鲜血与战意维系灭绝形态的暗裔剑魔。亚托克斯通过暗裔利刃积累血刃，并以恶火束链锁定猎物展开追击。",
+                            "des:渴望终结一切的暗裔剑魔，以鲜血与战意维系灭绝形态。他挥动暗裔利刃积累血刃，用恶火束链困住猎物，再展开不死不休的追击。",
                             "ext:峡谷幻音/yaTuoKeSi.jpg",
                         ],
                     ],
@@ -2628,7 +2628,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.11",
+            "version": "1.12",
         },
         "files": {
             "character": [
