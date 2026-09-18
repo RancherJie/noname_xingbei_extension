@@ -68,7 +68,7 @@ extension["十周年语音包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.11",
+	"version": "6.12",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -88,7 +88,7 @@ extension["十周年语音包"] = {
 		"info.json",
 		"package.js"
 	],
-	"size": "50.65MB"
+	"size": "50.66MB"
 };
 
 extension["创世纪"] = {
@@ -97,7 +97,7 @@ extension["创世纪"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.7",
+	"version": "2.8",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -122,7 +122,7 @@ extension["创世纪"] = {
 		"tianQiZhe.png",
 		"yuXueMoShen.png"
 	],
-	"size": "9.69MB"
+	"size": "9.70MB"
 };
 
 extension["十周年-AI优化版"] = {
@@ -444,7 +444,7 @@ extension["宿命挽歌"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.31",
+	"version": "2.32",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -498,7 +498,7 @@ extension["峡谷幻音"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.12",
+	"version": "1.13",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -535,7 +535,7 @@ extension["永夜残响"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.5",
+	"version": "2.6",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -570,7 +570,7 @@ extension["bigcowcow"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.12",
+	"version": "2.13",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -608,7 +608,7 @@ extension["电啸龙吟"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.7",
+	"version": "1.8",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -638,16 +638,16 @@ extension["轮回遗梦"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.3",
+	"version": "1.4",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
-		"audio-data/pack-81ad9002c12deb9b0640dfc820a552c0c4a1e71f2a50f0953f956be37330b4ae.json",
-		"audio-data/pack-847f9293ab4106cb04a72b9db1fcf59dfe1d08ca879df0eaf55eb33faf4f9df7.json",
-		"audio-data/pack-99033493d6cb660f44a2790c01c655daee16e61fb3a66978e953568bc8c879ff.json",
-		"audio-data/pack-b31dd4a7c8b47b244b774ac6d829760dbd0679e35d1deb9efd47d1a71dc0dd84.json",
-		"audio-data/pack-b8759f92f72ce3bcc7d4a9a7c06bf198da143bc05e21249b16c514d419bf761f.json",
-		"audio-data/pack-f736c13c23840d43062b9cbc3f4b18d8351bdc39d8701e2f6f1f698d18816979.json",
+		"audio-data/pack-30d343f2bd7c72a5dad6ebdc4fa2b2711dc3cad896185d95831ef0b34eba3615.json",
+		"audio-data/pack-39b2f1cdb28cd709ee80abce0d7e9536ebaa1b66cf6bd6cbfd7587067a030228.json",
+		"audio-data/pack-ad8c71e8ff0da2e2b73f795cd960927be54aa47a4a25045b89841f67d6eeedb9.json",
+		"audio-data/pack-df29f146515d0dbbd558861a1d169b8400b4f871be77be24bce01a94339f16d3.json",
+		"audio-data/pack-eb995abacc83a06329a27fc38bdc2615572bf859f1de520e59541b8b650fbb8f.json",
+		"audio-data/pack-f2285c99931ae310746b35a2f185f871c99f12823d5d148049ea78b953ee21aa.json",
 		"extension.js",
 		"info.json",
 		"jingTian.svg",
@@ -689,5 +689,5 @@ extension["轮回遗梦"] = {
 		"xieLing.png",
 		"xueJian.png"
 	],
-	"size": "34.37MB"
+	"size": "34.38MB"
 };
