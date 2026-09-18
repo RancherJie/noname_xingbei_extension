@@ -268,7 +268,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                             "naiLongDaXiao",
                         ],
                         [
-                            "des:总会以出人意料的方式打乱战局的显眼包。奶龙让角色因其技能弃牌后获得治疗，也能在受到攻击时用摸牌结果改变应战与伤害。",
+                            "des:总能以离谱笑声搅乱战局的显眼包，胡闹之中也会照顾同伴。他把技能弃牌转化为治疗，并用临场摸牌改写攻击的应战与伤害。",
                             "ext:电啸龙吟/naiLong.jpg",
                         ],
                     ],
@@ -285,7 +285,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                             "fangGuan",
                         ],
                         [
-                            "des:在伤害与失控之间不断升温的红温主播。电棍Otto会把承受的伤害积累为红温，并在白银晚期状态下将怒火倾泻给所有对手。",
+                            "des:在压力与失控之间不断升温的红温主播，把每次受伤都记成新的怒火。红温爆表后，他进入白银晚期，将加剧的伤害倾泻给所有对手。",
                             "ext:电啸龙吟/otto.jpg",
                         ],
                     ],
@@ -304,7 +304,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                             "yongChuTaFeiShuTiao",
                         ],
                         [
-                            "des:追逐热榜与流量的王牌主包。永雏塔菲会记录全场最后完成的行动类型，以薯条储存手牌，并在热度达到顶点时连续开启新的完整回合。",
+                            "des:追逐热榜与流量的王牌主包，把整片战场都变成直播素材。她记录全场行动、用薯条缓存手牌，并在热度顶峰连续开启额外回合。",
                             "ext:电啸龙吟/yongChuTaFei.jpg",
                         ],
                     ],
@@ -1591,7 +1591,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.6",
+            "version": "1.7",
         },
         "files": {
             "character": [
