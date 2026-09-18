@@ -3,7 +3,7 @@ extension["bigcowcow"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"2.11",
+    version:"2.12",
     files: [
     "LICENSE",
     "README.md",
