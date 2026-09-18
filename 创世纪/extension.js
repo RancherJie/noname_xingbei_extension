@@ -436,7 +436,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
                             "xuanWen",
                         ],
                         [
-                            "des:通过泰拉的科技将自己贝亚娜化，拥有着贤者的智慧和战神的力量，接近使徒的力量。",
+                            "des:以泰拉科技重塑自身的贝亚娜斗神，兼具贤者智慧与战神之力。她收集多系炫纹强化攻势，并在变身后以暗之力量压制全场。",
                             "ext:创世纪/beiyanadopushen.png",
                             "die:ext:创世纪/audio/die/beiyanadopushen.mp3",
                         ],
@@ -458,7 +458,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
                             "huaShi",
                         ],
                         [
-                            "des:以念气淬炼身体、守护同伴的格斗家。她能在进攻与支援之间切换，并在念气彻底绽放时令千莲席卷全场。",
+                            "des:以念气淬炼身心的气功宗师，拳掌之间亦有守护之意。她在进攻与援护中积蓄念气，最终令千莲怒放席卷全场。",
                             "ext:创世纪/baiHuaLiaoLuan.png",
                         ],
                     ],
@@ -482,7 +482,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
                             "luMiYaYanJiu",
                         ],
                         [
-                            "des:以实验材料进行魔道实验的学者。露米娅能通过研究修正实验结果，并在魔弹、扫把、药剂与装置之间灵活切换。",
+                            "des:沉迷危险实验的魔道学者，把每份材料都视作新发现的起点。她以研究修正随机结果，在魔弹、扫把、药剂与装置之间灵活应变。",
                             "ext:创世纪/luMiYa.png",
                         ],
                     ],
@@ -501,7 +501,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
                             "tianQiZheZhuFuManager",
                         ],
                         [
-                            "des:以治疗守护同伴、以神圣之力惩戒敌人的圣职者。她能将祝福赐予队友，并以天启之珠将光明化为最终审判。",
+                            "des:聆听神谕的圣职者，以治疗与祝福庇护同伴。她将四重恩赐分予队友，并借天启之珠把被触发的祝福化作最终审判。",
                             "ext:创世纪/tianQiZhe.png",
                         ],
                     ],
@@ -522,7 +522,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
                             "yuXueMoShenXueQi",
                         ],
                         [
-                            "des:被鬼神侵蚀后主动解开束缚的狂战士。伤痛会化为沸腾的血气，最终凝结为宣告狱血魔神降临的魔剑。",
+                            "des:主动解开鬼神束缚的浴血狂战，让伤痛化作沸腾血气。他以嗜血追击压迫战场，并将积蓄的力量凝为魔剑，宣告狱血魔神降临。",
                             "ext:创世纪/yuXueMoShen.png",
                         ],
                     ],
@@ -4085,7 +4085,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.6",
+            "version": "2.7",
         },
         "files": {
             "character": [
