@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2. Source: tools/audio-pack/runtime.js; bundled into each extension. */
+/* Audio JSON runtime v2, revision 3 (incremental). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.format === 2) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 3) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -105,19 +105,38 @@
         if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
             return previous.files && previous.files[file.path] === file.sha256;
         })) return false;
-        var index = 0, position = 0, bytes = null, hashes = Object.create(null), directories = new Set();
+        var files = new Map(), needed = new Set(), selected = new Set();
+        var bundleNames = new Set(manifest.bundles.map(function (bundle) { return safe(bundle.name); }));
+        var hashes = Object.create(null), legacy = false;
+        for (var entry of manifest.files) {
+            safe(entry.path);
+            if (files.has(entry.path)) throw new Error('重复音频路径');
+            if (entry.bundles && (!Array.isArray(entry.bundles) || !entry.bundles.length || entry.bundles.some(function (name) { return !bundleNames.has(name); }))) throw new Error('无效音频分包索引');
+            files.set(entry.path, entry);
+            if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
+                hashes[entry.path] = entry.sha256;
+            } else {
+                needed.add(entry.path);
+                if (entry.bundles) entry.bundles.forEach(function (name) { selected.add(name); });
+                else legacy = true;
+            }
+        }
+        var total = needed.size, index = 0, position = 0, bytes = null, current = null, directories = new Set();
         for (var bundle of manifest.bundles) {
+            if (!needed.size || (!legacy && !selected.has(bundle.name))) continue;
             safe(bundle.name);
             text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
             if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
             var body = JSON.parse(text);
             if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
             for (var record of body.records) {
-                var file = manifest.files[index];
-                if (!file || safe(record.path) !== file.path || record.offset !== position) throw new Error('音频分片顺序错误');
+                var file = files.get(safe(record.path));
+                if (!file || !needed.has(file.path) || (file.bundles && !file.bundles.includes(bundle.name))) continue;
+                if ((current && current !== file.path) || record.offset !== position) throw new Error('音频分片顺序错误');
                 if (!bytes) {
                     if (!Number.isSafeInteger(file.size) || file.size < 0) throw new Error('无效音频长度');
                     bytes = new Uint8Array(file.size);
+                    current = file.path;
                 }
                 var raw = root.atob(record.base64);
                 if (position + raw.length > bytes.length) throw new Error('音频长度超限');
@@ -138,15 +157,16 @@
                 var written = buffer(await game.promises.readFile(target));
                 if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
                 hashes[file.path] = file.sha256;
-                index++; position = 0; bytes = null;
-                if (options.onProgress) options.onProgress(index, manifest.files.length);
+                needed.delete(file.path);
+                index++; position = 0; bytes = null; current = null;
+                if (options.onProgress) options.onProgress(index, total);
                 // Let the browser paint progress during long voice-pack installations.
                 await new Promise(function (resolve) { root.setTimeout(resolve, 0); });
             }
         }
-        if (index !== manifest.files.length || bytes) throw new Error('音频数据包不完整');
+        if (needed.size || bytes) throw new Error('音频数据包不完整');
         storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
-        return true;
+        return index > 0;
     }
     function prepare(meta, lib, game) {
         if (pending.has(meta.name)) return pending.get(meta.name);
@@ -175,7 +195,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 3, sha256: sha256, install: install, prepare: prepare,
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
                 var object = factory.apply(this, arguments);
@@ -784,8 +804,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
             "character": {
                 "connect": true,
                 "character": {
-                    "yuanYiZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiLingZhuang","zheZhiJueMieTianShi","zheZhiJueWang","zheZhiGuangJian","zheZhiTianYi","zheZhiRiLun","zheZhiPaoGuan","zheZhiGuangYu"],["des:操纵绝灭天使的光羽布阵，绝望时化为反转折纸。","ext:永夜残响/yuanYiZheZhi.png"]],
-                    "fanZhuanZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiFanLingZhuang","zheZhiJuJue","zheZhiHeiYuShu","zheZhiJueMie","zheZhiYiShiHuiGui","zheZhiHeiYu"],["unseen","forbidai","des:仅由绝望反转进入，黑羽耗尽时强制绝灭并回归。","ext:永夜残响/fanZhuanZheZhi.png"]],
+                    "yuanYiZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiLingZhuang","zheZhiJueMieTianShi","zheZhiJueWang","zheZhiGuangJian","zheZhiTianYi","zheZhiRiLun","zheZhiPaoGuan","zheZhiGuangYu"],["des:驾驭绝灭天使的冷静术师，以光羽编织精密火力网。她不断分散与回收羽翼；当希望耗尽，绝望将令灵装彻底反转。","ext:永夜残响/yuanYiZheZhi.png"]],
+                    "fanZhuanZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiFanLingZhuang","zheZhiJuJue","zheZhiHeiYuShu","zheZhiJueMie","zheZhiYiShiHuiGui","zheZhiHeiYu"],["unseen","forbidai","des:绝望侵蚀后的鸢一折纸，以救世魔王散布象征拒绝的黑羽。她在伤害中转移灾厄，待黑羽耗尽便强制绝灭一切，唤回原本意识。","ext:永夜残响/fanZhuanZheZhi.png"]],
                     "wuHeQinLi": [
                         null,
                         "huanGroup",
@@ -799,7 +819,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "qinLiLingLi",
                         ],
                         [
-                            "des:统率空中舰队的炎之精灵。五河琴里通过双色发带在妹妹与司令形态间切换，并以灼烂歼鬼释放积蓄的灵力。",
+                            "des:统率空中舰队的炎之精灵，以双色发带切换妹妹与司令姿态。她积蓄灵力驾驭灼烂歼鬼，在治疗重生与炽烈炮击之间掌控节奏。",
                             "ext:永夜残响/wHeQingLi.jpg",
                         ],
                     ],
@@ -820,7 +840,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "fanZhuanLingLi",
                         ],
                         [
-                            "des:持有鏖杀公的公主。夜刀神十香在王座与剑刃形态之间切换，以灵力强化守御、斩击与最后之剑。",
+                            "des:持有鏖杀公的精灵公主，以纯粹意志守护珍视之人。她在王座与剑刃形态间转换，积蓄灵力强化防御、斩击与最后之剑。",
                             "ext:永夜残响/shiXiang.jpg",
                         ],
                     ],
@@ -837,7 +857,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "shiXiangLingLi",
                         ],
                         [
-                            "des:灵力彻底反转后的夜刀神十香。反灵装令她在伤害与自伤之间不断追击，直至意识回归。",
+                            "des:灵力彻底反转后的夜刀神十香，手中鏖杀公亦化为暴虐公。她以反转灵力换取毁灭性连击，在伤敌与自伤的边缘追击，直至意识回归。",
                             "ext:永夜残响/fanZhuanShiXiang.png",
                             "unseen",
                             "forbidai",
@@ -858,7 +878,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "siMiNaiDongJie",
                         ],
                         [
-                            "des:以冰霜与灵装守护同伴的精灵少女。四糸乃能够借助手偶四糸奈与冰结傀儡·撒旦操纵寒气，在治疗队友、削弱攻击与冻结对手的额外行动之间切换。",
+                            "des:温柔而胆怯的冰之精灵，借助手偶四糸奈传达勇气。她召唤冰结傀儡·撒旦守护同伴，在治疗、减伤与冻结额外行动之间调度寒气。",
                             "ext:永夜残响/siMiNai.jpg",
                         ],
                     ],
@@ -878,7 +898,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             "shiJianJingZhi",
                         ],
                         [
-                            "des:操纵时间之力的梦魇。时崎狂三以刻刻帝的十二种能力夺取、积蓄并支配时间，在伤害、支援与时间静止之间不断转换。",
+                            "des:游走于无数时间线的梦魇，以刻刻帝夺取并支配时间。她把伤害化为时差，在治疗、增伤与时间静止之间精密交换每一秒。",
                             "ext:永夜残响/shiQiKuangSan.jpg",
                         ],
                     ],
@@ -3553,7 +3573,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.4",
+            "version": "2.6",
         },
         "files": {
             "character": [

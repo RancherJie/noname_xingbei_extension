@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2. Source: tools/audio-pack/runtime.js; bundled into each extension. */
+/* Audio JSON runtime v2, revision 3 (incremental). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.format === 2) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 3) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -105,19 +105,38 @@
         if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
             return previous.files && previous.files[file.path] === file.sha256;
         })) return false;
-        var index = 0, position = 0, bytes = null, hashes = Object.create(null), directories = new Set();
+        var files = new Map(), needed = new Set(), selected = new Set();
+        var bundleNames = new Set(manifest.bundles.map(function (bundle) { return safe(bundle.name); }));
+        var hashes = Object.create(null), legacy = false;
+        for (var entry of manifest.files) {
+            safe(entry.path);
+            if (files.has(entry.path)) throw new Error('重复音频路径');
+            if (entry.bundles && (!Array.isArray(entry.bundles) || !entry.bundles.length || entry.bundles.some(function (name) { return !bundleNames.has(name); }))) throw new Error('无效音频分包索引');
+            files.set(entry.path, entry);
+            if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
+                hashes[entry.path] = entry.sha256;
+            } else {
+                needed.add(entry.path);
+                if (entry.bundles) entry.bundles.forEach(function (name) { selected.add(name); });
+                else legacy = true;
+            }
+        }
+        var total = needed.size, index = 0, position = 0, bytes = null, current = null, directories = new Set();
         for (var bundle of manifest.bundles) {
+            if (!needed.size || (!legacy && !selected.has(bundle.name))) continue;
             safe(bundle.name);
             text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
             if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
             var body = JSON.parse(text);
             if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
             for (var record of body.records) {
-                var file = manifest.files[index];
-                if (!file || safe(record.path) !== file.path || record.offset !== position) throw new Error('音频分片顺序错误');
+                var file = files.get(safe(record.path));
+                if (!file || !needed.has(file.path) || (file.bundles && !file.bundles.includes(bundle.name))) continue;
+                if ((current && current !== file.path) || record.offset !== position) throw new Error('音频分片顺序错误');
                 if (!bytes) {
                     if (!Number.isSafeInteger(file.size) || file.size < 0) throw new Error('无效音频长度');
                     bytes = new Uint8Array(file.size);
+                    current = file.path;
                 }
                 var raw = root.atob(record.base64);
                 if (position + raw.length > bytes.length) throw new Error('音频长度超限');
@@ -138,15 +157,16 @@
                 var written = buffer(await game.promises.readFile(target));
                 if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
                 hashes[file.path] = file.sha256;
-                index++; position = 0; bytes = null;
-                if (options.onProgress) options.onProgress(index, manifest.files.length);
+                needed.delete(file.path);
+                index++; position = 0; bytes = null; current = null;
+                if (options.onProgress) options.onProgress(index, total);
                 // Let the browser paint progress during long voice-pack installations.
                 await new Promise(function (resolve) { root.setTimeout(resolve, 0); });
             }
         }
-        if (index !== manifest.files.length || bytes) throw new Error('音频数据包不完整');
+        if (needed.size || bytes) throw new Error('音频数据包不完整');
         storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
-        return true;
+        return index > 0;
     }
     function prepare(meta, lib, game) {
         if (pending.has(meta.name)) return pending.get(meta.name);
@@ -175,7 +195,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 3, sha256: sha256, install: install, prepare: prepare,
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
                 var object = factory.apply(this, arguments);
@@ -268,7 +288,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                             "naiLongDaXiao",
                         ],
                         [
-                            "des:总会以出人意料的方式打乱战局的显眼包。奶龙让角色因其技能弃牌后获得治疗，也能在受到攻击时用摸牌结果改变应战与伤害。",
+                            "des:总能以离谱笑声搅乱战局的显眼包，胡闹之中也会照顾同伴。他把技能弃牌转化为治疗，并用临场摸牌改写攻击的应战与伤害。",
                             "ext:电啸龙吟/naiLong.jpg",
                         ],
                     ],
@@ -285,7 +305,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                             "fangGuan",
                         ],
                         [
-                            "des:在伤害与失控之间不断升温的红温主播。电棍Otto会把承受的伤害积累为红温，并在白银晚期状态下将怒火倾泻给所有对手。",
+                            "des:在压力与失控之间不断升温的红温主播，把每次受伤都记成新的怒火。红温爆表后，他进入白银晚期，将加剧的伤害倾泻给所有对手。",
                             "ext:电啸龙吟/otto.jpg",
                         ],
                     ],
@@ -304,7 +324,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                             "yongChuTaFeiShuTiao",
                         ],
                         [
-                            "des:追逐热榜与流量的王牌主包。永雏塔菲会记录全场最后完成的行动类型，以薯条储存手牌，并在热度达到顶点时连续开启新的完整回合。",
+                            "des:追逐热榜与流量的王牌主包，把整片战场都变成直播素材。她记录全场行动、用薯条缓存手牌，并在热度顶峰连续开启额外回合。",
                             "ext:电啸龙吟/yongChuTaFei.jpg",
                         ],
                     ],
@@ -1591,7 +1611,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.6",
+            "version": "1.8",
         },
         "files": {
             "character": [

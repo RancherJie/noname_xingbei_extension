@@ -16,12 +16,12 @@ extension["织梦者"] = {
 };
 
 extension["无名杯UI优化包"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志的美术语言。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.2",
+	"version": "2.3",
 	"files": [
 		"README.md",
 		"extension.css",
@@ -63,12 +63,12 @@ extension["无名杯UI优化包"] = {
 };
 
 extension["十周年语音包"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "十周年角色技能语音扩展。当前收录风之剑圣、狂战士、神箭手、封印师、暗杀者、圣女、守护天使、魔法少女、魔剑士、圣枪骑士、元素师、冒险家、瘟疫法师、仲裁者、神官、祈祷师、贤者、灵符师、格斗家、剑帝、灵魂术士、勇者、血之巫女、蝶舞者、女武神、魔弓、红莲骑士、英灵人形、魔枪、吟游诗人、苍炎魔女、精灵射手、血色剑灵、阴阳师、月之女神、兽灵武士、圣殿骑士、圣庭检察士、圣弓、原初之弓、星坠女巫、战斗法师、猎巫人、女仆长、矜贵之女、染污者、噬神者、结界师、红衣主教、铸律者、游击士、节日魔导、贪婪少女、见习制片、咒符师、怠惰少女与剑之子的全部技能语音。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.10",
+	"version": "6.12",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -88,16 +88,16 @@ extension["十周年语音包"] = {
 		"info.json",
 		"package.js"
 	],
-	"size": "50.65MB"
+	"size": "50.66MB"
 };
 
 extension["创世纪"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "添加角色贝亚娜斗神、百花缭乱、露米娅、天启者、狱血魔神。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.6",
+	"version": "2.8",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -122,7 +122,7 @@ extension["创世纪"] = {
 		"tianQiZhe.png",
 		"yuXueMoShen.png"
 	],
-	"size": "16.08MB"
+	"size": "9.70MB"
 };
 
 extension["十周年-AI优化版"] = {
@@ -142,12 +142,12 @@ extension["十周年-AI优化版"] = {
 };
 
 extension["十周年-噩梦人机"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "内置十周年-AI优化版，为70名电脑角色提供140项噩梦强化技能；新增最多三名玩家的联机合作 PvE 模式。真人操控角色保持原版技能。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.8",
+	"version": "1.9",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -431,19 +431,20 @@ extension["十周年-噩梦人机"] = {
 		"image/character/nightmare/zhongCaiZhe.png",
 		"image/character/nightmare/zhouFuShi.png",
 		"image/character/nightmare/zhuLvZhe.png",
+		"image/splash/xieLing.png",
 		"info.json",
 		"package.js"
 	],
-	"size": "181.16MB"
+	"size": "185.50MB"
 };
 
 extension["宿命挽歌"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "添加角色赵灵儿、李逍遥、林月如、阿奴、拜月教主、鬼将军、蛇妖男、狐妖女及不可选的水魔兽、僵尸转化形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.30",
+	"version": "2.32",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -488,16 +489,16 @@ extension["宿命挽歌"] = {
 		"zhaoLingEr.jpg",
 		"zhaoLingEr_mengShe.png"
 	],
-	"size": "79.25MB"
+	"size": "79.27MB"
 };
 
 extension["峡谷幻音"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "添加角色提莫、娑娜、亚托克斯、巴德。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.11",
+	"version": "1.13",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -525,16 +526,16 @@ extension["峡谷幻音"] = {
 		"tiMo.jpg",
 		"yaTuoKeSi.jpg"
 	],
-	"size": "5.31MB"
+	"size": "5.26MB"
 };
 
 extension["永夜残响"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三、鸢一折纸；含隐藏反转形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.4",
+	"version": "2.6",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -560,16 +561,16 @@ extension["永夜残响"] = {
 		"wHeQingLi.jpg",
 		"yuanYiZheZhi.png"
 	],
-	"size": "15.41MB"
+	"size": "11.91MB"
 };
 
 extension["bigcowcow"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "添加角色优菈、赫克托、史蒂夫、桐谷和人、一姬、萧炎。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.11",
+	"version": "2.13",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -602,12 +603,12 @@ extension["bigcowcow"] = {
 };
 
 extension["电啸龙吟"] = {
-	"date": "2026/09/16",
+	"date": "2026/09/18",
 	"intro": "添加角色奶龙、电棍Otto、永雏塔菲。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.6",
+	"version": "1.8",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -632,19 +633,21 @@ extension["电啸龙吟"] = {
 
 
 extension["轮回遗梦"] = {
-	"date": "2026/09/16",
-	"intro": "仙剑奇侠传三主题角色包：景天、雪见、龙葵。",
+	"date": "2026/09/18",
+	"intro": "仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.2",
+	"version": "1.4",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
+		"audio-data/pack-30d343f2bd7c72a5dad6ebdc4fa2b2711dc3cad896185d95831ef0b34eba3615.json",
 		"audio-data/pack-39b2f1cdb28cd709ee80abce0d7e9536ebaa1b66cf6bd6cbfd7587067a030228.json",
 		"audio-data/pack-ad8c71e8ff0da2e2b73f795cd960927be54aa47a4a25045b89841f67d6eeedb9.json",
 		"audio-data/pack-df29f146515d0dbbd558861a1d169b8400b4f871be77be24bce01a94339f16d3.json",
 		"audio-data/pack-eb995abacc83a06329a27fc38bdc2615572bf859f1de520e59541b8b650fbb8f.json",
+		"audio-data/pack-f2285c99931ae310746b35a2f185f871c99f12823d5d148049ea78b953ee21aa.json",
 		"extension.js",
 		"info.json",
 		"jingTian.svg",
@@ -679,9 +682,12 @@ extension["轮回遗梦"] = {
 		"mark_wuLing_tu_empty.png",
 		"mark_wuLing_tu_yang.png",
 		"mark_wuLing_tu_yin.png",
+		"mark_xieNian.png",
 		"mark_zhenYaoJian.png",
 		"package.js",
+		"xieJianXian.png",
+		"xieLing.png",
 		"xueJian.png"
 	],
-	"size": "32.13MB"
+	"size": "34.38MB"
 };

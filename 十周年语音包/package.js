@@ -3,7 +3,7 @@ extension["十周年语音包"] = {
     author: "蒙牛 / Codex",
     netdisk: "",
     forum: "",
-    version: "6.10",
+    version: "6.12",
     files: [
     "README.md",
     "audio-data/manifest.json",
@@ -23,5 +23,5 @@ extension["十周年语音包"] = {
     "info.json",
     "package.js"
 ],
-    size: "50.65MB"
+    size: "50.66MB"
 };

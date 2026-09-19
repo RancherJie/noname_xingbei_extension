@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2. Source: tools/audio-pack/runtime.js; bundled into each extension. */
+/* Audio JSON runtime v2, revision 3 (incremental). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.format === 2) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 3) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -105,19 +105,38 @@
         if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
             return previous.files && previous.files[file.path] === file.sha256;
         })) return false;
-        var index = 0, position = 0, bytes = null, hashes = Object.create(null), directories = new Set();
+        var files = new Map(), needed = new Set(), selected = new Set();
+        var bundleNames = new Set(manifest.bundles.map(function (bundle) { return safe(bundle.name); }));
+        var hashes = Object.create(null), legacy = false;
+        for (var entry of manifest.files) {
+            safe(entry.path);
+            if (files.has(entry.path)) throw new Error('重复音频路径');
+            if (entry.bundles && (!Array.isArray(entry.bundles) || !entry.bundles.length || entry.bundles.some(function (name) { return !bundleNames.has(name); }))) throw new Error('无效音频分包索引');
+            files.set(entry.path, entry);
+            if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
+                hashes[entry.path] = entry.sha256;
+            } else {
+                needed.add(entry.path);
+                if (entry.bundles) entry.bundles.forEach(function (name) { selected.add(name); });
+                else legacy = true;
+            }
+        }
+        var total = needed.size, index = 0, position = 0, bytes = null, current = null, directories = new Set();
         for (var bundle of manifest.bundles) {
+            if (!needed.size || (!legacy && !selected.has(bundle.name))) continue;
             safe(bundle.name);
             text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
             if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
             var body = JSON.parse(text);
             if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
             for (var record of body.records) {
-                var file = manifest.files[index];
-                if (!file || safe(record.path) !== file.path || record.offset !== position) throw new Error('音频分片顺序错误');
+                var file = files.get(safe(record.path));
+                if (!file || !needed.has(file.path) || (file.bundles && !file.bundles.includes(bundle.name))) continue;
+                if ((current && current !== file.path) || record.offset !== position) throw new Error('音频分片顺序错误');
                 if (!bytes) {
                     if (!Number.isSafeInteger(file.size) || file.size < 0) throw new Error('无效音频长度');
                     bytes = new Uint8Array(file.size);
+                    current = file.path;
                 }
                 var raw = root.atob(record.base64);
                 if (position + raw.length > bytes.length) throw new Error('音频长度超限');
@@ -138,15 +157,16 @@
                 var written = buffer(await game.promises.readFile(target));
                 if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
                 hashes[file.path] = file.sha256;
-                index++; position = 0; bytes = null;
-                if (options.onProgress) options.onProgress(index, manifest.files.length);
+                needed.delete(file.path);
+                index++; position = 0; bytes = null; current = null;
+                if (options.onProgress) options.onProgress(index, total);
                 // Let the browser paint progress during long voice-pack installations.
                 await new Promise(function (resolve) { root.setTimeout(resolve, 0); });
             }
         }
-        if (index !== manifest.files.length || bytes) throw new Error('音频数据包不完整');
+        if (needed.size || bytes) throw new Error('音频数据包不完整');
         storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
-        return true;
+        return index > 0;
     }
     function prepare(meta, lib, game) {
         if (pending.has(meta.name)) return pending.get(meta.name);
@@ -175,7 +195,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 3, sha256: sha256, install: install, prepare: prepare,
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
                 var object = factory.apply(this, arguments);
@@ -267,7 +287,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "fuChou",
                         ],
                         [
-                            "des:生于旧日宗室，身负罪恶血脉之人，的确需要独特的处世技巧，才能在偏见的高墙下安然行走。当然，这并不妨碍她与家族决裂，作为卓越的“浪花骑士”，在外游猎蒙德的敌人，完成她那意义独特的“复仇”。",
+                            "des:背负旧日宗室之名的浪花骑士，以冷峻剑舞追猎强敌。她借冰潮积蓄复仇意志，在攻防转换中引爆光降之剑。",
                             "ext:bigcowcow/youLa.png",
                             "die:ext:bigcowcow/audio/die/youLa.mp3",
                         ],
@@ -284,7 +304,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "qiangShi",
                         ],
                         [
-                            "des:赫克托曾是帝国边境军的枪术教官。比起追逐速度，他更擅长等待破绽，借敌我攻势以长枪反制。",
+                            "des:镇守帝国边境的回锋枪师，善于从敌我攻势中捕捉破绽。他以枪阵蓄势反制，越是承受压力，回击越发凌厉。",
                             "ext:bigcowcow/huiFengQiangShi.png",
                         ],
                     ],
@@ -307,7 +327,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "xiaJieHeJinJian",
                         ],
                         [
-                            "des:来自方块世界的冒险家。史蒂夫能在战斗中采集素材、锻造武器，并通过附魔赋予攻击不同效果。",
+                            "des:来自方块世界的冒险家，空手也能从战场采集一切资源。他挖掘素材、锻造装备并施加附魔，逐步打造属于自己的战斗体系。",
                             "ext:bigcowcow/steve.png",
                         ],
                     ],
@@ -324,7 +344,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "lianJi",
                         ],
                         [
-                            "des:以连续主动攻击积累连击的黑衣剑士。桐谷和人会在连击达到上限后进入二刀流，并以星爆气流斩终结本回合的追加攻势。",
+                            "des:独行于浮游城前线的黑衣剑士，以连续斩击突破极限。他积累连击切换二刀流，并以星爆气流斩终结漫长攻势。",
                             "ext:bigcowcow/tongGuHeRen.png",
                         ],
                     ],
@@ -344,7 +364,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "yiJiBaoPai",
                         ],
                         [
-                            "des:以公开宝牌引导牌势的招福雀姬。一姬会积累喵运，在断幺九、立直与役满之间不断更换宝牌并放大同系牌的收益。",
+                            "des:把战局当作牌桌经营的招福雀姬，以公开宝牌引导牌势。她积攒喵运，在断幺九、立直与役满之间寻找一击翻盘的牌型。",
                             "ext:bigcowcow/yiJi.png",
                         ],
                     ],
@@ -365,7 +385,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "xiaoYanYiHuoManager",
                         ],
                         [
-                            "des:以斗气炼化三种异火的炎帝。萧炎会在逆境中积蓄斗气，以暗劲延后爆发伤害，并通过天火三玄变与佛怒火莲释放异火的组合力量。",
+                            "des:执掌三种异火的炎帝，以斗气驾驭狂暴火力。他在逆境中蓄势，以暗劲延后爆发，再用天火三玄变与佛怒火莲焚尽强敌。",
                             "ext:bigcowcow/xiaoYan.png",
                         ],
                     ],
@@ -4880,7 +4900,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.11",
+            "version": "2.13",
         },
         "files": {
             "character": [

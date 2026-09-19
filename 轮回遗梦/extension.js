@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2. Source: tools/audio-pack/runtime.js; bundled into each extension. */
+/* Audio JSON runtime v2, revision 3 (incremental). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.format === 2) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 3) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -105,19 +105,38 @@
         if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
             return previous.files && previous.files[file.path] === file.sha256;
         })) return false;
-        var index = 0, position = 0, bytes = null, hashes = Object.create(null), directories = new Set();
+        var files = new Map(), needed = new Set(), selected = new Set();
+        var bundleNames = new Set(manifest.bundles.map(function (bundle) { return safe(bundle.name); }));
+        var hashes = Object.create(null), legacy = false;
+        for (var entry of manifest.files) {
+            safe(entry.path);
+            if (files.has(entry.path)) throw new Error('重复音频路径');
+            if (entry.bundles && (!Array.isArray(entry.bundles) || !entry.bundles.length || entry.bundles.some(function (name) { return !bundleNames.has(name); }))) throw new Error('无效音频分包索引');
+            files.set(entry.path, entry);
+            if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
+                hashes[entry.path] = entry.sha256;
+            } else {
+                needed.add(entry.path);
+                if (entry.bundles) entry.bundles.forEach(function (name) { selected.add(name); });
+                else legacy = true;
+            }
+        }
+        var total = needed.size, index = 0, position = 0, bytes = null, current = null, directories = new Set();
         for (var bundle of manifest.bundles) {
+            if (!needed.size || (!legacy && !selected.has(bundle.name))) continue;
             safe(bundle.name);
             text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
             if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
             var body = JSON.parse(text);
             if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
             for (var record of body.records) {
-                var file = manifest.files[index];
-                if (!file || safe(record.path) !== file.path || record.offset !== position) throw new Error('音频分片顺序错误');
+                var file = files.get(safe(record.path));
+                if (!file || !needed.has(file.path) || (file.bundles && !file.bundles.includes(bundle.name))) continue;
+                if ((current && current !== file.path) || record.offset !== position) throw new Error('音频分片顺序错误');
                 if (!bytes) {
                     if (!Number.isSafeInteger(file.size) || file.size < 0) throw new Error('无效音频长度');
                     bytes = new Uint8Array(file.size);
+                    current = file.path;
                 }
                 var raw = root.atob(record.base64);
                 if (position + raw.length > bytes.length) throw new Error('音频长度超限');
@@ -138,15 +157,16 @@
                 var written = buffer(await game.promises.readFile(target));
                 if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
                 hashes[file.path] = file.sha256;
-                index++; position = 0; bytes = null;
-                if (options.onProgress) options.onProgress(index, manifest.files.length);
+                needed.delete(file.path);
+                index++; position = 0; bytes = null; current = null;
+                if (options.onProgress) options.onProgress(index, total);
                 // Let the browser paint progress during long voice-pack installations.
                 await new Promise(function (resolve) { root.setTimeout(resolve, 0); });
             }
         }
-        if (index !== manifest.files.length || bytes) throw new Error('音频数据包不完整');
+        if (needed.size || bytes) throw new Error('音频数据包不完整');
         storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
-        return true;
+        return index > 0;
     }
     function prepare(meta, lib, game) {
         if (pending.has(meta.name)) return pending.get(meta.name);
@@ -175,7 +195,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 3, sha256: sha256, install: install, prepare: prepare,
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
                 var object = factory.apply(this, arguments);
@@ -192,22 +212,30 @@
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦","sha256":"30f3d1b641b40f2ec9fd459c95e73e6d822dbaa39a4faf23823803dfe042a039"}, function(lib, game, ui, get, ai, _status) {
+game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦","sha256":"3b58b60369d107d8a00b154dedaaf7b9825bd432440263d4a07e8734874f85e6"}, function(lib, game, ui, get, ai, _status) {
     'use strict';
     const menuTrack='ext:轮回遗梦/audio/bgm/yuJianJiangHu.mp3';
     const sharedMenuKey='lhym_suMing_menu_random';
     const sharedMenuTracks=['ext:宿命挽歌/audio/bgm/yunGuHeFeng.mp3',menuTrack];
     lib.lhymMenuMusicKey=sharedMenuKey;
     lib.lhymBattleMusic={
-        chooseTrack:function(){
+        tracks:function(){
+            const tracks=[];
             const matches=(id)=>game.hasPlayer(p=>p.isIn()&&[p.name,p.name1,p.name2].includes(id));
-            if(matches('jingTian'))return 'ext:轮回遗梦/audio/bgm/yuManTang.mp3';
+            const add=(src)=>{if(!tracks.includes(src))tracks.push(src);};
+            if(matches('jingTian'))add('ext:轮回遗梦/audio/bgm/yuManTang.mp3');
             if(matches('longKui')){
                 const red=game.hasPlayer(p=>p.isIn()&&[p.name,p.name1,p.name2].includes('longKui')&&p.storage.lhym_red===true);
-                return 'ext:轮回遗梦/audio/bgm/'+(red?'zhuShaBian':'qingYuAn')+'.mp3';
+                add('ext:轮回遗梦/audio/bgm/'+(red?'zhuShaBian':'qingYuAn')+'.mp3');
             }
-            if(matches('xueJian'))return 'ext:轮回遗梦/audio/bgm/huanHunCao.mp3';
-            return null;
+            if(matches('xueJian'))add('ext:轮回遗梦/audio/bgm/huanHunCao.mp3');
+            if(matches('xieLing'))add('ext:轮回遗梦/audio/bgm/linWeiBianDiao.mp3');
+            else if(matches('xieJianXian'))add('ext:轮回遗梦/audio/bgm/linWei.mp3');
+            return tracks;
+        },
+        chooseTrack:function(){
+            const tracks=this.tracks();
+            return tracks.length?tracks[Math.floor(Math.random()*tracks.length)]:null;
         },
         playTrack:function(src){
             game.broadcastAll(function(track){
@@ -369,24 +397,46 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
         enemies(p) { return game.filterPlayer(t => t.side !== p.side); },
         team(p) { return game.filterPlayer(t => t.side === p.side); },
         souls(p) { return p.getExpansions('lhym_soul'); },
-        setPortrait(p, file, character='jingTian') {
-            game.broadcastAll(function(target, image, characterId) {
+        setPortrait(p, file, character='jingTian', fade=false) {
+            game.broadcastAll(function(target, image, characterId, withFade) {
                 const setNode = function(node) {
                     if(node) node.setBackgroundImage('extension/轮回遗梦/' + image);
                 };
-                let activeNode;
+                const nodes=[];
                 if(target.name === characterId || target.name1 === characterId) {
-                    activeNode=target.node?.avatar;
-                    setNode(activeNode);
+                    if(target.node?.avatar) nodes.push(target.node.avatar);
                 }
                 if(target.name2 === characterId) {
-                    activeNode=target.node?.avatar2;
-                    setNode(activeNode);
+                    if(target.node?.avatar2) nodes.push(target.node.avatar2);
                 }
-                if(target === game.me && ui.fakeme && activeNode) {
-                    ui.fakeme.style.backgroundImage = activeNode.style.backgroundImage;
+                const syncFake=function(node) {
+                    if(target === game.me && ui.fakeme && node) {
+                        ui.fakeme.style.backgroundImage=node.style.backgroundImage;
+                    }
+                };
+                if(!withFade) {
+                    nodes.forEach(function(node){setNode(node);syncFake(node);});
+                    return;
                 }
-            }, p, file, character);
+                nodes.forEach(function(node) {
+                    const token=(node._lhymPortraitFadeToken||0)+1;
+                    node._lhymPortraitFadeToken=token;
+                    node.style.transition='opacity 140ms ease-in';
+                    node.style.opacity='0';
+                    setTimeout(function() {
+                        if(node._lhymPortraitFadeToken!==token) return;
+                        setNode(node);
+                        syncFake(node);
+                        node.style.transition='opacity 220ms ease-out';
+                        node.style.opacity='1';
+                        setTimeout(function() {
+                            if(node._lhymPortraitFadeToken!==token) return;
+                            node.style.removeProperty('transition');
+                            node.style.removeProperty('opacity');
+                        },230);
+                    },145);
+                });
+            }, p, file, character, fade);
         },
         material(card, face) {
             const [element, side] = face.split('_');
@@ -728,7 +778,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
         },
         lhym_actionVoice:{
             trigger:{player:['gouMai','heCheng','tiLian','_tiLian_backupAfter']},forced:true,popup:false,charlotte:true,firstDo:true,
-            filter:function(event,player){return [player.name,player.name1,player.name2].some(function(id){return id==='jingTian'||id==='xueJian'||id==='longKui';});},
+            filter:function(event,player){return [player.name,player.name1,player.name2].some(function(id){return id==='jingTian'||id==='xueJian'||id==='longKui'||id==='xieJianXian'||id==='xieLing';});},
             content:function(event,trigger,player){
                 var action=event.triggername||trigger.name;
                 var ids=[player.name,player.name1,player.name2];
@@ -745,6 +795,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                     lib.lhymVoice.say(player,'xueJian/'+action,event);
                 }else if(ids.includes('longKui')){
                     lib.lhymVoice.say(player,'longKui/'+action+'_'+(lib.lhymCompanion.red(player)?'red':'blue'),event);
+                }else if(ids.includes('xieJianXian')||ids.includes('xieLing')){
+                    lib.lhymVoice.say(player,'xieJianXian/'+action,event);
                 }
             },
         },
@@ -1290,17 +1342,26 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             },p,red,C.blueSkills,C.redSkills);
         },
         form(p,red){
+            const switching=typeof p.storage.lhym_red==='boolean'&&p.storage.lhym_red!==red;
             p.storage.lhym_red=red;p.syncStorage('lhym_red');
             if(p.marks?.lhym_jianZhongRen)p.unmarkSkill('lhym_jianZhongRen');
-            H.setPortrait(p,red?'longKui_red.png':'longKui_blue.png','longKui');
+            H.setPortrait(p,red?'longKui_red.png':'longKui_blue.png','longKui',switching);
             C.refreshBond(p);
         },
         holder(p){return game.players.find(t=>t.playerid===p.storage.lhym_flowerHolder)||p;},
+        refreshFlower(p){
+            if(!p)return;
+            const holder=C.holder(p);
+            if(holder&&holder.isIn&&holder.isIn()&&holder.hasSkill('lhym_flowerGuest')){
+                holder.markSkill('lhym_flowerGuest');
+            }
+        },
         move(p,t){
             const old=C.holder(p);if(old!==t&&[t.name,t.name1,t.name2].includes('jingTian'))V.say(p,'xueJian/flower',_status.event);
             old.unmarkSkill('lhym_flowerGuest');
             p.storage.lhym_flowerHolder=t.playerid;p.syncStorage('lhym_flowerHolder');
             t.storage.lhym_flowerGuest=p.playerid;t.syncStorage('lhym_flowerGuest');t.markSkill('lhym_flowerGuest');
+            C.refreshFlower(p);
             game.log(p,'将【花楹】移至',t);
         },
         jing(p,weapon){return game.players.filter(t=>t!==p&&t.side===p.side&&H.state(t).weapon===weapon);},
@@ -1311,7 +1372,12 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
         async friend(p,prompt){return (await p.chooseTarget(prompt,true,(c,p,t)=>t.side===p.side)
             .set('ai',t=>Math.max(0,t.getZhiLiaoLimit()-(t.zhiLiao||0))+t.countCards('h')*.1).forResultTargets()||[])[0];},
         async healMove(p,n){const t=await C.friend(p,'选择花楹的新持有者');if(t){C.move(p,t);await t.changeZhiLiao(n,p);}},
-        async spend(p,cards,tag){if(!cards.length)return;await p.showCards(cards);await p.loseToDiscardpile(cards);},
+        async spend(p,cards,tag){
+            if(!cards.length)return;
+            await p.showCards(cards);
+            await p.loseToDiscardpile(cards);
+            if(tag==='lhym_huaLu')C.refreshFlower(p);
+        },
         async counter(p,e,card){
             const targets=await p.chooseTarget('魔剑护体：选择应战目标',true,(c,p,t)=>t.side!==p.side&&t.playerid!==_status.event.lhymExcluded&&lib.filter.targetEnabled(_status.event.lhymCard,p,t))
                 .set('lhymExcluded',e.player.playerid).set('lhymCard',card).set('ai',t=>-t.countCards('h')).forResultTargets()||[];
@@ -1321,7 +1387,467 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             await next;if(p.isIn())C.form(p,true);
         },
     };
+    V.files.push(
+        ...['wuXie','wuXie_gain','liuJie','chuQiao','liHun','jieXing','xieJian','sheXin','miTian','wuXing','qinTi','gouMai','heCheng','tiLian']
+            .map(name=>'audio/skill/xieJianXian/'+name+'.mp3')
+    );
+    const X=lib.lhymXieJianXian={
+        isCharacter(p,id){return !!p&&[p.name,p.name1,p.name2].includes(id);},
+        syncThoughtMark(p){
+            if(!p)return;
+            game.broadcastAll(function(target){
+                if(!target)return;
+                if(target.hasSkill&&target.hasSkill('lhym_xieNian')){
+                    target.markSkill('lhym_xieNian');
+                }else if(target.unmarkSkill){
+                    target.unmarkSkill('lhym_xieNian');
+                }
+            },p);
+        },
+        isBasicTag(tag){
+            if(!tag)return false;
+            if(lib.skill[tag]?.tag?.jiChuXiaoGuo)return true;
+            return Object.values(game.jiChuXiaoGuo||{}).some(list=>Array.isArray(list)&&list.includes(tag));
+        },
+        thought(p){return p?.countZhiShiWu?.('lhym_xieNian')||0;},
+        // Shared, read-only AI estimates. Never call get.effect here: these methods
+        // also run from effect.player and would recurse through the same skill.
+        ai:{
+            manual(p){
+                return !!(p.isOnline?.()||(p.isUnderControl?.(true)&&!_status.auto));
+            },
+            people(){return game.players.filter(t=>t.isIn());},
+            sign(p,t){return p.side===t.side?1:-1;},
+            thoughts(p){return lib.lhymXieJianXian.thought(p);},
+            attacks(p,exclude){
+                return p.getCards('h').filter(c=>c!==exclude&&get.type(c)==='gongJi'&&
+                    lib.filter.cardEnabled(c,p)&&game.players.some(t=>t.isIn()&&t.side!==p.side&&p.canUseXingBei(c,t)));
+            },
+            bonus(n,spell=true){return (n>30?1:0)+(n>(spell?15:10)?1:0);},
+            value(p,n,viewer=p){
+                const A=lib.lhymXieJianXian.ai;
+                n=Math.max(0,Math.min(99,n));
+                // Only inspect our own cards; another player's hand size is public.
+                const own=p===viewer;
+                const attacks=own?A.attacks(p).length:Math.min(2,p.countCards('h'));
+                const fresh=!p.storage.lhym_xieNianFirstAttackUsed||_status.currentPhase!==p;
+                let v=n*.12;
+                if(n>5)v+=attacks?(fresh?2.8:.8):.4;
+                if(n>10)v+=attacks?2+Math.min(2,attacks)*.7:.6;
+                if(n>15)v+=2.8;
+                if(n>20)v+=attacks>1?3:1;
+                const next=n-(p.hasSkill('lhym_wuXingWuZhi')?1:0);
+                if(next>25)v+=p.countEmptyNengLiang()>0?2: .6;
+                if(n>30)v+=3.5;
+                if(p.hasSkill('lhym_xieLingQinTi')){
+                    v+=Math.min(n,6)*.35;
+                    if(next>5)v+=2; // A rescue can pay five and retain the skill.
+                }
+                return v;
+            },
+            delta(p,from,to,viewer=p){return lib.lhymXieJianXian.ai.value(p,to,viewer)-lib.lhymXieJianXian.ai.value(p,from,viewer);},
+            snapshot(){
+                const people=lib.lhymXieJianXian.ai.people();
+                const state=new Map(people.map(t=>[t,{hand:t.countCards('h'),heal:t.zhiLiao||0,thought:lib.lhymXieJianXian.thought(t)}]));
+                state.morale=new Map(people.map(t=>[t.side,get.shiQi(t.side)]));
+                return state;
+            },
+            damage(p,t,n,state,bonus=0){
+                if(n<=0)return 0;
+                const A=lib.lhymXieJianXian.ai, s=state.get(t);
+                if(!s)return 0;
+                // Core treatment precedes chengShouShangHaiBefore. Thought bonus
+                // only applies if damage remains, then LiHun reduces it by one.
+                const heal=Math.min(s.heal,n);
+                s.heal-=heal;
+                n-=heal;
+                if(n>0)n+=bonus;
+                if(n>=2&&s.thought>0&&t.hasSkill('lhym_xieQiLiHun')){
+                    n--;
+                    if(t!==p){s.thought--;state.get(p).thought=Math.min(99,state.get(p).thought+1);}
+                }
+                const actual=Math.max(0,n);
+                const spill=Math.max(0,s.hand+actual-t.getHandcardLimit());
+                s.hand=Math.min(t.getHandcardLimit(),s.hand+actual);
+                // Conservative: do not assume a complete QinTi rescue chain in estimates.
+                let cost=actual*.25+heal*.2+spill*2.5;
+                if(t.hasSkillTag('noShiQiXiaJiang'))cost=actual*.15+heal*.2;
+                else if(spill>0){
+                    const morale=state.morale.get(t.side);
+                    if(spill>=morale)cost+=30;
+                    else if(morale<=7)cost*=1.6;
+                    state.morale.set(t.side,Math.max(0,morale-spill));
+                }
+                return -A.sign(p,t)*cost;
+            },
+            basic(p,t,name,state,sourceThought){
+                const A=lib.lhymXieJianXian.ai;
+                if(t.hasSkill('lhym_liuJieZhiWai')||t.hasSkill('lhym_wuXingWuZhi'))return 0;
+                if(name==='zhongDu')return .8*A.damage(p,t,1,state,A.bonus(sourceThought));
+                if(name==='xuRuo'){
+                    if(t.hasJiChuXiaoGuo('_xuRuo'))return 0;
+                    const room=t.getHandcardLimit()-state.get(t).hand;
+                    // Weakness can refill an empty hand, or cost the action phase.
+                    const cost=room>=3?(state.get(t).hand<=1?-.6:.2):1.8;
+                    return -A.sign(p,t)*cost;
+                }
+                return 0;
+            },
+            hit(p,t,c,n,afterFirst=false){
+                if(!p.canUseXingBei(c,t))return 0;
+                if(t.hasJiChuXiaoGuo('_shengDun'))return .15;
+                const unavoidable=n>20||(n>5&&!afterFirst&&!p.storage.lhym_xieNianFirstAttackUsed)||get.name(c)==='anMie';
+                // Unanswerable attacks can still be stopped by Holy Light/shields.
+                return unavoidable?.9:Math.max(.25,.75-t.countCards('h')*.05);
+            },
+            nextAttack(p,n,exclude,afterFirst=false){
+                const A=lib.lhymXieJianXian.ai;
+                return Math.max(0,...A.attacks(p,exclude).flatMap(c=>A.people().filter(t=>t.side!==p.side).map(t=>
+                    A.hit(p,t,c,n,afterFirst)*A.damage(p,t,2,A.snapshot(),A.bonus(n,false)))));
+            },
+            slash(p,t,exclude){
+                const A=lib.lhymXieJianXian.ai,old=A.thoughts(p),count=A.thoughts(t);
+                if(!count)return -100;
+                const n=Math.min(99,old+(t===p?0:1)),enhanced=t===p||count>1;
+                const state=A.snapshot();state.get(p).thought=n;
+                if(t!==p)state.get(t).thought--;
+                const damage=enhanced?2:1;
+                const dealt=A.damage(p,t,damage,state,A.bonus(n));
+                let score=dealt+A.delta(p,old,n);
+                if(t!==p)score+=A.sign(p,t)*A.delta(t,count,count-1,p);
+                const follow=enhanced?A.nextAttack(p,n,exclude,true):0;
+                // Existing attack actions already cover some/all remaining cards.
+                const action=_status.event?.getParent?.('xingDong',true);
+                // xingDong decrements the current action AFTER attack responses.
+                const pending=action&&!action.extraXingDong&&['gongJi','gongJiOrFaShu'].includes(action.xingDong)?1:0;
+                const spare=Math.max(0,(p.storage.gongJi||0)+(p.storage.gongJiOrFaShu||0)-pending);
+                const cards=A.attacks(p,exclude).length;
+                const extra=cards>spare?follow*.9:0;
+                if(t===p){
+                    const remaining=Math.max(0,damage-(p.zhiLiao||0));
+                    const boosted=remaining>0?remaining+A.bonus(n):0;
+                    const actual=boosted>=2?boosted-1:boosted;
+                    if(!extra||p.countCards('h')+actual>p.getHandcardLimit()||get.shiQi(p.side)<=7)return -100;
+                    if(extra+dealt<=1)return -100;
+                    score-=1;
+                }
+                return score+extra;
+            },
+            recover(p,c){
+                const A=lib.lhymXieJianXian.ai,n=A.thoughts(p);
+                if(!n||p.countCards('h')+1>p.getHandcardLimit())return -100;
+                const spells=p.getCards('h').filter(c=>get.type(c)==='faShu');
+                const name=get.name(c,p),unique=!spells.some(s=>get.name(s,p)===name);
+                const usable=lib.filter.cardEnabled(c,p)&&A.people().some(t=>p.canUseXingBei(c,t));
+                let score=(usable?Math.max(0,get.value(c,p))*.35:0)-1.3+A.delta(p,n,n-1);
+                if(A.isBasic(c)&&p.hasSkill('lhym_liuJieZhiWai')&&p.canUseXingBei(c,p))score+=.9;
+                if(p.canBiShaShuiJing()&&A.sheXin(p,spells.concat(c))>0)score+=unique?1.1:spells.length===2?.6:0;
+                return score;
+            },
+            isBasic(c){return !!c&&typeof c==='object'&&Object.values(game.jiChuXiaoGuo||{}).some(list=>Array.isArray(list)&&list.includes(get.name(c)));},
+            sheXin(p,cards){
+                const A=lib.lhymXieJianXian.ai;
+                cards=cards||p.getCards('h').filter(c=>get.type(c)==='faShu');
+                if(!cards.length||!p.canBiShaShuiJing())return -100;
+                const rounds=new Set(cards.map(c=>get.name(c,p))).size,weak=cards.length>2?1:0;
+                const old=A.thoughts(p),human=p.hasSkill('lhym_liuJieZhiWai');
+                const n=Math.min(99,old+(human?2*(rounds+weak):0));
+                const state=A.snapshot();state.get(p).hand-=cards.length;state.get(p).thought=n;
+                // Startup preserves the normal attack/spell action; favour using
+                // available material instead of waiting indefinitely for more names.
+                let score=-.8-(p.countNengLiang('shuiJing')?0:.4);
+                score-=cards.reduce((v,c)=>v+Math.max(0,get.value(c,p))*.15,0);
+                score+=Math.min(cards.length,Math.max(0,p.countCards('h')-p.getHandcardLimit()+2))*.35;
+                const returned=human?Math.min(rounds+weak,Math.max(0,p.countEmptyNengLiang()+1)):0;
+                if(human){
+                    score+=A.delta(p,old,n);
+                    score+=returned*1.5;
+                }
+                for(let i=0;i<rounds;i++)for(const t of A.people())score+=A.basic(p,t,'zhongDu',state,n);
+                if(weak)for(const t of A.people())score+=A.basic(p,t,'xuRuo',state,n);
+                if(state.morale.get(p.side)<=0)return -100;
+                const gem=p.countNengLiang('baoShi')-(p.countNengLiang('shuiJing')>0?0:1)+returned;
+                // _qiDong disables special actions, so do not discard the only
+                // actionable cards and then rely on purchase/refine/synthesis.
+                if(!A.attacks(p).length&&A.miTian(p,{thought:n,gem,hand:Math.max(0,p.countCards('h')-cards.length)})<=0)return -100;
+                return score+(human?1.5:1);
+            },
+            miTian(p,preview){
+                const A=lib.lhymXieJianXian.ai,others=A.people().filter(t=>t!==p&&A.thoughts(t)>0);
+                if(!(preview?preview.gem>0:p.canBiShaBaoShi())||!others.length)return -100;
+                const old=preview?preview.thought:A.thoughts(p),n=Math.min(99,old+others.reduce((v,t)=>v+A.thoughts(t),0));
+                const state=A.snapshot();state.get(p).thought=n;
+                if(preview)state.get(p).hand=preview.hand;
+                for(const t of others)state.get(t).thought=0;
+                const action=_status.event?.getParent?.('xingDong',true);
+                const dedicated=action?.xingDong==='faShu'||(!action&&p.storage.faShu>0);
+                const remainingAttacks=(p.storage.gongJi||0)+Math.max(0,(p.storage.gongJiOrFaShu||0)-(dedicated?0:1));
+                // Banking the 11-thought attack tier is not an immediate attack:
+                // paying for recall usually consumes this turn's common action.
+                const resourceWeight=remainingAttacks>0&&A.attacks(p).length?1:.35;
+                let score=A.delta(p,old,n)*resourceWeight-2;
+                for(const t of others){
+                    const count=A.thoughts(t);
+                    score+=A.sign(p,t)*A.delta(t,count,0,p);
+                    score+=A.damage(p,t,Math.min(3,count),state,A.bonus(n));
+                    if(count>2)score+=A.basic(p,t,'zhongDu',state,n);
+                    if(count>4)score+=A.basic(p,t,'xuRuo',state,n);
+                }
+                // Compare the immediate attack chain against recalling first. A
+                // dedicated spell action need not compete with an attack action.
+                if(!(p.storage.faShu>0)){
+                    const attack=A.nextAttack(p,old);
+                    const chain=Math.max(0,...others.filter(t=>t.side!==p.side&&A.thoughts(t)>1).map(t=>A.slash(p,t)));
+                    score-=Math.min(5,attack+chain*.5);
+                    if(!p.storage.lhym_xieNianFirstAttackUsed&&old<=5&&n>5)score+=A.nextAttack(p,n);
+                }
+                if((p.hasSkill('lhym_xieLingChuQiao')&&get.shiQi(p.side)<=9)||
+                    (p.hasSkill('lhym_xieLingQinTi')&&get.shiQi(p.side)<=2))score-=1.5;
+                return score;
+            },
+        },
+        async add(p,n=1){
+            if(!p?.isIn?.()||n<=0)return;
+            if(!p.hasSkill('lhym_xieNian'))p.addSkill('lhym_xieNian');
+            await p.addZhiShiWu('lhym_xieNian',n);
+            lib.lhymXieJianXian.syncThoughtMark(p);
+        },
+        async remove(p,n=1){
+            const count=Math.min(n,lib.lhymXieJianXian.thought(p));
+            if(count>0){
+                await p.removeZhiShiWu('lhym_xieNian',count);
+                lib.lhymXieJianXian.syncThoughtMark(p);
+            }
+            return count;
+        },
+        async move(from,to,n=1){
+            const count=await lib.lhymXieJianXian.remove(from,n);
+            if(count>0)await lib.lhymXieJianXian.add(to,count);
+            return count;
+        },
+        async effect(source,name,target){
+            if(!source?.isIn?.()||!target?.isIn?.())return;
+            const card=game.createCard(name);
+            await source.useCard(card,target,false);
+            card.destroyed='discardPile';
+        },
+        async miTian(player,free=false){
+            if(!player?.isIn?.())return false;
+            if(!free){
+                if(!player.canBiShaBaoShi())return false;
+                await player.removeBiShaBaoShi();
+            }
+            lib.lhymVoice.say(player,'xieJianXian/miTian',_status.event);
+            const records=[];
+            for(const target of game.players.filter(t=>t!==player&&t.isIn()).sortBySeat(player)){
+                const count=lib.lhymXieJianXian.thought(target);
+                if(count>0){records.push([target,count]);await lib.lhymXieJianXian.move(target,player,count);}
+            }
+            for(const [target,count] of records){
+                if(!target.isIn())continue;
+                await target.faShuDamage(Math.min(3,count),player,'nocard');
+                if(target.isIn()&&count>2)await lib.lhymXieJianXian.effect(player,'zhongDu',target);
+                if(target.isIn()&&count>4)await lib.lhymXieJianXian.effect(player,'xuRuo',target);
+            }
+            return true;
+        },
+    };
     Object.assign(skill,{
+        lhym_xieNian:{
+            mark:true,
+            marktext:'邪',
+            markimage:'extension/轮回遗梦/mark_xieNian.png',
+            intro:{
+                name:'专属【邪念】',
+                max:99,
+                markcount:function(storage,player){
+                    return player&&player.countZhiShiWu ? player.countZhiShiWu('lhym_xieNian') : 0;
+                },
+                content:function(storage,player){
+                    var count=player&&player.countZhiShiWu ? player.countZhiShiWu('lhym_xieNian') : 0;
+                    return '当前持有'+count+'枚【邪念】<br>'+
+                        '＞5：每回合首次主动攻击无法应战<br>'+
+                        '＞10：攻击伤害+1<br>'+
+                        '＞15：法术伤害+1<br>'+
+                        '＞20：攻击无法应战<br>'+
+                        '＞25：回合开始时+1【宝石】<br>'+
+                        '＞30：所有伤害额外+1';
+                },
+            },
+            group:['lhym_xieNian_attack','lhym_xieNian_damage','lhym_xieNian_phase'],
+            ai:{effect:{player:function(card,player,target){
+                if(!card||typeof card!=='object'||get.type(card)!=='gongJi'||!target||target.side===player.side||
+                    _status.currentPhase!==player||_status.event?.yingZhan||_status.event?.getParent?.('_yingZhan',true))return;
+                const A=lib.lhymXieJianXian.ai,n=A.thoughts(player);
+                const damage=A.damage(player,target,2,A.snapshot(),A.bonus(n,false));
+                const base=A.damage(player,target,2,A.snapshot());
+                const follow=player.hasSkill('lhym_xieJianZhan')?Math.max(0,...A.people().map(t=>A.slash(player,t,card))):0;
+                return [1,Math.max(0,(damage-base)+follow*.65)*A.hit(player,target,card,n)];
+            }}},
+            subSkill:{
+                attack:{
+                    trigger:{player:'gongJiSheZhi'},forced:true,popup:false,priority:30,
+                    filter:(e,p)=>!e.yingZhan||lib.lhymXieJianXian.thought(p)>20,
+                    content:function(event,trigger,player){
+                        const active=!trigger.yingZhan;
+                        if(lib.lhymXieJianXian.thought(player)>20||(active&&lib.lhymXieJianXian.thought(player)>5&&!player.storage.lhym_xieNianFirstAttackUsed))trigger.wuFaYingZhan();
+                        if(active){player.storage.lhym_xieNianFirstAttackUsed=true;player.syncStorage('lhym_xieNianFirstAttackUsed');}
+                    },
+                },
+                damage:{
+                    trigger:{global:'chengShouShangHaiBefore'},forced:true,popup:false,priority:20,
+                    filter:(e,p)=>e.source===p&&e.num>0&&lib.lhymXieJianXian.thought(p)>10,
+                    content:function(event,trigger,player){
+                        const count=lib.lhymXieJianXian.thought(player);
+                        let bonus=count>30?1:0;
+                        if(trigger.faShu===true){if(count>15)bonus++;}
+                        else bonus++;
+                        if(bonus>0)trigger.changeDamageNum(bonus);
+                    },
+                },
+                phase:{
+                    trigger:{player:'phaseBegin'},forced:true,popup:false,priority:30,
+                    content:async function(event,trigger,player){
+                        delete player.storage.lhym_xieNianFirstAttackUsed;player.syncStorage('lhym_xieNianFirstAttackUsed');
+                        if(lib.lhymXieJianXian.thought(player)>25)await player.addNengLiang('baoShi',1);
+                    },
+                },
+            },
+        },
+        lhym_wuXieJuXing:{
+            trigger:{global:['gameStart','changeShiQiEnd']},forced:true,
+            filter:(e,p)=>{
+                if(_status.event?.triggername==='gameStart'||e.name==='gameStart')return !p.storage.lhym_wuXieStarted;
+                return e.num<0&&e.cause==='damage'&&e.player?.isIn?.()&&e.source?.isIn?.();
+            },
+            content:async function(event,trigger,player){
+                if(event.triggername==='gameStart'||trigger.name==='gameStart'){
+                    player.storage.lhym_wuXieStarted=true;player.syncStorage('lhym_wuXieStarted');
+                    lib.lhymVoice.say(player,'xieJianXian/wuXie',event);await lib.lhymXieJianXian.add(player,5);return;
+                }
+                lib.lhymVoice.say(player,'xieJianXian/wuXie_gain',event);await lib.lhymXieJianXian.add(trigger.source,1);await lib.lhymXieJianXian.add(trigger.player,1);
+            },
+        },
+        lhym_liuJieZhiWai:{
+            trigger:{player:'addJiChuXiaoGuoBefore'},forced:true,priority:20,
+            ai:{effect:{target:function(card,player,target){
+                const A=lib.lhymXieJianXian.ai;
+                if(!A.isBasic(card))return;
+                const n=A.thoughts(target);
+                return [0,A.delta(target,n,Math.min(99,n+2),player),1,player.countEmptyNengLiang()>0?1.2:0];
+            }}},
+            filter:(e,p)=>lib.lhymXieJianXian.isBasicTag(e.jiChuXiaoGuo||e.gaintag?.[0]),
+            content:async function(event,trigger,player){
+                lib.lhymVoice.say(player,'xieJianXian/liuJie',event);const source=trigger.source;trigger.cancel();await lib.lhymXieJianXian.add(player,2);
+                if(source?.isIn?.())await source.addNengLiang('baoShi',1);
+            },
+        },
+        lhym_xieLingChuQiao:{
+            trigger:{global:'changeShiQiEnd'},forced:true,lastDo:true,
+            filter:(e,p)=>!p.storage.lhym_xieLingChanged&&e.num<0&&e.side===p.side&&get.shiQi(p.side)<=7,
+            content:async function(event,trigger,player){
+                lib.lhymVoice.say(player,'xieJianXian/chuQiao',event);
+                player.storage.lhym_xieLingChanged=true;player.syncStorage('lhym_xieLingChanged');
+                await player.reinitCharacter('xieJianXian','xieLing');
+                if(!player.hasSkill('lhym_xieNian'))player.addSkill('lhym_xieNian');
+                lib.lhymBattleMusic.playTrack('ext:轮回遗梦/audio/bgm/linWeiBianDiao.mp3');
+                await lib.lhymXieJianXian.miTian(player,true);
+            },
+        },
+        lhym_xieQiLiHun:{
+            trigger:{player:'chengShouShangHaiBefore'},forced:true,
+            filter:(e,p)=>e.num>=2&&e.source?.isIn?.()&&lib.lhymXieJianXian.thought(p)>0,
+            content:async function(event,trigger,player){
+                if(await lib.lhymXieJianXian.move(player,trigger.source,1)){lib.lhymVoice.say(player,'xieJianXian/liHun',event);trigger.changeDamageNum(-1);}
+            },
+        },
+        lhym_jieXingQiShi:{
+            trigger:{global:'useCardAfter'},direct:true,usable:1,
+            filter:(e,p)=>e.player!==p&&get.type(e.card)==='faShu'&&lib.lhymXieJianXian.thought(p)>0&&e.cards?.some(c=>get.position(c,true)==='d'&&get.type(c)==='faShu'),
+            content:async function(event,trigger,player){
+                const pool=trigger.cards.filter(c=>get.position(c,true)==='d'&&get.type(c)==='faShu');
+                const cards=pool.length===1?pool:await player.chooseCardButton(pool,'借形欺世：选择取得的实体法术牌',1)
+                    .set('ai',b=>lib.lhymXieJianXian.ai.recover(_status.event.player,b.link)).forResultLinks()||[];
+                if(!cards.length||!await player.chooseBool('移除1【邪念】，获得'+get.translation(cards[0])+'？')
+                    .set('lhymRecoverScore',lib.lhymXieJianXian.ai.recover(player,cards[0]))
+                    .set('ai',()=>_status.event.lhymRecoverScore>0).forResultBool())return;
+                if(get.position(cards[0],true)!=='d'||!await lib.lhymXieJianXian.remove(player,1))return;
+                player.logSkill('lhym_jieXingQiShi',trigger.player);lib.lhymVoice.say(player,'xieJianXian/jieXing',event);await player.gain(cards[0],'gain2');
+            },
+        },
+        lhym_xieJianZhan:{
+            trigger:{source:'gongJiMingZhong'},direct:true,
+            filter:(e,p)=>!e.yingZhan&&game.hasPlayer(t=>t.isIn()&&lib.lhymXieJianXian.thought(t)>0),
+            content:async function(event,trigger,player){
+                const targets=await player.chooseTarget('邪剑斩：选择一名角色，收回其1【邪念】并对其造成法术伤害',
+                    (card,p,target)=>target.isIn()&&lib.lhymXieJianXian.thought(target)>0)
+                    .set('ai',target=>lib.lhymXieJianXian.ai.slash(_status.event.player,target))
+                    .forResultTargets()||[];
+                const target=targets[0];
+                if(!target||!await lib.lhymXieJianXian.move(target,player,1))return;
+                player.logSkill('lhym_xieJianZhan',target);lib.lhymVoice.say(player,'xieJianXian/xieJian',event);
+                const enhanced=lib.lhymXieJianXian.thought(target)>0;
+                await target.faShuDamage(enhanced?2:1,player,'nocard');
+                if(enhanced&&player.isIn())player.addGongJi();
+            },
+        },
+        lhym_sheXinShu:{
+            type:'qiDong',trigger:{player:'qiDong'},
+            filter:(e,p)=>p.canBiShaShuiJing()&&p.countCards('h',c=>get.type(c)==='faShu')>0,
+            check:(e,p)=>lib.lhymXieJianXian.ai.sheXin(p)>0,
+            content:async function(event,trigger,player){
+                const cards=player.getCards('h',c=>get.type(c)==='faShu');
+                if(!cards.length)return;
+                lib.lhymVoice.say(player,'xieJianXian/sheXin',event);await player.removeBiShaShuiJing();await player.discard(cards);
+                const names=Array.from(new Set(cards.map(c=>get.name(c,player))));
+                for(let i=0;i<names.length;i++)for(const target of game.players.filter(t=>t.isIn()).sortBySeat(player))await lib.lhymXieJianXian.effect(player,'zhongDu',target);
+                if(cards.length>2)for(const target of game.players.filter(t=>t.isIn()).sortBySeat(player))await lib.lhymXieJianXian.effect(player,'xuRuo',target);
+            },ai:{shuiJing:true,order:5,result:{player:p=>lib.lhymXieJianXian.ai.sheXin(p)}},
+        },
+        lhym_xieLingMiTian:{
+            type:'faShu',enable:'faShu',filter:function(e,p){
+                if(!p.canBiShaBaoShi())return false;
+                const A=lib.lhymXieJianXian.ai;
+                // Both AI packs add 100000 to ai1/ai2. Non-positive order/result
+                // is not a veto there; remove the candidate before scoring it.
+                return A.manual(p)||A.miTian(p)>0;
+            },
+            content:async function(event,trigger,player){await lib.lhymXieJianXian.miTian(player,false);},
+            ai:{baoShi:true,order:(item,p)=>lib.lhymXieJianXian.ai.miTian(p)>0?6:0,
+                result:{player:p=>lib.lhymXieJianXian.ai.miTian(p)}},
+        },
+        lhym_wuXingWuZhi:{
+            forced:true,group:['lhym_wuXingWuZhi_cancel','lhym_wuXingWuZhi_end'],
+            ai:{effect:{target:function(card){if(lib.lhymXieJianXian.ai.isBasic(card))return 'zerotarget';}}},
+            subSkill:{
+                cancel:{trigger:{player:'addJiChuXiaoGuoBefore'},forced:true,priority:20,filter:(e,p)=>lib.lhymXieJianXian.isBasicTag(e.jiChuXiaoGuo||e.gaintag?.[0]),content:function(event,trigger,player){lib.lhymVoice.say(player,'xieJianXian/wuXing',event);trigger.cancel();}},
+                end:{trigger:{player:'phaseEnd'},forced:true,lastDo:true,filter:(e,p)=>lib.lhymXieJianXian.thought(p)>0,content:async function(event,trigger,player){await lib.lhymXieJianXian.remove(player,1);}},
+            },
+        },
+        lhym_xieLingQinTi:{
+            trigger:{global:'changeShiQiBefore'},forced:true,priority:30,
+            filter:(e,p)=>e.side===p.side&&e.num<0&&get.shiQi(p.side)+e.num<=0,
+            content:async function(event,trigger,player){
+                // 队友爆牌优先保底1士气，不消耗侵体的邪念与恢复次数。
+                if(trigger.baoPai===true&&trigger.player&&trigger.player!==player&&trigger.player.side===player.side){
+                    trigger.num=Math.min(0,1-get.shiQi(player.side));
+                    return;
+                }
+                trigger.num=0;
+                // 免费祢天可触发反伤；外层尚未回血时只保命，不递归再开祢天。
+                if(player._lhymQinTiResolving)return;
+                player._lhymQinTiResolving=true;
+                try{
+                    lib.lhymVoice.say(player,'xieJianXian/qinTi',event);
+                    await lib.lhymXieJianXian.miTian(player,true);
+                    await lib.lhymXieJianXian.remove(player,5);
+                    await player.addShiQi(5);
+                    if(lib.lhymXieJianXian.thought(player)===0)player.removeSkill('lhym_xieLingQinTi');
+                }finally{
+                    delete player._lhymQinTiResolving;
+                }
+            },
+        },
         lhym_suYuan:{},
         lhym_shenShuZhaoDan:{trigger:{source:'gongJiMingZhong'},direct:true,
             filter:(e,p)=>!e.yingZhan&&H.state(p).weapon==='镇妖剑'&&game.hasPlayer(t=>t.hasSkill('lhym_huaYing')),
@@ -1344,13 +1870,66 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             content:async function(event,trigger,player){ V.say(player,'xueJian/huaYing',event);lib.lhymCompanion.move(player,player);},
             group:['lhym_huaLu','lhym_huaYingEnd'],
         },
-        lhym_flowerGuest:{charlotte:true,mark:true,marktext:'楹',markimage:'extension/轮回遗梦/mark_huaYing.png',intro:{content:'花楹在此；花露由雪见保管并随花楹移动，不属于手牌或基础效果。'}},
-        lhym_huaLu:{charlotte:true,marktext:'露',intro:{name:'花露',content:'gaiPai',markcount:'gaiPai'},
-            onremove:p=>{const cards=C.dew(p);if(cards.length)p.loseToDiscardpile(cards);}},
+        lhym_flowerGuest:{
+            charlotte:true,
+            mark:true,
+            marktext:'楹',
+            markimage:'extension/轮回遗梦/mark_huaYing.png',
+            intro:{
+                name:'花楹',
+                markcount:function(storage,owner){
+                    var snow=null;
+                    if(owner&&owner.storage&&owner.storage.lhym_flowerGuest){
+                        snow=game.players.find(function(current){
+                            return current.playerid===owner.storage.lhym_flowerGuest;
+                        });
+                    }
+                    return snow&&snow.getExpansions?snow.getExpansions('lhym_huaLu').length:0;
+                },
+                mark:function(dialog,storage,owner){
+                    var snow=null;
+                    if(owner&&owner.storage&&owner.storage.lhym_flowerGuest){
+                        snow=game.players.find(function(current){
+                            return current.playerid===owner.storage.lhym_flowerGuest;
+                        });
+                    }
+                    var cards=snow&&snow.getExpansions?snow.getExpansions('lhym_huaLu'):[];
+                    var count=cards.length;
+                    var flower='<span style="color:#f08fbd;font-weight:bold">【花露】</span>';
+
+                    dialog.addText('唯一专属，可以在角色之间移动。');
+                    dialog.addText('当前携带'+count+'/2张'+flower+'。');
+
+                    if(count){
+                        var canView=!!(snow&&lib.lhymCompanion&&lib.lhymCompanion.localViewer&&
+                            lib.lhymCompanion.localViewer(snow));
+                        if(canView){
+                            dialog.addText(flower);
+                            dialog.addAuto(cards);
+                        }else{
+                            dialog.addText(flower+'牌面仅雪见可查看。');
+                        }
+                    }
+
+                    dialog.addText('雪见的回合结束时，若'+flower+
+                        '不为0，由雪见选择丢弃1张'+flower+'，己方士气-1。');
+                    return false;
+                }
+            }
+        },
+        lhym_huaLu:{
+            charlotte:true,
+            popup:false,
+            nopop:true,
+            onremove:p=>{
+                const cards=C.dew(p);
+                if(cards.length)p.loseToDiscardpile(cards);
+            }
+        },
         lhym_huaYingEnd:{trigger:{player:'phaseEnd'},forced:true,
             filter:(e,p)=>C.dew(p).length>0||C.holder(p)===p,
             content:async function(event,trigger,player){
-                if(C.dew(player).length){const cards=await C.pick(player,C.dew(player),'花楹：丢弃1张花露，己方士气-1',1,true);if(cards.length){await player.loseToDiscardpile(cards);await player.changeShiQi(-1);}}
+                if(C.dew(player).length){const cards=await C.pick(player,C.dew(player),'花楹：丢弃1张花露，己方士气-1',1,true);if(cards.length){await player.loseToDiscardpile(cards);C.refreshFlower(player);await player.changeShiQi(-1);}}
                 if(player.isIn()&&C.holder(player)===player)await player.changeZhiLiao(1,player);
             }},
         lhym_huZhu:{trigger:{global:'discardBefore'},direct:true,
@@ -1360,7 +1939,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 if(trigger.lhym_flowerSaved)return;
                 const cards=await C.pick(trigger.player,trigger.cards,'花楹护主：选择1张已选弃牌交给雪见暗置',1,true);
                 if(!cards.length)return;trigger.lhym_flowerSaved=true;player.logSkill('lhym_huZhu',trigger.player);V.say(player,'xueJian/huZhu',event);
-                trigger.cards.remove(cards[0]);await player.addGaiPai(cards,'lhym_huaLu');
+                trigger.cards.remove(cards[0]);await player.addGaiPai(cards,'lhym_huaLu');C.refreshFlower(player);
             }},
         lhym_wuDuGuiYuan:{type:'faShu',enable:'faShu',filter:(e,p)=>C.dew(p).length>0,filterTarget:(c,p,t)=>t.side===p.side,
             content:async function(event,trigger,player){
@@ -1369,8 +1948,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                     const opts=[];if(bad.length)opts.push('净化');if(t.countCards('h')>=2)opts.push('弃牌收入');
                     if(opts.length){const choice=opts.length===1?opts[0]:await t.chooseControl(opts).set('ai',()=>0).forResultControl();
                         const cards=await C.pick(player,pool,'五毒归元：选择花露',1,true);
-                        if(choice==='净化'){await player.loseToDiscardpile(cards);const remove=await C.pick(t,bad,'移除1张中毒或虚弱',1,true);if(remove.length)await t.discard(remove,t.getExpansions('_zhongDu').includes(remove[0])?'_zhongDu':'_xuRuo');if(!t.getExpansions('_zhongDu').length)t.storage.zhongDu=[];}
-                        else{await t.chooseToDiscard('h',2,true);await t.gain(cards,player,'giveAuto');}
+                        if(choice==='净化'){await player.loseToDiscardpile(cards);C.refreshFlower(player);const remove=await C.pick(t,bad,'移除1张中毒或虚弱',1,true);if(remove.length)await t.discard(remove,t.getExpansions('_zhongDu').includes(remove[0])?'_zhongDu':'_xuRuo');if(!t.getExpansions('_zhongDu').length)t.storage.zhongDu=[];}
+                        else{await t.chooseToDiscard('h',2,true);await t.gain(cards,player,'giveAuto');C.refreshFlower(player);}
                     }
                 }
                 if(t.hasZhiShiWu('wuDuZhu'))await t.changeZhiLiao(2,player);
@@ -1455,16 +2034,27 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
     });
     skill.lhym_daiJun.group=['lhym_daiJunChoice','lhym_guiLan'];
     Object.assign(descriptions,{
+        lhym_xieNian:['专属【邪念】','专属指示物，上限99，可置于任意角色面前。按持有数量获得以下累计效果：<br>＞5：每回合首次主动攻击无法被应战；<br>＞10：攻击伤害+1；<br>＞15：法术伤害+1；<br>＞20：所有攻击无法被应战；<br>＞25：回合开始时+1【宝石】；<br>＞30：所有伤害额外+1。'],
+        lhym_wuXieJuXing:['被动【五邪聚形】','（游戏开始时）你+5【邪念】。<br>（一名角色因伤害导致士气下降后）伤害来源与该角色各+1【邪念】。'],
+        lhym_liuJieZhiWai:['被动【六界之外】','（你即将获得【基础效果】时）取消该效果，你+2【邪念】，施加者+1【宝石】；若施加者为你，两项均由你获得。'],
+        lhym_xieLingChuQiao:['被动【邪灵出壳】','（己方士气下降至7或以下后）转化为【邪灵】，保留场上所有【邪念】，无条件发动一次【邪灵祢天】。每局限一次。'],
+        lhym_xieQiLiHun:['被动【邪气离魂】','（你即将受到有来源的至少2点伤害时）将你面前1【邪念】移至伤害来源面前，本次伤害-1⑤。来源为你时，【邪念】位置不变。'],
+        lhym_jieXingQiShi:['响应【借形欺世】【回合限定】','（其他角色的实体法术牌结算后）若该牌仍在弃牌区，你可以-1【邪念】，将其加入手牌。'],
+        lhym_xieJianZhan:['响应【邪剑斩】','（你的主动攻击命中后②）你可以指定一名有【邪念】的角色，将其1【邪念】移至你面前，对其造成1点法术伤害③。若其仍有【邪念】，本次伤害+1，你+1【攻击行动】。可以指定自己。'],
+        lhym_sheXinShu:['启动【摄心术】','（【水晶】，手中有法术牌）弃置所有法术手牌。每有一种不同牌名，对所有角色各施加1层【中毒】；若弃置超过2张牌，再对所有角色施加【虚弱】。'],
+        lhym_xieLingMiTian:['法术【邪灵祢天】','（【宝石】）记录其他角色各自的【邪念】数量，再将这些【邪念】全部移至你面前。<br>对这些角色各造成X点法术伤害③，X为其原有【邪念】数量，最多为3；原数量＞2，施加【中毒】；＞4，再施加【虚弱】。'],
+        lhym_wuXingWuZhi:['被动【无形无质】','你不能获得【基础效果】。<br>（你的回合结束时）你-1【邪念】。'],
+        lhym_xieLingQinTi:['被动【邪灵侵体】','己方其他角色爆牌时，己方士气最低为1。<br>（己方士气即将降至0或以下时）取消此次士气下降，无条件发动一次【邪灵祢天】；然后你-5【邪念】，己方士气+5。若结算后你没有【邪念】，失去本技能。'],
         lhym_daiJunChoice:['被动【代君出鞘】','残影与借来剑魂发动主动攻击时，选择原系增伤或改系；无论选择哪项，攻击结束后均转为蓝葵。'],
         lhym_flowerGuest:['花楹','花楹当前持有者；花露仅雪见可查看。'],
         lhym_lvBoHit:['绿波红露斩·移花','异系花露强化的攻击命中后，可移动花楹并治疗。'],
         lhym_suYuan:['响应【宿缘相应】','（你发动【典当】时）你可以将其中1枚星石给予【雪见】或【龙葵】。<br>（【雪见】或【龙葵】【提炼】后）你可以获得其本次提炼所得且仍持有的1枚星石。'],
         lhym_shenShuZhaoDan:['【镇妖剑·神树照胆】','（任意阵营雪见在场）（你的主动攻击命中时②）你可以将【花楹】移至你的角色面前，然后你+1【治疗】。'],
         lhym_qianNianGongMing:['【魔剑·千年共鸣】','（龙葵在场）（你的【魔剑技】结算结束后）【龙葵】可以无消耗发动一次【双生】。'],
-        lhym_huaYing:['被动【花楹】','（游戏开始时）将【花楹】置于你面前。【花露】随【花楹】移动，仅你可以查看。<br>（你的回合结束时，若【花楹】在你面前）先结算【花楹·散露】，再+1【治疗】。'],
+        lhym_huaYing:['被动【花楹】','（游戏开始时）将【花楹】置于你面前。【花露】随花楹移动，仅你可以查看。<br>（回合结束时）若【花楹】在你面前，你+1【治疗】。'],
         lhym_huaLu:['【花露】','暗置实体牌，上限为2，仅雪见可以查看。'],
         lhym_huZhu:['响应【花楹护主】','（【花楹】持有者爆牌时）你可以将其1张应弃手牌暗置为【花露】，该牌不令己方士气下降。每次爆牌至多收取1张；【花露】已达上限时不能发动。'],
-        lhym_huaYingEnd:['花楹·散露','（你的回合结束时）若【花露】不为空，弃置其中1张，然后己方士气-1。'],
+        lhym_huaYingEnd:['花楹·散露','（雪见的回合结束时）若【花露】不为0，由雪见选择丢弃1张【花露】，然后己方士气-1。'],
         lhym_wuDuGuiYuan:['法术【五毒归元】','（【花露】不为0时）将【花楹】移至一名我方角色面前，该角色选择一项：<br>·移除1张【花露】，并移除自身1个【中毒】或【虚弱】<br>·弃两张牌，将1张【花露】加入手牌<br>若其拥有【五毒珠】，其+2【治疗】。'],
         lhym_lvBo:['响应【绿波红露斩】','（你攻击时①）你可以展示并移除1张【花露】：<br>·若其与本次攻击系别相同，本次攻击伤害+1<br>·若不同，本次攻击命中后②，你可以将【花楹】移至一名我方角色面前，并使其+1【治疗】。'],
         lhym_tianLing:['法术【天灵千裂破】','【水晶】对一名对手造成1点法术伤害③；伤害结算后，将【花楹】移至一名我方角色面前，该角色+1【治疗】。<br>你可以额外展示并移除全部【花露】：<br>·移除1张时，本次伤害+1<br>·移除2张且同系时，本次伤害+2。'],
@@ -1491,6 +2081,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
         '【花露】':'#f08fbd',
         '【五毒珠】':'#62c96b',
         '【剑中残影】':'#7652cc',
+        '【邪念】':'#c58af0',
     };
     const colorResourceKeywords = text => String(text).replace(/【[^】]+】/g, function(keyword) {
         if(keyword==='【水晶】')return '<span class="lan">'+keyword+'</span>';
@@ -1514,7 +2105,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
     for(const s of Object.values(skill)) if(s.audio===undefined) s.audio=false;
     const markFiles=[
         'mark_moJian.png','mark_longJingShi.png','mark_jianHun.png','mark_zhenYaoJian.png',
-        'mark_route_moJian.png','mark_route_zhenYaoJian.png','mark_huaYing.png','mark_canYing.png',
+        'mark_route_moJian.png','mark_route_zhenYaoJian.png','mark_huaYing.png','mark_canYing.png','mark_xieNian.png',
     ];
     for(const element of ['shui','huo','lei','feng','tu']) for(const status of ['empty','yin','yang','both']) {
         markFiles.push('mark_wuLing_'+element+'_'+status+'.png');
@@ -1581,28 +2172,44 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                         name:'lunHuiYiMeng',
                         connect:true,
                         character:{
-                            xueJian:[null,'jiGroup',4.5,['lhym_huaYing','lhym_huZhu','lhym_wuDuGuiYuan','lhym_lvBo','lhym_tianLing','lhym_shenShu'],['ext:轮回遗梦/xueJian.png']],
-                            longKui:[null,'huanGroup',4.5,['lhym_jianZhongRen','lhym_cangFeng','lhym_moJianHuTi','lhym_daiJun','lhym_buYuan','lhym_shuangSheng','lhym_huanGui','lhym_qianNian','lhym_youLan','lhym_hongYing','lhym_canYingPai'],['ext:轮回遗梦/longKui_blue.png']],
+                            xieJianXian:[null,'jiGroup',4.5,['lhym_wuXieJuXing','lhym_liuJieZhiWai','lhym_xieLingChuQiao','lhym_xieQiLiHun','lhym_jieXingQiShi','lhym_xieJianZhan','lhym_sheXinShu','lhym_xieLingMiTian','lhym_xieNian'],['des:蜀山五长老排出的邪念聚合体，士气低落时脱壳化为邪灵。','ext:轮回遗梦/xieJianXian.png']],
+                            xieLing:[null,'jiGroup',4.5,[
+                                'lhym_wuXingWuZhi',
+                                'lhym_xieLingQinTi',
+                                'lhym_xieQiLiHun',
+                                'lhym_xieJianZhan',
+                                'lhym_sheXinShu',
+                                'lhym_xieLingMiTian',
+                                'lhym_xieNian'
+                            ],['unseen','forbidai','des:邪剑仙的脱壳形态，只能由【邪灵出壳】转化。','ext:轮回遗梦/xieLing.png']],
+                            xueJian:[null,'jiGroup',4.5,['lhym_huaYing','lhym_huZhu','lhym_wuDuGuiYuan','lhym_lvBo','lhym_tianLing','lhym_shenShu'],['des:出身唐门却向往江湖的任性千金，与五毒兽花楹彼此守护。她收集花露化解爆牌，以毒珠、绿波和天灵千裂破反制强敌，并能助景天重铸镇妖剑。','ext:轮回遗梦/xueJian.png']],
+                            longKui:[null,'huanGroup',4.5,['lhym_jianZhongRen','lhym_cangFeng','lhym_moJianHuTi','lhym_daiJun','lhym_buYuan','lhym_shuangSheng','lhym_huanGui','lhym_qianNian','lhym_youLan','lhym_hongYing','lhym_canYingPai'],['des:守候魔剑千年的姜国公主，以蓝葵的温柔与红葵的决绝守护王兄。她收纳攻击为剑中残影，在双形态间切换，并与魔剑路线的景天共鸣。','ext:轮回遗梦/longKui_blue.png']],
                             jingTian:[
                                 null,
                                 'huanGroup',
                                 5,
                                 ['lhym_shuangJian','lhym_yongAn','lhym_dianDang','lhym_feiLong','lhym_zhuJian','lhym_huiYan','lhym_yinDan','lhym_suYuan'],
-                                ['ext:轮回遗梦/jingTian_moJian.png']
+                                ['des:永安当里梦想成为大侠的少年，因双剑宿缘卷入六界纷争。开局选择魔剑或镇妖剑，收集龙精石、剑魂与五灵材料，走向不同的永久成长路线。','ext:轮回遗梦/jingTian_moJian.png']
                             ],
                         },
                         translate:{
                             lunHuiYiMeng:'轮回遗梦',
                             jingTian:'景天',
                             jingTian_ab:'景天',
+                            xieJianXian:'邪剑仙',xieLing:'邪灵',
                             xueJian:'雪见',longKui:'龙葵',
                         },
                         characterTitle:{
                             jingTian:'永安少侠',
+                            xieJianXian:'六界邪念',xieLing:'五邪离魂',
                             xueJian:'唐门千金',longKui:'千年剑灵',
                         },
                         characterIntro:{
-                            jingTian:'永安当少侠，双剑宿缘。开局选择魔剑或镇妖剑，走不同的永久培养路线。',
+                            jingTian:'永安当里梦想成为大侠的少年，因双剑宿缘卷入六界纷争。开局选择魔剑或镇妖剑，收集龙精石、剑魂与五灵材料，走向不同的永久成长路线。',
+                            xieJianXian:'蜀山五长老修炼禁术后排出的邪念聚合体，不在六界之中。',
+                            xieLing:'邪剑仙脱去人形后的邪灵，只能通过【邪灵出壳】进入。',
+                            xueJian:'出身唐门却向往江湖的任性千金，与五毒兽花楹彼此守护。她收集花露化解爆牌，以毒珠、绿波和天灵千裂破反制强敌，并能助景天重铸镇妖剑。',
+                            longKui:'守候魔剑千年的姜国公主，以蓝葵的温柔与红葵的决绝守护王兄。她收纳攻击为剑中残影，在双形态间切换，并与魔剑路线的景天共鸣。',
                         },
                     };
                 });
@@ -1614,8 +2221,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             // 这里保持为空，避免单机/联机出现双份武将定义。
             character:{character:{},translate:{},characterTitle:{},characterIntro:{}},
             card:{card:{},translate:{},list:[]},skill:{skill,translate},
-            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵。',author:'蒙牛',version:'1.2',diskURL:'',forumURL:'',
+            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',author:'蒙牛',version:'1.4',diskURL:'',forumURL:'',
         },
-        files:{character:['jingTian_moJian.png','jingTian_zhenYaoJian.png','xueJian.png','longKui_blue.png','longKui_red.png'],card:[],skill:markFiles,audio:V.files.concat(['audio/bgm/yuJianJiangHu.mp3','audio/bgm/yuManTang.mp3','audio/bgm/qingYuAn.mp3','audio/bgm/zhuShaBian.mp3','audio/bgm/huanHunCao.mp3'])},
+        files:{character:['jingTian_moJian.png','jingTian_zhenYaoJian.png','xueJian.png','longKui_blue.png','longKui_red.png','xieJianXian.png','xieLing.png'],card:[],skill:markFiles,audio:V.files.concat(['audio/bgm/yuJianJiangHu.mp3','audio/bgm/yuManTang.mp3','audio/bgm/qingYuAn.mp3','audio/bgm/zhuShaBian.mp3','audio/bgm/huanHunCao.mp3','audio/bgm/linWei.mp3','audio/bgm/linWeiBianDiao.mp3'])},
     };
 }));

@@ -3,7 +3,7 @@ extension["永夜残响"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"2.4",
+    version:"2.6",
     files: [
     "LICENSE",
     "README.md",
@@ -29,5 +29,5 @@ extension["永夜残响"]={
     "wHeQingLi.jpg",
     "yuanYiZheZhi.png"
 ],
-    size: "15.41MB"
+    size: "11.91MB"
 };

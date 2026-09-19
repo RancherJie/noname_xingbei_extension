@@ -139,9 +139,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     add(entry[1], "ext:宿命挽歌/audio/bgm/" + entry[2] + ".mp3");
             });
         }
-        if (lib.config.extension_轮回遗梦_enable) {
-            if (hasCharacter("jingTian")) add("玉满堂", "ext:轮回遗梦/audio/bgm/yuManTang.mp3");
-            if (hasCharacter("longKui")) {
+        if (hasCharacter("jingTian")) add("玉满堂", "ext:轮回遗梦/audio/bgm/yuManTang.mp3");
+        if (hasCharacter("longKui")) {
                 var red = players.some(function (player) {
                     return [player.name, player.name1, player.name2].includes("longKui") &&
                         player.storage && player.storage.lhym_red === true;
@@ -154,9 +153,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 longKuiSongs.forEach(function (song) {
                     add(song[0], "ext:轮回遗梦/audio/bgm/" + song[1] + ".mp3");
                 });
-            }
-            if (hasCharacter("xueJian")) add("还魂草", "ext:轮回遗梦/audio/bgm/huanHunCao.mp3");
         }
+        if (hasCharacter("xueJian")) add("还魂草", "ext:轮回遗梦/audio/bgm/huanHunCao.mp3");
+        if (hasCharacter("xieLing"))
+            add("临危·变调", "ext:轮回遗梦/audio/bgm/linWeiBianDiao.mp3");
+        else if (hasCharacter("xieJianXian"))
+            add("临危", "ext:轮回遗梦/audio/bgm/linWei.mp3");
         if (lib.config.extension_宿命挽歌_enable) {
             add("ending", "ext:宿命挽歌/audio/bgm/ending.mp3");
             add("Date a Live", "ext:宿命挽歌/audio/bgm/dateALive.mp3");
@@ -868,7 +870,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "2.2",
+        version: "2.3",
         editable: false,
         precontent: function () {
             loadStyle();
@@ -930,7 +932,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.2"
+            version: "2.3"
         },
         files: {
             character: [],

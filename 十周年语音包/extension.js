@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2. Source: tools/audio-pack/runtime.js; bundled into each extension. */
+/* Audio JSON runtime v2, revision 3 (incremental). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.format === 2) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 3) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -105,19 +105,38 @@
         if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
             return previous.files && previous.files[file.path] === file.sha256;
         })) return false;
-        var index = 0, position = 0, bytes = null, hashes = Object.create(null), directories = new Set();
+        var files = new Map(), needed = new Set(), selected = new Set();
+        var bundleNames = new Set(manifest.bundles.map(function (bundle) { return safe(bundle.name); }));
+        var hashes = Object.create(null), legacy = false;
+        for (var entry of manifest.files) {
+            safe(entry.path);
+            if (files.has(entry.path)) throw new Error('重复音频路径');
+            if (entry.bundles && (!Array.isArray(entry.bundles) || !entry.bundles.length || entry.bundles.some(function (name) { return !bundleNames.has(name); }))) throw new Error('无效音频分包索引');
+            files.set(entry.path, entry);
+            if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
+                hashes[entry.path] = entry.sha256;
+            } else {
+                needed.add(entry.path);
+                if (entry.bundles) entry.bundles.forEach(function (name) { selected.add(name); });
+                else legacy = true;
+            }
+        }
+        var total = needed.size, index = 0, position = 0, bytes = null, current = null, directories = new Set();
         for (var bundle of manifest.bundles) {
+            if (!needed.size || (!legacy && !selected.has(bundle.name))) continue;
             safe(bundle.name);
             text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
             if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
             var body = JSON.parse(text);
             if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
             for (var record of body.records) {
-                var file = manifest.files[index];
-                if (!file || safe(record.path) !== file.path || record.offset !== position) throw new Error('音频分片顺序错误');
+                var file = files.get(safe(record.path));
+                if (!file || !needed.has(file.path) || (file.bundles && !file.bundles.includes(bundle.name))) continue;
+                if ((current && current !== file.path) || record.offset !== position) throw new Error('音频分片顺序错误');
                 if (!bytes) {
                     if (!Number.isSafeInteger(file.size) || file.size < 0) throw new Error('无效音频长度');
                     bytes = new Uint8Array(file.size);
+                    current = file.path;
                 }
                 var raw = root.atob(record.base64);
                 if (position + raw.length > bytes.length) throw new Error('音频长度超限');
@@ -138,15 +157,16 @@
                 var written = buffer(await game.promises.readFile(target));
                 if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
                 hashes[file.path] = file.sha256;
-                index++; position = 0; bytes = null;
-                if (options.onProgress) options.onProgress(index, manifest.files.length);
+                needed.delete(file.path);
+                index++; position = 0; bytes = null; current = null;
+                if (options.onProgress) options.onProgress(index, total);
                 // Let the browser paint progress during long voice-pack installations.
                 await new Promise(function (resolve) { root.setTimeout(resolve, 0); });
             }
         }
-        if (index !== manifest.files.length || bytes) throw new Error('音频数据包不完整');
+        if (needed.size || bytes) throw new Error('音频数据包不完整');
         storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
-        return true;
+        return index > 0;
     }
     function prepare(meta, lib, game) {
         if (pending.has(meta.name)) return pending.get(meta.name);
@@ -175,7 +195,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 3, sha256: sha256, install: install, prepare: prepare,
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
                 var object = factory.apply(this, arguments);
@@ -748,6 +768,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
 
         game._shiZhouNianSpatialTrySkillAudioOriginal = game.trySkillAudio;
         game.trySkillAudio = function (skill, player) {
+            if (typeof game._shiZhouNianSpatialTrySkillAudioOriginal !== "function") return;
             var previous = game._shiZhouNianSpatialSpeaker;
             game._shiZhouNianSpatialSpeaker = player;
             try {
@@ -800,6 +821,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
         if (!game.trySkillAudio._shiZhouNianKuangHuaAudioWrapped) {
             game._shiZhouNianKuangHuaTrySkillAudioOriginal = game.trySkillAudio;
             game.trySkillAudio = function (skill, player, directaudio, nobroadcast, skillInfo, args) {
+                if (typeof game._shiZhouNianKuangHuaTrySkillAudioOriginal !== "function") return;
                 if (skill === "kuangHua" && args && args[0]) {
                     var roots = [args[0]];
                     if (typeof args[0].getTrigger === "function") roots.push(args[0].getTrigger());
@@ -837,6 +859,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
                 jianYing: true
             };
             game.trySkillAudio = function (skill, player, directaudio, nobroadcast, skillInfo, args) {
+                if (typeof game._shiZhouNianJianZhiZiTrySkillAudioOriginal !== "function") return;
                 var isJianZhiZi = player && (
                     player.name === "jianZhiZi" ||
                     player.name1 === "jianZhiZi" ||
@@ -1169,7 +1192,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
 
     return {
         name: extensionName,
-        version: "6.10",
+        version: "6.12",
         connect: true,
         editable: false,
         config: {
@@ -1190,7 +1213,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "6.10"
+            version: "6.12"
         },
         files: {
             character: [],

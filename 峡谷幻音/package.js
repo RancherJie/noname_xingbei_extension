@@ -3,7 +3,7 @@ extension["峡谷幻音"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"1.11",
+    version:"1.13",
     files: [
     "LICENSE",
     "README.md",
@@ -31,5 +31,5 @@ extension["峡谷幻音"]={
     "tiMo.jpg",
     "yaTuoKeSi.jpg"
 ],
-    size: "5.31MB"
+    size: "5.26MB"
 };

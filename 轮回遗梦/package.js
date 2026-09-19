@@ -1,13 +1,15 @@
 extension['轮回遗梦']={
-    intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵。',
-    author:'蒙牛',version:'1.2',netdisk:'',forum:'',
+    intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',
+    author:'蒙牛',version:'1.4',netdisk:'',forum:'',
     files: [
     "README.md",
     "audio-data/manifest.json",
+    "audio-data/pack-30d343f2bd7c72a5dad6ebdc4fa2b2711dc3cad896185d95831ef0b34eba3615.json",
     "audio-data/pack-39b2f1cdb28cd709ee80abce0d7e9536ebaa1b66cf6bd6cbfd7587067a030228.json",
     "audio-data/pack-ad8c71e8ff0da2e2b73f795cd960927be54aa47a4a25045b89841f67d6eeedb9.json",
     "audio-data/pack-df29f146515d0dbbd558861a1d169b8400b4f871be77be24bce01a94339f16d3.json",
     "audio-data/pack-eb995abacc83a06329a27fc38bdc2615572bf859f1de520e59541b8b650fbb8f.json",
+    "audio-data/pack-f2285c99931ae310746b35a2f185f871c99f12823d5d148049ea78b953ee21aa.json",
     "extension.js",
     "info.json",
     "jingTian.svg",
@@ -42,8 +44,11 @@ extension['轮回遗梦']={
     "mark_wuLing_tu_empty.png",
     "mark_wuLing_tu_yang.png",
     "mark_wuLing_tu_yin.png",
+    "mark_xieNian.png",
     "mark_zhenYaoJian.png",
     "package.js",
+    "xieJianXian.png",
+    "xieLing.png",
     "xueJian.png"
 ],
 };
