@@ -383,6 +383,10 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "foNuHuoLian",
                             "xiaoYanDouQi",
                             "xiaoYanYiHuoManager",
+                            "xiaoYanAnJin",
+                            "qingLianDiXinHuo",
+                            "yunLuoXinYan",
+                            "guLingLengHuo",
                         ],
                         [
                             "des:执掌三种异火的炎帝，以斗气驾驭狂暴火力。他在逆境中蓄势，以暗劲延后爆发，再用天火三玄变与佛怒火莲焚尽强敌。",
@@ -405,36 +409,42 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
             "card": {
                 "card": {
                     "xiaoYanQingLianDiXinHuoKa": {
+                        "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
                         "image": "ext:bigcowcow/mark_qingLianDiXinHuo.png",
                     },
                     "xiaoYanAnDanQingLianDiXinHuoKa": {
+                        "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
                         "image": "ext:bigcowcow/mark_anDanQingLianDiXinHuo.png",
                     },
                     "xiaoYanYunLuoXinYanKa": {
+                        "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
                         "image": "ext:bigcowcow/mark_yunLuoXinYan.png",
                     },
                     "xiaoYanAnDanYunLuoXinYanKa": {
+                        "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
                         "image": "ext:bigcowcow/mark_anDanYunLuoXinYan.png",
                     },
                     "xiaoYanGuLingLengHuoKa": {
+                        "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
                         "image": "ext:bigcowcow/mark_guLingLengHuo.png",
                     },
                     "xiaoYanAnDanGuLingLengHuoKa": {
+                        "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
@@ -442,17 +452,17 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     },
                 },
                 "translate": {
-                    "xiaoYanQingLianDiXinHuoKa": "(专)【青莲地心火】",
-                    "xiaoYanQingLianDiXinHuoKa_info": "明亮面拥有响应【地火焚身】：<span class='tiaoJian'>（你对目标造成攻击伤害后⑤）</span>对该目标额外造成1点法术伤害③。",
-                    "xiaoYanAnDanQingLianDiXinHuoKa": "(专)【黯淡的青莲地心火】",
+                    "xiaoYanQingLianDiXinHuoKa": "专属【青莲地心火】",
+                    "xiaoYanQingLianDiXinHuoKa_info": "明亮面拥有<span class='greentext'>响应【地火焚身】</span><br><span class='tiaoJian'>（对目标造成正数实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
+                    "xiaoYanAnDanQingLianDiXinHuoKa": "专属【黯淡的青莲地心火】",
                     "xiaoYanAnDanQingLianDiXinHuoKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
-                    "xiaoYanYunLuoXinYanKa": "(专)【陨落心炎】",
-                    "xiaoYanYunLuoXinYanKa_info": "<span class='tiaoJian'>（明亮面拥有响应【心火重燃】：你执行【特殊行动】后）</span>必须选择一项：+1【斗气】；或将另一张处于黯淡面的【异火】翻至明亮面。",
-                    "xiaoYanAnDanYunLuoXinYanKa": "(专)【黯淡的陨落心炎】",
+                    "xiaoYanYunLuoXinYanKa": "专属【陨落心炎】",
+                    "xiaoYanYunLuoXinYanKa_info": "明亮面拥有<span class='greentext'>响应【心火重燃】</span><br><span class='tiaoJian'>（【特殊行动】结束后）</span>必须选择一项：<br>·+1<span style=\"color:#A13F32\">【斗气】</span>；<br>·将另一张黯淡<span class='hong'>【异火】</span>翻至明亮面。",
+                    "xiaoYanAnDanYunLuoXinYanKa": "专属【黯淡的陨落心炎】",
                     "xiaoYanAnDanYunLuoXinYanKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
-                    "xiaoYanGuLingLengHuoKa": "(专)【骨灵冷火】",
-                    "xiaoYanGuLingLengHuoKa_info": "明亮面拥有响应【冷火灼魂】：<span class='tiaoJian'>（你对另一名目标造成正数实际法术伤害后⑤）</span>对该目标额外造成1点法术伤害③。你对自己造成的法术伤害不能触发此技能。",
-                    "xiaoYanAnDanGuLingLengHuoKa": "(专)【黯淡的骨灵冷火】",
+                    "xiaoYanGuLingLengHuoKa": "专属【骨灵冷火】",
+                    "xiaoYanGuLingLengHuoKa_info": "明亮面拥有<span class='greentext'>响应【冷火灼魂】</span><br><span class='tiaoJian'>（对其他角色造成正数实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；此追加伤害不再触发【冷火灼魂】。",
+                    "xiaoYanAnDanGuLingLengHuoKa": "专属【黯淡的骨灵冷火】",
                     "xiaoYanAnDanGuLingLengHuoKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
                 },
                 "list": [],
@@ -2391,9 +2401,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     await player.removeZhiShiWu('miaoYun', 5);
                     var cards = get.cards(5);
                     if(!cards || !cards.length) return;
-                    await player.viewCards(
-                        '【役满时间喵】：查看牌库顶5张牌',
-                        cards
+                    await player.showCards(
+                        cards,
+                        '【役满时间喵】：展示牌库顶5张牌'
                     );
                     var x = cards.filter(function(card) {
                         return lib.skill.yiJiBaoPai
@@ -2559,12 +2569,12 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             "xiaJieHeJinJian": "下界合金剑",
                         },
                         "swordInfo": {
-                            "muJian": "响应【简易工具】：攻击时移除1【耐久】；若未命中，攻击结算结束后将本次使用的攻击牌作为【素材】。",
-                            "jinJian": "响应【急速挥砍】【回合限定】：【攻击行动】结束时移除1【耐久】，+1【攻击行动】或【法术行动】。<br>被动【矿物勘探】：【采集】改为查看牌库顶4张牌，选择1张作为【素材】，弃置其余牌。",
-                            "shiJian": "响应【沉重格挡】：应战时移除1【耐久】，可以将任意攻击牌视为与当前攻击同系的攻击牌应战；若命中，额外发动一次【采集】。<br>被动【粗糙采掘】：【采集】改为查看牌库顶2张牌，选择1张作为【素材】，弃置另一张。",
-                            "tieJian": "响应【稳定锋刃】：攻击时移除1【耐久】，本次攻击伤害+1。<br>被动【矿脉精炼】：【采集】改为查看牌库顶3张牌，选择1张作为【素材】，弃置其余牌。",
-                            "zuanShiJian": "响应【钻石破甲】：攻击时移除1【耐久】，本次攻击伤害+1；若为主动攻击，则无法被应战。<br>响应【精准开采】：【采集】时可以改为令任意一名有可弃置牌的角色弃置1张牌作为【素材】。",
-                            "xiaJieHeJinJian": "响应【不毁之锋】：攻击时移除1【耐久】，本次攻击伤害+1且无法被应战。<br>被动【下界锻造】：攻击结算结束时，若【耐久】为0，展示并弃置所有【素材】，以其中火系或暗系【素材】恢复【耐久】。",
+                            "muJian": "<span class='greentext'>响应【简易工具】</span><br>攻击时移除1【耐久】；若未命中，攻击结算结束后将本次使用的攻击牌作为【素材】。",
+                            "jinJian": "<span class='greentext'>响应【急速挥砍】【回合限定】</span><br>【攻击行动】结束时移除1【耐久】，+1【攻击行动】或【法术行动】。<br><span class='greentext'>被动【矿物勘探】</span><br>【采集】改为查看牌库顶4张牌，选择1张作为【素材】，弃置其余牌。",
+                            "shiJian": "<span class='greentext'>响应【沉重格挡】</span><br><span class='tiaoJian'>（应战时①，移除1【耐久】）</span>将1张攻击牌视为与当前攻击同系的攻击牌应战；<span class='tiaoJian'>（若命中）</span>额外发动1次【采集】。<br><span class='greentext'>被动【粗糙采掘】</span><br>【采集】改为二选一，另一张弃置。",
+                            "tieJian": "<span class='greentext'>响应【稳定锋刃】</span><br>攻击时移除1【耐久】，本次攻击伤害+1。<br><span class='greentext'>被动【矿脉精炼】</span><br>【采集】改为查看牌库顶3张牌，选择1张作为【素材】，弃置其余牌。",
+                            "zuanShiJian": "<span class='greentext'>响应【钻石破甲】</span><br><span class='tiaoJian'>（攻击时①，移除1【耐久】）</span>本次攻击伤害+1；<span class='tiaoJian'>（若为主动攻击）</span>本次攻击无法应战。<br><span class='greentext'>响应【精准开采】</span><br><span class='tiaoJian'>（发动【采集】时）</span>可以改为令1名有可弃置牌的角色弃1张牌作为<span style=\"color:#8B5E3C\">【素材】</span>。",
+                            "xiaJieHeJinJian": "<span class='greentext'>响应【不毁之锋】</span><br><span class='tiaoJian'>（攻击时①，移除1【耐久】）</span>本次攻击伤害+1且无法应战。<br><span class='greentext'>被动【下界锻造】</span><br><span class='tiaoJian'>（攻击结算结束时，若【耐久】为0）</span>展示并弃置全部<span style=\"color:#8B5E3C\">【素材】</span>；每张火系或暗系<span style=\"color:#8B5E3C\">【素材】</span>令当前剑+1【耐久】。",
                         },
                         "getSword": function(player) {
                     return player.storage.shiDiFuDangQianJian || null;
@@ -3747,7 +3757,10 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                         fires.forEach(function(fire) {
                             score -= manager.aiFireKeepValue(player, fire) * 0.25;
                         });
-                        if(get.zhanJi(player.side).includes('shuiJing')) {
+                        if(game.hasPlayer(function(current) {
+                            return current.side == player.side &&
+                                current.hasNengLiang('shuiJing');
+                        })) {
                             score += 0.8;
                         }
                         plans.push({
@@ -4623,9 +4636,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     }
                     return null;
                 },
-                        "clear": async function(player) {
+                        "clear": async function(player, dimFires) {
                     var state = player.storage.tianHuoSanXuanBianState;
-                    if(state && state.fires) {
+                    if(dimFires !== false && state && state.fires) {
                         await lib.skill.xiaoYanYiHuoManager.dimFires(
                             player,
                             state.fires
@@ -4693,12 +4706,29 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                             return !!lib.skill
                                 .tianHuoSanXuanBianState
                                 .findAttack(event, player) &&
-                                get.zhanJi(player.side)
-                                    .includes('shuiJing');
+                                game.hasPlayer(function(current) {
+                                    return current.side == player.side &&
+                                        current.hasNengLiang('shuiJing');
+                                });
+                        },
+                                "cost": async function(event, trigger, player) {
+                            event.result = await player.chooseTarget(
+                                '【天火三玄变】：可以将1名我方角色的1【水晶】翻为1【宝石】',
+                                function(card, player, target) {
+                                    return target.side == player.side &&
+                                        target.hasNengLiang('shuiJing');
+                                }
+                            ).set('ai', function(target) {
+                                return get.attitude(_status.event.player, target);
+                            }).forResult();
                         },
                                 "content": async function(event, trigger, player) {
-                            await player.changeZhanJi('shuiJing', -1);
-                            await player.changeZhanJi('baoShi', 1);
+                            var target = event.targets && event.targets[0];
+                            if(!target || !target.isIn() ||
+                                target.side != player.side ||
+                                !target.hasNengLiang('shuiJing')) return;
+                            await target.removeNengLiang('shuiJing', 1);
+                            await target.addNengLiang('baoShi', 1);
                         },
                             },
                             "gongJiJieShu": {
@@ -4731,7 +4761,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                         },
                                 "content": async function(event, trigger, player) {
                             await lib.skill
-                                .tianHuoSanXuanBianState.clear(player);
+                                .tianHuoSanXuanBianState.clear(player, false);
                         },
                             },
                         },
@@ -4749,149 +4779,148 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "ningLangZhiGuangJian": "被动【凝浪之光剑】",
                     "ningLangZhiGuangJian_info": "<span class='tiaoJian'>（攻击命中时②）</span>你+1<span class='hong'>【复仇】</span>。",
                     "guangJiangZhiJian": "响应【光降之剑】",
-                    "guangJiangZhiJian_info": "<span class='tiaoJian'>（主动攻击命中时②，移除2<span class='hong'>【复仇】</span>并弃1张牌【展示】）</span>按弃牌系别结算：<br>火：本次伤害+1。<br>地：对其他对手各造成X-1点法术伤害③，X为本次攻击伤害。<br>风：再弃1张牌，本次伤害-1；行动结束后对该目标进行一次暗系主动攻击。",
+                    "guangJiangZhiJian_info": "<span class='tiaoJian'>（主动攻击命中时②，移除2</span><span class='hong'>【复仇】</span><span class='tiaoJian'>并弃置1张牌【展示】）</span>按弃牌系别结算：<br>火：本次攻击伤害+1。<br>地：对其他对手各造成X-1点法术伤害③，X为本次攻击伤害。<br>风：再弃置1张牌，本次攻击伤害-1；行动结束后对该目标进行1次暗系主动攻击。",
                     "guangJiangZhiJian_feng": "响应【光降之剑-风】",
                     "guangJiangZhiJian_di": "响应【光降之剑-地】",
                     "chaoJuanBingXiao": "响应【潮卷冰削】",
-                    "chaoJuanBingXiao_info": "【回合限定】<span class='tiaoJian'>（本回合已主动攻击过一名角色，移除1<span class='hong'>【复仇】</span>）</span>对其再执行一次【攻击行动】，伤害+1；不能与【凝浪之光剑】同时发动。",
+                    "chaoJuanBingXiao_info": "【回合限定】<span class='tiaoJian'>（本回合已主动攻击过1名角色，移除1</span><span class='hong'>【复仇】</span><span class='tiaoJian'>）</span>对其再执行1次【攻击行动】，伤害+1；不能与【凝浪之光剑】同时发动。",
                     "bingChaoDeWoXuan": "响应【冰潮的涡旋】",
-                    "bingChaoDeWoXuan_info": "【水晶】<span class='tiaoJian'>（主动攻击前①）</span>将手牌补至上限【强制】，+1<span class='hong'>【复仇】</span>；本次攻击无法应战。",
+                    "bingChaoDeWoXuan_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（主动攻击时①）</span>将手牌补至上限【强制】，+1<span class='hong'>【复仇】</span>；本次攻击无法应战。",
                     "fuChou": "复仇",
-                    "fuChou_info": "<span class='hong'>【复仇】</span>为浪花骑士（优菈）专属指示物，上限为4。",
+                    "fuChou_info": "<span class='hong'>【复仇】</span>为优菈专属指示物，上限为4。",
                     "jieShi": "被动【借势】",
-                    "jieShi_info": "你的攻击无视【圣盾】。<span class='tiaoJian'>（主动攻击未命中或应战攻击命中时）</span>+1<span class='hong'>【枪势】</span>；你的攻击每有一次未命中，后续攻击伤害累计+1；你的回合结束时将累计值置为0。",
+                    "jieShi_info": "你的攻击无视【圣盾】；<br><span class='tiaoJian'>（主动攻击未命中②或应战攻击命中时②）</span>+1<span class='hong'>【枪势】</span>；<br>你的攻击每有一次未命中，后续攻击伤害累计+1，<span class='tiaoJian'>（你的回合结束时）</span>将累计值置为0。",
                     "lianHuanTuCi": "响应【连环突刺】",
-                    "lianHuanTuCi_info": "【回合限定】<span class='tiaoJian'>（主动攻击未命中时，移除1<span class='hong'>【枪势】</span>）</span>+1【攻击行动】。",
+                    "lianHuanTuCi_info": "【回合限定】<span class='tiaoJian'>（主动攻击未命中时②，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>+1【攻击行动】。",
                     "hengQiangJiaShi": "响应【横枪架势】",
-                    "hengQiangJiaShi_info": "【回合限定】<span class='tiaoJian'>（应战时，移除1<span class='hong'>【枪势】</span>）</span>将任意系攻击牌视为与当前攻击同系使用，应战伤害-1；不改变原攻击牌系别。",
+                    "hengQiangJiaShi_info": "【回合限定】<span class='tiaoJian'>（应战攻击时①，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>将任意系攻击牌视为与当前攻击同系使用，应战伤害-1。",
                     "poZhenHuiQiang": "响应【破阵回枪】",
-                    "poZhenHuiQiang_info": "【回合限定】【水晶】<span class='tiaoJian'>（主动攻击前，移除1<span class='hong'>【枪势】</span>）</span>本次攻击伤害+1；若本次攻击未命中，+1【攻击行动】。",
+                    "poZhenHuiQiang_info": "【回合限定】<span class='lan'>【水晶】</span><span class='tiaoJian'>（主动攻击时①，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>本次攻击伤害+1，<span class='tiaoJian'>（若本次攻击未命中）</span>+1【攻击行动】。",
                     "qiangShi": "枪势",
                     "qiangShi_info": "<span class='hong'>【枪势】</span>为赫克托专属指示物，上限为2。",
                     "shengCunQiDian": "被动【生存起点】",
-                    "shengCunQiDian_info": "<span class='tiaoJian'>（游戏开始时）</span>将具有2【耐久】的【木剑】置于面前，其余剑置于场外。剑的【耐久】不超过上限；回合结束时移除0【耐久】的当前剑。",
+                    "shengCunQiDian_info": "<span class='tiaoJian'>（游戏开始时）</span>将具有2【耐久】的【木剑】置于面前，其余剑置于场外。剑的【耐久】不超过上限；<span class='tiaoJian'>（你的回合结束时）</span>移除0【耐久】的当前剑。",
                     "caiJi": "响应【采集】",
-                    "caiJi_info": "<span class='tiaoJian'>（你因发动剑的专属技能而移除【耐久】后）</span>若<span class='lan'>【素材】</span>未达到上限，将牌堆顶1张牌面朝下置于角色旁作为<span class='lan'>【素材】</span>。",
+                    "caiJi_info": "<span class='tiaoJian'>（你因发动剑的专属技能而移除【耐久】后）</span>若<span style=\"color:#8B5E3C\">【素材】</span>未达到上限，将牌堆顶1张牌面朝下置于角色旁作为<span style=\"color:#8B5E3C\">【素材】</span>。",
                     "gongZuoTai": "启动【工作台】",
-                    "gongZuoTai_info": "<span class='tiaoJian'>（展示并弃置配方所需<span class='lan'>【素材】</span>）</span>制作1把可锻造的剑；将当前剑置于场外，新剑以满【耐久】置于面前。",
+                    "gongZuoTai_info": "<span class='tiaoJian'>（展示并弃置配方所需</span><span style=\"color:#8B5E3C\">【素材】</span><span class='tiaoJian'>）</span>制作1把可锻造的剑；将当前剑置于场外，新剑以满【耐久】置于面前。",
                     "zhanDouFuMo": "响应【战斗附魔】",
-                    "zhanDouFuMo_info": "<span class='tiaoJian'>（持剑攻击命中后②，弃置X张<span class='lan'>【素材】</span>；【金剑】或【下界合金剑】X可为1或2，否则X=1）</span>每系数量为Y：<br>雷：伤害+Y。　火：对目标造成Y点法术伤害③。<br>地：对另外Y名角色各造成等额法术伤害③。　水：发动Y+1次【采集】。<br>风：选择1名角色弃Y张手牌。　光：当前剑+（Y+1）【耐久】。<br>暗：你+（Y+1）【水晶】。",
+                    "zhanDouFuMo_info": "<span class='tiaoJian'>（持剑攻击命中后②，弃1张</span><span style=\"color:#8B5E3C\">【素材】</span><span class='tiaoJian'>；持有【金剑】或【下界合金剑】时可改为弃2张）</span>按各系<span style=\"color:#8B5E3C\">【素材】</span>的数量Y分别结算：<br>雷：伤害+Y。<br>火：对目标造成Y点法术伤害③。<br>地：对另外Y名角色各造成等额法术伤害③。<br>水：发动Y+1次【采集】。<br>风：令1名角色弃Y张手牌。<br>光：当前剑+（Y+1）【耐久】。<br>暗：你+（Y+1）<span class='lan'>【水晶】</span>。",
                     "jingYanXiuBu": "响应【经验修补】",
-                    "jingYanXiuBu_info": "【水晶】<span class='tiaoJian'>（攻击命中后②，弃2张手牌）</span>当前剑+2【耐久】，不超过上限。",
+                    "jingYanXiuBu_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（攻击命中后②，弃置2张手牌）</span>当前剑+2【耐久】。",
                     "shiDiFuSuCai": "素材",
-                    "shiDiFuSuCai_info": "<span class='lan'>【素材】</span>为史蒂夫专属盖牌，上限为5。",
+                    "shiDiFuSuCai_info": "<span style=\"color:#8B5E3C\">【素材】</span>为史蒂夫专属盖牌，上限为5。",
                     "shiDiFuJian": "史蒂夫剑专属卡管理",
                     "shiDiFuJian_info": "面前至多有1把剑；【耐久】记录于当前剑且不超过上限，与角色【治疗】无关。",
-                    "muJian": "(专)[响应]木剑",
-                    "muJian_info": "【耐久2｜配方：任意1<span class='lan'>【素材】</span>】<br>【简易工具】：攻击时移除1【耐久】；若未命中，结算后将攻击牌盖为<span class='lan'>【素材】</span>。",
-                    "jinJian": "(专)[响应]金剑",
-                    "jinJian_info": "【耐久1｜配方：1光系<span class='lan'>【素材】</span>】<br>【急速挥砍】【回合限定】：<span class='tiaoJian'>（攻击行动结束时，移除1【耐久】）</span>+1【攻击行动】或【法术行动】。<br>【矿物勘探】：【采集】改为四选一，其余牌弃置。",
-                    "shiJian": "(专)[响应]石剑",
-                    "shiJian_info": "【耐久2｜配方：1地系<span class='lan'>【素材】</span>】<br>【沉重格挡】：应战时移除1【耐久】，将任意攻击牌视为当前攻击同系；若命中，额外发动1次【采集】。<br>【粗糙采掘】：【采集】改为二选一，另一张弃置。",
-                    "tieJian": "(专)[响应]铁剑",
-                    "tieJian_info": "【耐久3｜配方：2张同系<span class='lan'>【素材】</span>】<br>【稳定锋刃】：攻击时移除1【耐久】，伤害+1。<br>【矿脉精炼】：【采集】改为三选一，其余牌弃置。",
-                    "zuanShiJian": "(专)[响应]钻石剑",
-                    "zuanShiJian_info": "【耐久4｜配方：3水系<span class='lan'>【素材】</span>】<br>【钻石破甲】：攻击时移除1【耐久】，伤害+1；主动攻击无法应战。<br>【精准开采】：【采集】可改为令任意角色弃1张牌作为<span class='lan'>【素材】</span>。",
-                    "xiaJieHeJinJian": "(专)[响应]下界合金剑",
-                    "xiaJieHeJinJian_info": "【耐久5｜配方：持有【钻石剑】，1火系+1暗系<span class='lan'>【素材】</span>】<br>【不毁之锋】：攻击时移除1【耐久】，伤害+1且无法应战。<br>【下界锻造】：攻击结算后若耐久为0，弃置全部<span class='lan'>【素材】</span>；每张火系或暗系素材恢复1【耐久】。",
+                    "muJian": "专属【木剑】",
+                    "muJian_info": "【耐久2｜配方：任意1<span style=\"color:#8B5E3C\">【素材】</span>】<br><span class='greentext'>响应【简易工具】</span><br><span class='tiaoJian'>（攻击时①，移除1【耐久】）</span>若未命中，结算后将攻击牌盖为<span style=\"color:#8B5E3C\">【素材】</span>。",
+                    "jinJian": "专属【金剑】",
+                    "jinJian_info": "【耐久1｜配方：1光系<span style=\"color:#8B5E3C\">【素材】</span>】<br><span class='greentext'>响应【急速挥砍】【回合限定】</span><br><span class='tiaoJian'>（【攻击行动】结束时，移除1【耐久】）</span>+1【攻击行动】或【法术行动】。<br><span class='greentext'>被动【矿物勘探】</span><br>【采集】改为四选一，其余牌弃置。",
+                    "shiJian": "专属【石剑】",
+                    "shiJian_info": "【耐久2｜配方：1地系<span style=\"color:#8B5E3C\">【素材】</span>】<br><span class='greentext'>响应【沉重格挡】</span><br><span class='tiaoJian'>（应战时①，移除1【耐久】）</span>将1张攻击牌视为与当前攻击同系的攻击牌应战；<span class='tiaoJian'>（若命中）</span>额外发动1次【采集】。<br><span class='greentext'>被动【粗糙采掘】</span><br>【采集】改为二选一，另一张弃置。",
+                    "tieJian": "专属【铁剑】",
+                    "tieJian_info": "【耐久3｜配方：2张同系<span style=\"color:#8B5E3C\">【素材】</span>】<br><span class='greentext'>响应【稳定锋刃】</span><br><span class='tiaoJian'>（攻击时①，移除1【耐久】）</span>本次攻击伤害+1。<br><span class='greentext'>被动【矿脉精炼】</span><br>【采集】改为三选一，其余牌弃置。",
+                    "zuanShiJian": "专属【钻石剑】",
+                    "zuanShiJian_info": "【耐久4｜配方：3水系<span style=\"color:#8B5E3C\">【素材】</span>】<br><span class='greentext'>响应【钻石破甲】</span><br><span class='tiaoJian'>（攻击时①，移除1【耐久】）</span>本次攻击伤害+1；<span class='tiaoJian'>（若为主动攻击）</span>本次攻击无法应战。<br><span class='greentext'>响应【精准开采】</span><br><span class='tiaoJian'>（发动【采集】时）</span>可以改为令1名有可弃置牌的角色弃1张牌作为<span style=\"color:#8B5E3C\">【素材】</span>。",
+                    "xiaJieHeJinJian": "专属【下界合金剑】",
+                    "xiaJieHeJinJian_info": "【耐久5｜配方：持有【钻石剑】，1火系+1暗系<span style=\"color:#8B5E3C\">【素材】</span>】<br><span class='greentext'>响应【不毁之锋】</span><br><span class='tiaoJian'>（攻击时①，移除1【耐久】）</span>本次攻击伤害+1且无法应战。<br><span class='greentext'>被动【下界锻造】</span><br><span class='tiaoJian'>（攻击结算结束时，若【耐久】为0）</span>展示并弃置全部<span style=\"color:#8B5E3C\">【素材】</span>；每张火系或暗系<span style=\"color:#8B5E3C\">【素材】</span>令当前剑+1【耐久】。",
                     "jianYiGongJu": "响应【简易工具】",
-                    "jianYiGongJu_info": "<span class='tiaoJian'>（当前剑为【木剑】，攻击时移除1【耐久】）</span>若本次攻击未命中，结算结束后将本次使用的攻击牌作为<span class='lan'>【素材】</span>盖放于角色旁。",
+                    "jianYiGongJu_info": "<span class='tiaoJian'>（当前剑为【木剑】，攻击时移除1【耐久】）</span>若本次攻击未命中，结算结束后将本次使用的攻击牌作为<span style=\"color:#8B5E3C\">【素材】</span>盖放于角色旁。",
                     "jiSuHuiKan": "响应【急速挥砍】",
                     "jiSuHuiKan_info": "【回合限定】<span class='tiaoJian'>（当前剑为【金剑】，【攻击行动】结束时移除1【耐久】）</span>+1【攻击行动】或【法术行动】。",
                     "kuangWuKanTan": "被动【矿物勘探】",
-                    "kuangWuKanTan_info": "<span class='tiaoJian'>（当前剑为【金剑】，发动【采集】时）</span>改为查看牌库顶4张牌，选择1张作为<span class='lan'>【素材】</span>，弃置其余牌。",
+                    "kuangWuKanTan_info": "<span class='tiaoJian'>（当前剑为【金剑】，发动【采集】时）</span>改为查看牌库顶4张牌，选择1张作为<span style=\"color:#8B5E3C\">【素材】</span>，弃置其余牌。",
                     "chenZhongGeDang": "响应【沉重格挡】",
-                    "chenZhongGeDang_info": "<span class='tiaoJian'>（当前剑为【石剑】，应战时移除1【耐久】）</span>可以将任意1张攻击牌视为与当前攻击同系的攻击牌应战；若本次应战攻击命中，额外发动一次【采集】。",
+                    "chenZhongGeDang_info": "<span class='tiaoJian'>（当前剑为【石剑】，应战时移除1【耐久】）</span>将1张攻击牌视为与当前攻击同系的攻击牌应战；<span class='tiaoJian'>（若命中）</span>额外发动1次【采集】。",
                     "cuCaoCaiJue": "被动【粗糙采掘】",
-                    "cuCaoCaiJue_info": "<span class='tiaoJian'>（当前剑为【石剑】，发动【采集】时）</span>改为查看牌库顶2张牌，选择1张作为<span class='lan'>【素材】</span>，弃置另一张。",
+                    "cuCaoCaiJue_info": "<span class='tiaoJian'>（当前剑为【石剑】，发动【采集】时）</span>改为查看牌库顶2张牌，选择1张作为<span style=\"color:#8B5E3C\">【素材】</span>，弃置另一张。",
                     "wenDingFengRen": "响应【稳定锋刃】",
                     "wenDingFengRen_info": "<span class='tiaoJian'>（当前剑为【铁剑】，攻击时移除1【耐久】）</span>本次攻击伤害+1。",
                     "kuangMaiJingLian": "被动【矿脉精炼】",
-                    "kuangMaiJingLian_info": "<span class='tiaoJian'>（当前剑为【铁剑】，发动【采集】时）</span>改为查看牌库顶3张牌，选择1张作为<span class='lan'>【素材】</span>，弃置其余牌。",
+                    "kuangMaiJingLian_info": "<span class='tiaoJian'>（当前剑为【铁剑】，发动【采集】时）</span>改为查看牌库顶3张牌，选择1张作为<span style=\"color:#8B5E3C\">【素材】</span>，弃置其余牌。",
                     "zuanShiPoJia": "响应【钻石破甲】",
-                    "zuanShiPoJia_info": "<span class='tiaoJian'>（当前剑为【钻石剑】，攻击时移除1【耐久】）</span>本次攻击伤害+1；若为主动攻击，则无法被应战。",
+                    "zuanShiPoJia_info": "<span class='tiaoJian'>（当前剑为【钻石剑】，攻击时移除1【耐久】）</span>本次攻击伤害+1；<span class='tiaoJian'>（若为主动攻击）</span>本次攻击无法应战。",
                     "jingZhunKaiCai": "响应【精准开采】",
-                    "jingZhunKaiCai_info": "<span class='tiaoJian'>（当前剑为【钻石剑】，发动【采集】时）</span>可以改为选择任意一名有可弃置牌的角色，令其弃置1张牌作为<span class='lan'>【素材】</span>。",
+                    "jingZhunKaiCai_info": "<span class='tiaoJian'>（当前剑为【钻石剑】，发动【采集】时）</span>可以改为令1名有可弃置牌的角色弃1张牌作为<span style=\"color:#8B5E3C\">【素材】</span>。",
                     "buHuiZhiFeng": "响应【不毁之锋】",
-                    "buHuiZhiFeng_info": "<span class='tiaoJian'>（当前剑为【下界合金剑】，攻击时移除1【耐久】）</span>本次攻击伤害+1且无法被应战。",
+                    "buHuiZhiFeng_info": "<span class='tiaoJian'>（当前剑为【下界合金剑】，攻击时移除1【耐久】）</span>本次攻击伤害+1且无法应战。",
                     "xiaJieDuanZao": "被动【下界锻造】",
-                    "xiaJieDuanZao_info": "<span class='tiaoJian'>（当前攻击结算结束时，若【下界合金剑】的【耐久】为0）</span>展示并弃置所有<span class='lan'>【素材】</span>；其中每有1张火系或暗系<span class='lan'>【素材】</span>，令【下界合金剑】+1【耐久】。",
+                    "xiaJieDuanZao_info": "<span class='tiaoJian'>（当前攻击结算结束时，若【下界合金剑】的【耐久】为0）</span>展示并弃置全部<span style=\"color:#8B5E3C\">【素材】</span>；每张火系或暗系<span style=\"color:#8B5E3C\">【素材】</span>令当前剑+1【耐久】。",
                     "lianJi": "连击",
-                    "lianJi_info": "<span class='lan'>【连击】</span>为桐谷和人专属指示物，上限为3；<span class='tiaoJian'>（【普通形态】下）</span>跨回合保留。",
+                    "lianJi_info": "<span style=\"color:#8E44AD\">【连击】</span>为桐谷和人专属指示物，上限为3。",
                     "fengBiZhe": "被动【封弊者】",
-                    "fengBiZhe_info": "<span class='tiaoJian'>（【普通形态】下）</span>主动【攻击行动】结束后+1<span class='lan'>【连击】</span>；本回合第4次及之后的主动攻击无法应战。",
+                    "fengBiZhe_info": "<span class='tiaoJian'>（【普通形态】下，主动【攻击行动】结束时）</span>+1<span style=\"color:#8E44AD\">【连击】</span>；本回合第4次及之后的主动攻击无法应战。",
                     "erDaoLiu": "被动【二刀流】",
-                    "erDaoLiu_info": "<span class='tiaoJian'>（【普通形态】下，主动攻击行动结束后，<span class='lan'>【连击】</span>已满）</span>【横置】进入【二刀流形态】并+1【攻击行动】。入形后的第一次主动攻击若与入形攻击异系，伤害+1。回合结束时清空<span class='lan'>【连击】</span>并【重置】。",
+                    "erDaoLiu_info": "<span class='tiaoJian'>（【普通形态】下，主动【攻击行动】结束后，</span><span style=\"color:#8E44AD\">【连击】</span><span class='tiaoJian'>已满）</span>【横置】进入【二刀流形态】，+1【攻击行动】，入形后的第一次主动攻击若与入形攻击异系，伤害+1；<br><span class='tiaoJian'>（回合结束时）</span>清空<span style=\"color:#8E44AD\">【连击】</span>并【重置】。",
                     "erDaoLiuZhuangTai": "二刀流形态",
-                    "erDaoLiuZhuangTai_info": "<span class='tiaoJian'>（【二刀流形态】下）</span>入形后的第一次主动攻击若与入形攻击异系，伤害+1；回合结束时清空<span class='lan'>【连击】</span>并【重置】。",
+                    "erDaoLiuZhuangTai_info": "<span class='tiaoJian'>（【二刀流形态】下）</span>入形后的第一次主动攻击若与入形攻击异系，伤害+1；<span class='tiaoJian'>（回合结束时）</span>清空<span style=\"color:#8E44AD\">【连击】</span>并【重置】。",
                     "yinSuChongJi": "响应【音速冲击】",
-                    "yinSuChongJi_info": "【回合限定】<span class='tiaoJian'>（【普通形态】下，主动攻击前①）</span>摸1张牌【强制】；命中则伤害+1，未命中则行动结束后+1【攻击行动】。",
+                    "yinSuChongJi_info": "【回合限定】<span class='tiaoJian'>（【普通形态】下，主动攻击前①）</span>摸1张牌【强制】；本次攻击伤害+1，<span class='tiaoJian'>（此次攻击未命中②）</span>+1【攻击行动】。",
                     "siFangZhan": "响应【四方斩】",
-                    "siFangZhan_info": "<span class='tiaoJian'>（【二刀流形态】下，主动攻击前①，移除1<span class='lan'>【连击】</span>）</span>选择：伤害+1；或伤害-1，行动结束后+1【攻击行动】。",
+                    "siFangZhan_info": "<span class='tiaoJian'>（【二刀流形态】下，主动攻击前①，移除1</span><span style=\"color:#8E44AD\">【连击】</span><span class='tiaoJian'>）</span>选择一项发动：<br>·本次攻击伤害+1；<br>·本次攻击伤害-1，攻击结束后，+1【攻击行动】。",
                     "xingBaoQiLiuZhan": "响应【星爆气流斩】",
-                    "xingBaoQiLiuZhan_info": "【宝石】<span class='tiaoJian'>（【二刀流形态】下，主动攻击命中后②，清空<span class='lan'>【连击】</span>）</span>可弃至多X张攻击牌，X不超过移除数且至多为3；弃牌须与本次攻击及彼此异系。伤害+Y+1，Y为弃牌数。行动结束后【重置】，本回合不能再获得或执行额外【攻击行动】。",
+                    "xingBaoQiLiuZhan_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（【二刀流形态】下，主动攻击命中后②，清空</span><span style=\"color:#8E44AD\">【连击】</span><span class='tiaoJian'>）</span>可以弃置攻击牌，数量不超过本次移除的<span style=\"color:#8E44AD\">【连击】</span>数，且须与本次攻击及彼此异系。本次攻击伤害+X+1，X为弃牌数。<span class='tiaoJian'>（行动结束后）</span>【重置】，本回合不能再获得或执行额外【攻击行动】。",
                     "xingBaoQiLiuZhanFengSuo": "星爆气流斩",
                     "xingBaoQiLiuZhanFengSuo_info": "本回合不能再获得或执行额外【攻击行动】。",
                     "miaoYun": "喵运",
-                    "miaoYun_info": "<span class='lan'>【喵运】</span>为一姬的专属指示物，上限为5。",
+                    "miaoYun_info": "<span style=\"color:#B33D75\">【喵运】</span>为一姬的专属指示物，上限为5。",
                     "yiJiBaoPai": "宝牌",
-                    "yiJiBaoPai_info": "<span class='lan'>【宝牌】</span>为全场公开的专属牌，上限为4。与<span class='lan'>【宝牌】</span>同系，指与当前任意一张<span class='lan'>【宝牌】</span>同系。",
+                    "yiJiBaoPai_info": "<span class='hong'>【宝牌】</span>为全场公开的专属牌，上限为4。",
                     "baoPaiZhiShi": "被动【宝牌指示】",
-                    "baoPaiZhiShi_info": "<span class='tiaoJian'>（游戏开始时）</span>展示牌库顶1张牌作为<span class='lan'>【宝牌】</span>。使用或打出与当前某张<span class='lan'>【宝牌】</span>同系的牌后，+1<span class='lan'>【喵运】</span>。",
+                    "baoPaiZhiShi_info": "<span class='tiaoJian'>（游戏开始时）</span>展示牌库顶1张牌作为<span class='hong'>【宝牌】</span>。使用或打出与当前某张<span class='hong'>【宝牌】</span>同系的牌后，+1<span style=\"color:#B33D75\">【喵运】</span>。",
                     "duanYaoJiuZhuangTai": "断幺九",
                     "duanYaoJiuZhuangTai_info": "手牌数不少于3，且没有【圣光】【暗灭】【圣盾】【虚弱】【中毒】。",
                     "duanYaoJiuMiao": "响应【断幺九喵】",
-                    "duanYaoJiuMiao_info": "当你的手牌数不少于3，且手牌中没有【圣光】【暗灭】或基础效果牌时，你处于<span class='lan'>【断幺九】</span>状态。<br><span class='tiaoJian'>（特殊行动结束后，处于<span class='lan'>【断幺九】</span>状态）</span>可以展示并弃置全部手牌。令Y为弃置手牌数，X为其中与当前任意<span class='lan'>【宝牌】</span>同系的牌数，Z为当前<span class='lan'>【宝牌】</span>数：+X+1<span class='lan'>【喵运】</span>；摸Y-X张牌【强制】；移除全部<span class='lan'>【宝牌】</span>，展示牌库顶Z张牌，将其作为新的<span class='lan'>【宝牌】</span>。",
+                    "duanYaoJiuMiao_info": "<span class='tiaoJian'>（你的手牌数＞2，且手牌中没有【圣光】【暗灭】或基础效果牌时）</span>你处于<span style=\"color:#537D28\">【断幺九】</span>状态；<br><span class='tiaoJian'>（【特殊行动】结束后，若你处于</span><span style=\"color:#537D28\">【断幺九】</span><span class='tiaoJian'>状态）</span>展示并弃置全部手牌。令Y为弃置手牌数，X为其中与当前任意<span class='hong'>【宝牌】</span>同系的牌数：+（X+1）<span style=\"color:#B33D75\">【喵运】</span>；摸Y-X张牌【强制】；<br>移除全部<span class='hong'>【宝牌】</span>，展示牌库顶等量的牌作为新的<span class='hong'>【宝牌】</span>。",
                     "liZhiMiao": "响应【立直喵】",
-                    "liZhiMiao_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①，攻击牌与某张<span class='lan'>【宝牌】</span>同系）</span>伤害+1；若命中，+1【法术行动】。",
+                    "liZhiMiao_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①，攻击牌与某张</span><span class='hong'>【宝牌】</span><span class='tiaoJian'>同系）</span>本次攻击伤害+1，<span class='tiaoJian'>（若命中）</span>+1【法术行动】。",
                     "duiDuiHuMiao": "法术【对对胡喵】",
-                    "duiDuiHuMiao_info": "<span class='tiaoJian'>（弃1张法术牌）</span>+1<span class='lan'>【喵运】</span>，指定一名对手并展示牌库顶牌：与某张<span class='lan'>【宝牌】</span>同系，对目标造成2点法术伤害③；否则你与目标各受1点法术伤害③。结算后，选择移除1张<span class='lan'>【宝牌】</span>，将展示牌作为新的<span class='lan'>【宝牌】</span>。",
+                    "duiDuiHuMiao_info": "<span class='tiaoJian'>（弃置1张法术牌）</span>+1<span style=\"color:#B33D75\">【喵运】</span>，指定1名对手并展示牌库顶1张牌：<br>·与某张<span class='hong'>【宝牌】</span>同系：对目标造成2点法术伤害③；<br>·与所有<span class='hong'>【宝牌】</span>不同系：你与目标各受1点法术伤害③。<br>结算后，选择移除1张<span class='hong'>【宝牌】</span>，将展示牌作为新的<span class='hong'>【宝牌】</span>。",
                     "haiDiLaoYueMiao": "响应【海底捞月喵】",
-                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（你摸牌时）</span>可以展示最后摸到的1张牌。<br>若与某张<span class='lan'>【宝牌】</span>同系：+1【治疗】，+1<span class='lan'>【喵运】</span>。<br>若与所有<span class='lan'>【宝牌】</span>不同系，可以将该牌与其中1张<span class='lan'>【宝牌】</span>交换。",
+                    "haiDiLaoYueMiao_info": "<span class='tiaoJian'>（你摸牌时）</span>可以展示最后摸到的1张牌。<br>若与某张<span class='hong'>【宝牌】</span>同系：+1【治疗】，+1<span style=\"color:#B33D75\">【喵运】</span>。<br>若与所有<span class='hong'>【宝牌】</span>不同系，可以将该牌与其中1张<span class='hong'>【宝牌】</span>交换。",
                     "gangMiao": "启动【杠喵】",
-                    "gangMiao_info": "【水晶】<span class='tiaoJian'>（移除2<span class='lan'>【喵运】</span>）</span>展示牌库顶1张牌，额外作为你的<span class='lan'>【宝牌】</span>。",
+                    "gangMiao_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除2</span><span style=\"color:#B33D75\">【喵运】</span><span class='tiaoJian'>）</span>展示牌库顶1张牌，额外作为你的<span class='hong'>【宝牌】</span>。",
                     "yiManShiJianMiao": "法术【役满时间喵】",
-                    "yiManShiJianMiao_info": "【宝石】<span class='tiaoJian'>（移除5<span class='lan'>【喵运】</span>）</span>查看并弃置牌库顶5张牌，对一名对手造成X点法术伤害③；X为其中与某张<span class='lan'>【宝牌】</span>同系的牌数。若X＞2，+1【法术行动】；若X＞4，额外+5<span class='lan'>【喵运】</span>。",
+                    "yiManShiJianMiao_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（移除5</span><span style=\"color:#B33D75\">【喵运】</span><span class='tiaoJian'>）</span>展示并弃置牌库顶5张牌，对1名对手造成X点法术伤害③；X为其中与某张<span class='hong'>【宝牌】</span>同系的牌数。<br>若X＞2，+1【法术行动】；若X＞4，额外+5<span style=\"color:#B33D75\">【喵运】</span>。",
                     "moQiShaoNianQiong": "被动【莫欺少年穷】",
-                    "moQiShaoNianQiong_info": "<span class='tiaoJian'>（回合结束时，本回合未执行【特殊行动】且未因你的效果令对方士气下降）</span>+1<span class='lan'>【斗气】</span>、+1【治疗】；若己方士气较低，改为+2<span class='lan'>【斗气】</span>并+1【水晶】。【斗气】已满仍获得【水晶】。",
+                    "moQiShaoNianQiong_info": "<span class='tiaoJian'>（回合结束时，本回合未执行【特殊行动】且你未导致对方士气下降）</span>+1<span style=\"color:#A13F32\">【斗气】</span><span class='lan'>，</span>+1【治疗】，<br><span class='tiaoJian'>（若己方士气落后）</span>改为+2<span style=\"color:#A13F32\">【斗气】</span>并+1<span class='lan'>【水晶】</span>。",
                     "fenJue": "被动【焚决】",
-                    "fenJue_info": "游戏开始时没有【异火】。<span class='tiaoJian'>（回合开始时）</span>若有黯淡【异火】，将其中1张翻亮【强制】。",
+                    "fenJue_info": "<span class='tiaoJian'>（游戏开始时）</span>你没有<span class='hong'>【异火】</span>。<br><span class='tiaoJian'>（你的回合开始时）</span>若有黯淡<span class='hong'>【异火】</span>，选择其中1张翻至明亮面。",
                     "baJiBeng": "响应【八极崩】",
-                    "baJiBeng_info": "<span class='tiaoJian'>（攻击命中后③，目标没有【暗劲】，移除1<span class='lan'>【斗气】</span>）</span>将专属卡【暗劲】置于攻击目标面前。",
+                    "baJiBeng_info": "<span class='tiaoJian'>（攻击命中后③，移除1</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>将【暗劲】置于攻击目标面前。",
                     "yanFenShiLangChi": "响应【焰分噬浪尺】",
-                    "yanFenShiLangChi_info": "<span class='tiaoJian'>（已炼化至少1张【异火】，攻击命中后③，移除3<span class='lan'>【斗气】</span>）</span>选择攻击目标以外的另外两名角色，对其各造成X点法术伤害；X为已炼化【异火】数量÷2，向上取整。",
+                    "yanFenShiLangChi_info": "<span class='tiaoJian'>（【异火】＞0，攻击命中后③，移除3</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>选择攻击目标外的另外2名角色，对其各造成X点法术伤害；X为已炼化<span class='hong'>【异火】</span>数量÷2，向上取整。",
                     "lianQiHuaDan": "法术【炼气化丹】",
-                    "lianQiHuaDan_info": "<span class='tiaoJian'>（弃置X张法术牌，X≥1）</span>+X<span class='lan'>【斗气】</span>；若你额外支付1【水晶】，再+1<span class='lan'>【斗气】</span>、+1【攻击行动】。",
+                    "lianQiHuaDan_info": "<span class='tiaoJian'>（弃置X张法术牌）</span>+X<span style=\"color:#A13F32\">【斗气】</span>；<br><span class='tiaoJian'>（若你额外支付1</span><span class='lan'>【水晶】</span><span class='tiaoJian'>）</span>+1<span style=\"color:#A13F32\">【斗气】</span>，+1【攻击行动】。",
                     "fenJueLianHua": "启动【焚诀·炼化】",
-                    "fenJueLianHua_info": "依次炼化【青莲地心火】→【陨落心炎】→【骨灵冷火】：<br>青莲：【水晶】、2<span class='lan'>【斗气】</span>，自伤2。<br>陨落：【水晶】、3<span class='lan'>【斗气】</span>，自伤3。<br>骨灵：【宝石】、3<span class='lan'>【斗气】</span>，自伤4。<br>若自伤及爆牌令己方士气下降，炼化失败并返还1<span class='lan'>【斗气】</span>；否则放置对应【异火】，骨灵成功后失去此技能。",
+                    "fenJueLianHua_info": "依次炼化<span class='hong'>【青莲地心火】</span>→<span class='hong'>【陨落心炎】</span>→<span class='hong'>【骨灵冷火】</span>：<br><span class='hong'>【青莲地心火】</span>：<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除2</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>对自己造成2点法术伤害。<br><span class='hong'>【陨落心炎】</span>：<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除3</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>对自己造成3点法术伤害。<br><span class='hong'>【骨灵冷火】</span>：<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（移除3</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>对自己造成4点法术伤害。<br><span class='tiaoJian'>（若炼化导致己方士气下降）</span>炼化失败并返还1<span style=\"color:#A13F32\">【斗气】</span>；否则放置对应<span class='hong'>【异火】</span>，<span class='tiaoJian'>（全部炼化成功后）</span>失去此技能。",
                     "tianHuoSanXuanBian": "启动【天火三玄变】",
-                    "tianHuoSanXuanBian_info": "【回合限定】【水晶】<span class='tiaoJian'>（移除X<span class='lan'>【斗气】</span>，选择X张明亮【异火】，1≤X≤3）</span>本回合不能发动【佛怒火莲】。下一次主动攻击：<br>X≥1：伤害+1。　X≥2：无视【圣盾】且不能以【治疗】抵伤。　X=3：无法应战。<br>命中时可将己方1【水晶】转为1【宝石】；攻击结束后将所选异火翻暗，未攻击则于回合结束翻暗。",
+                    "tianHuoSanXuanBian_info": "【回合限定】<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除X</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>，选择X张明亮</span><span class='hong'>【异火】</span><span class='tiaoJian'>）</span>本回合不能发动【佛怒火莲】。本回合的下一次主动攻击伤害+1，并获得以下累计效果：<br>X≥2：无视【圣盾】且不能以【治疗】抵伤；<br>X=3：无法应战。<br><span class='tiaoJian'>（命中时）</span>可以将1名我方角色能量区的1<span class='lan'>【水晶】</span>翻为1<span style=\"color:#E02B17\">【宝石】</span>；<span class='tiaoJian'>（【攻击行动】结束后）</span>将所选异火翻为黯淡状态。",
                     "foNuHuoLian": "法术【佛怒火莲】",
-                    "foNuHuoLian_info": "【宝石】<span class='tiaoJian'>（选择2或3张明亮【异火】）</span>结算后翻暗：<br>2张：对一名对手造成2点法术伤害③，再对自己造成1点法术伤害③。<br>3张：对一名对手造成3点法术伤害③，对其他对手各造成1点法术伤害③。",
+                    "foNuHuoLian_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（选择2或3张明亮【异火】）</span>结算后翻暗：<br>2张：对1名对手造成2点法术伤害③，再对自己造成1点法术伤害③。<br>3张：对1名对手造成3点法术伤害③，对其他对手各造成1点法术伤害③。",
                     "xiaoYanDouQi": "斗气",
-                    "xiaoYanDouQi_info": "<span class='lan'>【斗气】</span>为萧炎专属指示物，上限为6。",
+                    "xiaoYanDouQi_info": "<span style=\"color:#A13F32\">【斗气】</span>为萧炎专属指示物，上限为6。",
                     "xiaoYanYiHuoManager": "异火管理",
-                    "xiaoYanYiHuoManager_info": "【异火】炼化前位于场外；炼化后以明亮面放置。翻暗时失去对应技能，翻亮后恢复。",
-                    "xiaoYanAnJin": "(专)【暗劲】",
-                    "xiaoYanAnJin_info": "<span class='tiaoJian'>（拥有者回合开始时）</span>移除【暗劲】，萧炎对其造成1点法术伤害③；若因此令对方士气下降，萧炎自身能量区+1【水晶】。每名角色上限为1。",
-                    "qingLianDiXinHuo": "(专)【青莲地心火】",
-                    "qingLianDiXinHuo_info": "【地火焚身】：<span class='tiaoJian'>（对目标造成实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。翻面后变为黯淡。",
-                    "yunLuoXinYan": "(专)【陨落心炎】",
-                    "yunLuoXinYan_info": "【心火重燃】：<span class='tiaoJian'>（特殊行动后）</span>必须选择：+1<span class='lan'>【斗气】</span>；或将另一张黯淡【异火】翻亮。翻面后变为黯淡。",
-                    "guLingLengHuo": "(专)【骨灵冷火】",
-                    "guLingLengHuo_info": "【冷火灼魂】：<span class='tiaoJian'>（对另一名角色造成实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；对自己的伤害不能触发。翻面后变为黯淡。",
-                    "anDanQingLianDiXinHuo": "(专)【黯淡的青莲地心火】",
+                    "xiaoYanAnJin": "专属【暗劲】",
+                    "xiaoYanAnJin_info": "<span class='tiaoJian'>（拥有者回合开始时）</span>移除【暗劲】，萧炎对其造成1点法术伤害③；<br><span class='tiaoJian'>（若因此令对方士气下降）</span>萧炎+1<span class='lan'>【水晶】</span>。",
+                    "qingLianDiXinHuo": "专属【青莲地心火】",
+                    "qingLianDiXinHuo_info": "<span class='greentext'>响应【地火焚身】</span><br><span class='tiaoJian'>（对目标造成正数实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
+                    "yunLuoXinYan": "专属【陨落心炎】",
+                    "yunLuoXinYan_info": "<span class='greentext'>响应【心火重燃】</span><br><span class='tiaoJian'>（【特殊行动】结束后）</span>必须选择一项：<br>·+1<span style=\"color:#A13F32\">【斗气】</span>；<br>·将另一张黯淡<span class='hong'>【异火】</span>翻至明亮面。",
+                    "guLingLengHuo": "专属【骨灵冷火】",
+                    "guLingLengHuo_info": "<span class='greentext'>响应【冷火灼魂】</span><br><span class='tiaoJian'>（对其他角色造成正数实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；此追加伤害不再触发【冷火灼魂】。",
+                    "anDanQingLianDiXinHuo": "专属【黯淡的青莲地心火】",
                     "anDanQingLianDiXinHuo_info": "黯淡的【青莲地心火】，通过【焚决】可重新翻至明亮面。",
-                    "anDanYunLuoXinYan": "(专)【黯淡的陨落心炎】",
+                    "anDanYunLuoXinYan": "专属【黯淡的陨落心炎】",
                     "anDanYunLuoXinYan_info": "黯淡的【陨落心炎】，通过【焚决】可重新翻至明亮面。",
-                    "anDanGuLingLengHuo": "(专)【黯淡的骨灵冷火】",
+                    "anDanGuLingLengHuo": "专属【黯淡的骨灵冷火】",
                     "anDanGuLingLengHuo_info": "黯淡的【骨灵冷火】，通过【焚决】可重新翻至明亮面。",
                     "diHuoFenShen": "响应【地火焚身】",
-                    "diHuoFenShen_info": "<span class='tiaoJian'>（对目标造成实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
+                    "diHuoFenShen_info": "<span class='tiaoJian'>（对目标造成正数实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
                     "xinHuoChongRan": "响应【心火重燃】",
-                    "xinHuoChongRan_info": "<span class='tiaoJian'>（特殊行动后）</span>必须选择：+1<span class='lan'>【斗气】</span>；或将另一张黯淡【异火】翻亮。",
+                    "xinHuoChongRan_info": "<span class='tiaoJian'>（【特殊行动】结束后）</span>必须选择一项：<br>·+1<span style=\"color:#A13F32\">【斗气】</span>；<br>·将另一张黯淡<span class='hong'>【异火】</span>翻至明亮面。",
                     "lengHuoZhuoHun": "响应【冷火灼魂】",
-                    "lengHuoZhuoHun_info": "<span class='tiaoJian'>（对另一名角色造成实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；对自己的伤害不能触发。",
+                    "lengHuoZhuoHun_info": "<span class='tiaoJian'>（对其他角色造成正数实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；此追加伤害不再触发【冷火灼魂】。",
                     "tianHuoSanXuanBianState": "天火三玄变",
                     "tianHuoSanXuanBianJinZhiFoNu": "天火三玄变",
                 },
@@ -4900,7 +4929,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.13",
+            "version": "2.10",
         },
         "files": {
             "character": [

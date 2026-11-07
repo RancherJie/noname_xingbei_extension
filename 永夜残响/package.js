@@ -3,7 +3,7 @@ extension["永夜残响"]={
     author:"蒙牛",
     netdisk:"",
     forum:"",
-    version:"2.6",
+    version:"2.7",
     files: [
     "LICENSE",
     "README.md",

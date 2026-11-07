@@ -92,12 +92,12 @@ extension["十周年语音包"] = {
 };
 
 extension["创世纪"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/08",
 	"intro": "添加角色贝亚娜斗神、百花缭乱、露米娅、天启者、狱血魔神。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.8",
+	"version": "2.9",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -439,12 +439,12 @@ extension["十周年-噩梦人机"] = {
 };
 
 extension["宿命挽歌"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/08",
 	"intro": "添加角色赵灵儿、李逍遥、林月如、阿奴、拜月教主、鬼将军、蛇妖男、狐妖女及不可选的水魔兽、僵尸转化形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.32",
+	"version": "2.33",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -489,7 +489,7 @@ extension["宿命挽歌"] = {
 		"zhaoLingEr.jpg",
 		"zhaoLingEr_mengShe.png"
 	],
-	"size": "79.27MB"
+	"size": "79.28MB"
 };
 
 extension["峡谷幻音"] = {
@@ -530,12 +530,12 @@ extension["峡谷幻音"] = {
 };
 
 extension["永夜残响"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/08",
 	"intro": "添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三、鸢一折纸；含隐藏反转形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.6",
+	"version": "2.7",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -561,16 +561,16 @@ extension["永夜残响"] = {
 		"wHeQingLi.jpg",
 		"yuanYiZheZhi.png"
 	],
-	"size": "11.91MB"
+	"size": "11.92MB"
 };
 
 extension["bigcowcow"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/08",
 	"intro": "添加角色优菈、赫克托、史蒂夫、桐谷和人、一姬、萧炎。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.13",
+	"version": "2.14",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -603,12 +603,12 @@ extension["bigcowcow"] = {
 };
 
 extension["电啸龙吟"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/08",
 	"intro": "添加角色奶龙、电棍Otto、永雏塔菲。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.8",
+	"version": "1.9",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -690,4 +690,59 @@ extension["轮回遗梦"] = {
 		"xueJian.png"
 	],
 	"size": "34.38MB"
+};
+
+extension['百年战争·序章'] = {
+	"date": "2026/11/08",
+	"intro": "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
+	"author": "北风/蒙牛",
+	"netdisk": "",
+	"forum": "",
+	"version": "0.2.0-dev",
+	"files": [
+		"audio-data/manifest.json",
+		"audio-data/pack-1100fad92b76de51ee0452a3352c0b373ef1175f64b79c3387c8f54380360f4f.json",
+		"audio-data/pack-8793cdec7fd4842f25a19ee441cea6192f077e7020561576477b2d839853ddfd.json",
+		"bnzz_bingShuangJianZong.png",
+		"bnzz_buSiZhe.png",
+		"bnzz_fangZhuQiShi.png",
+		"bnzz_fengYunZhiLing.png",
+		"bnzz_gongNengJiShi.png",
+		"bnzz_haiShenJiSi.png",
+		"bnzz_huiXiangYueShi.png",
+		"bnzz_jingLingChiHou.png",
+		"bnzz_jinWeiQiangShou.png",
+		"bnzz_juJiShou.png",
+		"bnzz_lingYuQiShi.png",
+		"bnzz_qiuDaoZhe.png",
+		"bnzz_yaoJiXueZhe.png",
+		"bnzz_zhiMoZhe.png",
+		"bnzz_zhuoYanWuZhe.png",
+		"extension.js",
+		"info.json",
+		"mark_bnzz_anWang.png",
+		"mark_bnzz_guangWang.png",
+		"mark_bnzz_huoWuXingTai.png",
+		"mark_bnzz_miaoZhunXingTai.png",
+		"mark_bnzz_qiangDan.png",
+		"mark_bnzz_renNai.png",
+		"mark_bnzz_shanXian.png",
+		"mark_bnzz_shuFu.png",
+		"mark_bnzz_siWangLangYong_blocked.png",
+		"mark_bnzz_wanQiQiMing_effect.png",
+		"mark_bnzz_xueShang.png",
+		"mark_bnzz_xuLi.png",
+		"mark_bnzz_xuNengChi.png",
+		"mark_bnzz_xunMiZhanJi_block.png",
+		"mark_bnzz_youHuo.png",
+		"mark_bnzz_yuanLi.png",
+		"mark_bnzz_yueLv.png",
+		"mark_bnzz_zhanHun.png",
+		"mark_bnzz_zhenYanXingTai.png",
+		"mark_bnzz_zhiGanXingTai.png",
+		"mark_bnzz_zhouFuZhiChui.png",
+		"package.js",
+		"README.md"
+	],
+	"size": "15.42MB"
 };
