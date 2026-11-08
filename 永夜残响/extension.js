@@ -213,6 +213,124 @@
 
 /* AUDIO_PACK_RUNTIME_END */
 game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响","sha256":"9e4e092d812d620ac5e7b6fef281c6c7f107fb319f2a66015a0f3c41cb2a3d80"}, function(lib, game, ui, get, ai, _status) {
+    // <diy-form-preview>
+    // Copies stay inside each standalone expansion; the shared UI hook installs once.
+    function installDiyFormPreview(groups, routes) {
+        var preview = lib.diyFormPreview;
+        if(!preview) {
+            preview = lib.diyFormPreview = { groups: Object.create(null) };
+        }
+        groups.forEach(function(group) {
+            group.forEach(function(id) { preview.groups[id] = group.slice(); });
+        });
+        preview.routes = preview.routes || Object.create(null);
+        Object.assign(preview.routes, routes || {});
+        if(preview.installed) return;
+        var createCharacter = ui.create.buttonPresets.character;
+        var characterCard = ui.click.charactercard;
+        preview.installed = true;
+        preview.forms = function(id) {
+            return (preview.groups[id] || []).filter(function(name) {
+                return !!lib.character[name] || Object.keys(lib.characterPack).some(function(pack) {
+                    return !!lib.characterPack[pack][name];
+                });
+            });
+        };
+        function listen(button, action) {
+            button.setAttribute('role', 'button');
+            button.tabIndex = 0;
+            function activate(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                ui.click.touchpop();
+                action();
+            }
+            button.addEventListener(lib.config.touchscreen ? 'touchend' : 'click', activate);
+            button.addEventListener('keydown', function(event) {
+                if(event.key === 'Enter' || event.key === ' ') activate(event);
+            });
+        }
+        ui.create.buttonPresets.character = function() {
+            var node = createCharacter.apply(this, arguments);
+            var forms = node && preview.forms(node.link);
+            if(!node) return node;
+            var existing = node.querySelector('.diy-form-preview');
+            if((!forms || forms.length < 2) && !preview.routes[node.link]) {
+                if(existing) existing.remove();
+                return node;
+            }
+            if(existing) return node;
+            var button = ui.create.div('.button.replaceButton.diy-form-preview', node);
+            button.textContent = preview.routes[node.link] ? '武器预览' : '形态预览';
+            Object.assign(button.style, { width: 'auto', padding: '0 5px', fontSize: '13px' });
+            listen(button, function() {
+                var list = preview.forms(node.link);
+                if(preview.routes[node.link]) {
+                    ui.click.charactercard(node.link, null, true);
+                } else if(list.length > 1) {
+                    ui.click.charactercard(list[(list.indexOf(node.link) + 1) % list.length], null, true);
+                }
+            });
+            return node;
+        };
+        ui.click.charactercard = function(name, source, noedit, resume) {
+            var previous = ui.window.lastElementChild;
+            var result = characterCard.apply(this, arguments);
+            var layer = ui.window.lastElementChild;
+            var forms = preview.forms(name);
+            var routes = preview.routes[name];
+            if(layer === previous || !layer || (forms.length < 2 && !routes)) return result;
+            var panel = layer.querySelector('.charactercard');
+            if(!panel) return result;
+            var portrait = panel.querySelector('.ava');
+            if(!portrait) return result;
+            var button = ui.create.div('.menubutton.large.diy-form-preview', portrait);
+            button.textContent = routes ? '切换预览武器' : '切换预览形态';
+            Object.assign(button.style, { position: 'absolute', left: '0', bottom: '0', width: '100%', height: '30px', lineHeight: '30px', margin: '0', fontSize: '16px', zIndex: '3' });
+            var caption = ui.create.div('.diy-form-preview-caption', portrait);
+            caption.textContent = name === forms[0] ? '初始形态' : '转化形态，无法直接开局';
+            Object.assign(caption.style, { position: 'absolute', left: '0', bottom: '34px', width: '100%', textAlign: 'center', fontSize: '13px', lineHeight: '22px', color: '#fff', background: 'rgba(0,0,0,0.65)', pointerEvents: 'none', zIndex: '3' });
+            if(routes && routes.length) {
+                var index = 0;
+                var skills = panel.querySelector('.characterskill');
+                var intro = panel.querySelector('.intro2');
+                var routeButton = skills && ui.create.div('.menubutton.large.diy-weapon-route', skills);
+                if(routeButton) skills.prepend(routeButton);
+                function showRoute() {
+                    var route = routes[index];
+                    (portrait.querySelector('.avatar') || portrait).setBackgroundImage('extension/轮回遗梦/' + route.image);
+                    caption.textContent = route.name + '预览，开局仍需选剑';
+                    if(routeButton) routeButton.textContent = route.name + '专属与路线';
+                    if(intro) {
+                        if(skills) {
+                            var active = skills.querySelector('.active');
+                            if(active) active.classList.remove('active');
+                        }
+                        if(routeButton) routeButton.classList.add('active');
+                        intro.innerHTML = route.content();
+                        intro.scrollTop = 0;
+                    }
+                }
+                if(routeButton) listen(routeButton, showRoute);
+                listen(button, function() {
+                    index = (index + 1) % routes.length;
+                    showRoute();
+                });
+                showRoute();
+                return result;
+            }
+            listen(button, function() {
+                var next = forms[(forms.indexOf(name) + 1) % forms.length];
+                // Only the independent detail panel changes. The source card,
+                // selection IDs, player and skin settings are never passed in.
+                var oldLayer = ui.window.lastElementChild;
+                ui.click.charactercard(next, null, true, resume);
+                if(ui.window.lastElementChild !== oldLayer) layer.remove();
+            });
+            return result;
+        };
+    }
+    // </diy-form-preview>
     // One manager owns both forms; all nested feather operations finish before switching.
     const oz = lib.yongYeZheZhiHelpers = {
         light: 'zheZhiGuangYu', dark: 'zheZhiHeiYu',
@@ -260,7 +378,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
             if(mark === this.light) this.keepLightMark(from);
             return true;
         },
-        async choose(p, prompt, candidates, score) {
+        async choose(p, prompt, candidates, score, optional) {
             if(!candidates.length) return null;
 
             const ids=candidates
@@ -281,7 +399,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
 
             const targets=(await p.chooseTarget(
                 prompt,
-                true,
+                !optional,
                 function(card,player,target) {
                     var ids=_status.event.ozCandidateIds||[];
                     return !!target&&ids.indexOf(target.playerid)!==-1;
@@ -509,7 +627,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
         zheZhiTianYi: {
             audio:'ext:永夜残响/audio/skill/yuanYiZheZhi/zheZhiTianYi.mp3',
             trigger:{player:'chengShouShangHai'},
-            filter:(e,p)=>!!e && e.num>0 && oz.count(p,oz.light)>0 && p.countCards('h')>0 && oz.players().some(t=>t!==p&&t.side===p.side&&oz.room(t,oz.light)),
+            filter:(e,p)=>!!e && oz.count(p,oz.light)>0 && p.countCards('h',c=>lib.filter.cardDiscardable(c,p))>0 && oz.players().some(t=>t!==p&&t.side===p.side&&oz.room(t,oz.light)),
             cost:async function(e,tr,p) {
                 const candidates=oz.players().filter(function(target){
                     return target!==p&&target.side===p.side&&oz.room(target,oz.light);
@@ -563,9 +681,11 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                 await p.removeBiShaShuiJing();
                 await oz.batch(p,async()=>{
                     for(const t of e.targets.slice().sortBySeat(p)) if(t.isIn()) await t.faShuDamage(1,p,'nocard');
-                    for(let i=0;i<4 && oz.count(p,oz.light)>0;i++) {
+                    const lightCount=oz.count(p,oz.light);
+                    for(let i=0;i<lightCount;i++) {
                         const t=await oz.choose(p,'日轮：分配1枚光羽',oz.players().filter(t=>t.side!==p.side&&oz.room(t,oz.light)),t=>oz.deployScore(p,t));
-                        if(!t||!await oz.move(p,t,oz.light)) break;
+                        if(!t) break;
+                        if(t!==p&&!await oz.move(p,t,oz.light)) break;
                     }
                 });
             },
@@ -643,6 +763,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
 
 },
         "precontent": function(){
+            installDiyFormPreview([["yeDaoShenShiXiang","fanZhuanShiXiang"],["yuanYiZheZhi","fanZhuanZheZhi"]]);
             var siMiNaiAudio = {
                 bingJieTuXi: "bingJieTuXi.mp3",
                 bingZhiShouHu: "bingZhiShouHu.mp3",
@@ -1046,8 +1167,6 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                                 "filter": function(event, player) {
                             return !!event &&
                                 event.num > 0 &&
-                                !!event.source &&
-                                event.source != player &&
                                 !player.isZhiShiWuMax('qinLiLingLi');
                         },
                                 "content": async function(event, trigger, player) {
@@ -2121,10 +2240,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                                             .baoNueGongZhongYan === true;
                                 },
                                 "content": async function(event, trigger, player) {
-                                    if(trigger.target &&
-                                        trigger.customArgs
-                                            .baoNueGongZhongYanMingZhong ===
-                                                true) {
+                                    var hit = !!trigger.customArgs
+                                        .baoNueGongZhongYanMingZhong;
+                                    if(hit && trigger.target) {
                                         var targets = game.filterPlayer(
                                             function(current) {
                                                 return current.side !=
@@ -2136,10 +2254,14 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                                             await target.faShuDamage(1, player);
                                         }
                                     }
-                                    await player.faShuDamage(2, player);
-                                    if(player.name == 'fanZhuanShiXiang' ||
+                                    if(hit) {
+                                        await player.faShuDamage(2, player);
+                                    }
+                                    if((hit ||
+                                        player.countZhiShiWu('shiXiangLingLi') == 0) &&
+                                        (player.name == 'fanZhuanShiXiang' ||
                                         player.name1 == 'fanZhuanShiXiang' ||
-                                        player.name2 == 'fanZhuanShiXiang') {
+                                        player.name2 == 'fanZhuanShiXiang')) {
                                         await lib.skill.yiShiHuiGui
                                             .returnToPrincess(player, true);
                                     }
@@ -2418,8 +2540,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                             '冰之祈愿：展示水系或光系牌'
                         );
                     }
-                    await target.changeZhiLiao(enhanced ? 2 : 1, player);
+                    await target.changeZhiLiao(1, player);
                     await target.discard([card]).set('visible', true);
+                    if(enhanced) await target.changeZhiLiao(1, player);
                     await player.addZhiShiWu('siMiNaiBingJing', 1);
                 },
                         "ai": {
@@ -2544,7 +2667,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                         "intro": {
                             "name": "(专)【冻结】",
                             "content": "mark",
-                            "max": 2,
+                            "max": 1,
                         },
                         "markimage": "extension/永夜残响/mark_siMiNaiDongJie.png",
                         "global": [
@@ -2554,23 +2677,11 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                         ],
                         "addDongJie": async function(source, target) {
                     if(!target || !target.isIn()) return;
-                    if(target.countZhiShiWu('siMiNaiDongJie') >= 2) return;
-                    target.storage.siMiNaiDongJieSource =
-                        source && source.playerid ? source.playerid : null;
-                    target.syncStorage('siMiNaiDongJieSource');
-                    await target.addZhiShiWu('siMiNaiDongJie', 1, true);
-                    if(target.countZhiShiWu('siMiNaiDongJie') >= 2) {
-                        var sourceId = target.storage.siMiNaiDongJieSource;
-                        var damageSource = game.players.find(function(current) {
-                            return current.playerid == sourceId;
-                        });
-                        if(damageSource) {
-                            await target.faShuDamage(2, damageSource);
-                        } else {
-                            await target.faShuDamage(2, 'nosource');
-                        }
-                        await lib.skill.siMiNaiDongJie.clearDongJie(target);
+                    if(target.countZhiShiWu('siMiNaiDongJie') > 0) {
+                        await target.faShuDamage(2, source || 'nosource');
+                        return;
                     }
+                    await target.addZhiShiWu('siMiNaiDongJie', 1, true);
                 },
                         "clearDongJie": async function(target) {
                     if(!target) return;
@@ -2578,8 +2689,6 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                     if(num > 0) {
                         await target.removeZhiShiWu('siMiNaiDongJie', num);
                     }
-                    delete target.storage.siMiNaiDongJieSource;
-                    target.syncStorage('siMiNaiDongJieSource');
                 },
                         "isExtraAction": function(event, action, player) {
                     if(!event || typeof event.getParent != 'function') {
@@ -2612,7 +2721,6 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                 },
                         "onremove": function(player) {
                     delete player.storage.siMiNaiDongJie;
-                    delete player.storage.siMiNaiDongJieSource;
                 },
                         "subSkill": {
                             "gongJiOrFaShu": {
@@ -2710,8 +2818,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                         !player.isZhiShiWuMax('shiCha');
                 },
                         "content": async function(event, trigger, player) {
-                    trigger.changeDamageNum(-1);
                     await player.addZhiShiWu('shiCha', 1, true);
+                    trigger.changeDamageNum(-1);
                 },
                     },
                     "yiZhiDan": {
@@ -3400,46 +3508,43 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                     if(!event || !event.player ||
                         event.player == player ||
                         event.player.side != player.side) return false;
-                    var target = event.player;
-                    return player.countCards('he', function(card) {
-                        return lib.filter.cardDiscardable(card, player);
-                    }) > 0 && target.countCards('he', function(card) {
-                        return lib.filter.cardDiscardable(card, target);
-                    }) > 0;
+                    return true;
                 },
                         "cost": async function(event, trigger, player) {
-                    var cards = (await player.chooseCard(
-                        'he',
-                        1,
-                        '是否弃置1张牌，对' +
-                            get.translation(trigger.player) +
-                            '发动【司令调度】？'
-                    ).set('filterCard', function(card, player) {
-                        return lib.filter.cardDiscardable(card, player);
-                    }).set('ai', function(card) {
-                        return 6 - get.value(card);
-                    }).forResultCards() || []);
-                    cards = Array.isArray(cards) ? cards : [];
-                    event.result = {
-                        bool: cards.length > 0,
-                        cards: cards,
-                    };
+                    event.result = await player.chooseBool(
+                        '是否发动【司令调度】？'
+                    ).set('prompt2', '有可弃置牌时，你与其各弃置1张牌；然后你摸1张牌。')
+                        .set('ai', function() {
+                            var player = _status.event.player;
+                            return player.countCards('h') <
+                                player.getHandcardLimit();
+                        }).forResult();
                 },
                         "content": async function(event, trigger, player) {
                     var target = trigger.player;
-                    await player.discard(event.cards);
-                    if(target && target.isIn() &&
-                        target.countCards('he', function(card) {
-                            return lib.filter.cardDiscardable(card, target);
-                        }) > 0) {
-                        await target.chooseToDiscard(
-                            'he',
-                            1,
-                            true,
-                            '司令调度：弃置1张牌'
-                        );
-                        if(target.isIn()) await target.draw(1);
+                    if(player.countCards('he', function(card) {
+                        return lib.filter.cardDiscardable(card, player);
+                    }) > 0) {
+                        await player.chooseToDiscard(
+                            'he', 1, true, '司令调度：你须弃置1张牌'
+                        ).set('filterCard', function(card, player) {
+                            return lib.filter.cardDiscardable(card, player);
+                        }).set('ai', function(card) {
+                            return 6 - get.value(card);
+                        });
                     }
+                    if(target && target.isIn() && target.countCards('he', function(card) {
+                        return lib.filter.cardDiscardable(card, target);
+                    }) > 0) {
+                        await target.chooseToDiscard(
+                            'he', 1, true, '司令调度：你须弃置1张牌'
+                        ).set('filterCard', function(card, target) {
+                            return lib.filter.cardDiscardable(card, target);
+                        }).set('ai', function(card) {
+                            return 6 - get.value(card);
+                        });
+                    }
+                    if(player.isIn()) await player.draw(1);
                 },
                     },
                 },
@@ -3447,124 +3552,124 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
                     "siMiNaiBingJing": "冰晶",
                     "zheZhiManager": "羽阵管理",
                     "zheZhiGuangYu": "光羽",
-                    "zheZhiGuangYu_info": "鸢一折纸专属指示物。自身初始上限4，其他角色上限2；普通折纸自身的栏位常驻并显示当前上限。<span class='tiaoJian'>（拥有者攻击命中后②）</span>将自身1枚<span class='lan'>【光羽】</span>移给另一名未满角色，再由拥有者对其造成1点法术伤害③。",
+                    "zheZhiGuangYu_info": "鸢一折纸专属指示物。自身初始上限4，其他角色上限2。<span class='tiaoJian'>（拥有者攻击命中后②）</span>将自身1枚<span style=\"color:#9A7027\">【光羽】</span>移给另一名未满角色，再由拥有者对其造成1点法术伤害③。",
                     "zheZhiHeiYu": "黑羽",
-                    "zheZhiHeiYu_info": "反转折纸专属指示物，上限8；反转折纸自身上限随黑羽实际减少而递减。",
+                    "zheZhiHeiYu_info": "反转折纸专属指示物，上限8；上限随<span style=\"color:#655078\">【黑羽】</span>实际减少而递减。",
                     "zheZhiLingZhuang": "被动【神威灵装·一番】",
-                    "zheZhiLingZhuang_info": "<span class='tiaoJian'>（游戏开始时）</span>将4枚<span class='lan'>【光羽】</span>放于自身。",
+                    "zheZhiLingZhuang_info": "<span class='tiaoJian'>（游戏开始时）</span>+4<span style=\"color:#9A7027\">【光羽】</span>。",
                     "zheZhiJueMieTianShi": "响应【绝灭天使】",
-                    "zheZhiJueMieTianShi_info": "<span class='tiaoJian'>（【攻击行动】或【法术行动】结束后）</span>可将自身1枚<span class='lan'>【光羽】</span>移给一名未满对手。",
+                    "zheZhiJueMieTianShi_info": "<span class='tiaoJian'>（【攻击行动】或【法术行动】结束后）</span>将自身1枚<span style=\"color:#9A7027\">【光羽】</span>移给目标对手。",
                     "zheZhiJueWang": "被动【绝望反转】",
-                    "zheZhiJueWang_info": "<span class='tiaoJian'>（承受实际伤害后⑤，且自身没有<span class='lan'>【光羽】</span>）</span>自身光羽上限-1，最低0。<span class='tiaoJian'>（光羽上限降至0）</span>免费强制释放【绝灭天使·炮冠】，完整结算后变为【反转·折纸】，将黑羽上限重置为8并获得8枚<span class='lan'>【黑羽】</span>。",
+                    "zheZhiJueWang_info": "<span class='tiaoJian'>（承受实际伤害后⑤，且自身没有</span><span style=\"color:#9A7027\">【光羽】</span><span class='tiaoJian'>）</span>自身<span style=\"color:#9A7027\">【光羽】</span>上限-1。<span class='tiaoJian'>（</span><span style=\"color:#9A7027\">【光羽】</span><span class='tiaoJian'>上限降至0）</span>强制释放【绝灭天使·炮冠】，结算后变为【反转·折纸】，将<span style=\"color:#655078\">【黑羽】</span>上限重置为8，你+8<span style=\"color:#655078\">【黑羽】</span>。",
                     "zheZhiGuangJian": "法术【绝灭天使·光剑】",
-                    "zheZhiGuangJian_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对一名拥有<span class='lan'>【光羽】</span>的对手造成1点法术伤害③。<span class='tiaoJian'>（目标有2枚<span class='lan'>【光羽】</span>）</span>本次伤害+1。然后将其1枚<span class='lan'>【光羽】</span>移给另一名未满对手。",
+                    "zheZhiGuangJian_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对1名拥有<span style=\"color:#9A7027\">【光羽】</span>的对手造成1点法术伤害③。<span class='tiaoJian'>（目标有2枚</span><span style=\"color:#9A7027\">【光羽】</span><span class='tiaoJian'>）</span>本次伤害+1。然后将其1枚<span style=\"color:#9A7027\">【光羽】</span>移给另一名对手。",
                     "zheZhiTianYi": "响应【绝灭天使·天翼】",
-                    "zheZhiTianYi_info": "<span class='tiaoJian'>（承受正数伤害时④，弃置1张牌，将自身1枚<span class='lan'>【光羽】</span>移给另一名未满队友）</span>使本次伤害-1，再由你对该队友造成1点法术伤害③。",
+                    "zheZhiTianYi_info": "<span class='tiaoJian'>（承受伤害时④，弃置1张牌，将自身1枚</span><span style=\"color:#9A7027\">【光羽】</span><span class='tiaoJian'>移给目标队友）</span>本次伤害-1，你对该队友造成1点法术伤害③。",
                     "zheZhiRiLun": "法术【绝灭天使·日轮】",
-                    "zheZhiRiLun_info": "<span class='tiaoJian'>（<span class='lan'>【水晶】</span>）</span>对所有对手各造成1点法术伤害③；全部伤害结算后，由你将自身<span class='lan'>【光羽】</span>逐枚分配给未满对手，尽可能放置，无法放置的保留在自身。",
+                    "zheZhiRiLun_info": "<span class='lan'>【水晶】</span>对所有对手各造成1点法术伤害③；伤害结算后，由你将自身<span style=\"color:#9A7027\">【光羽】</span>任意分配给目标对手。",
                     "zheZhiPaoGuan": "法术【绝灭天使·炮冠】",
-                    "zheZhiPaoGuan_info": "<span class='tiaoJian'>（自身没有<span class='lan'>【光羽】</span>，支付<span class='lan'>【宝石】</span>）</span>回收其他角色的全部<span class='lan'>【光羽】</span>，依座次对原持有者造成等同于其原有光羽数量的法术伤害③；再对其中一名原有2枚<span class='lan'>【光羽】</span>的角色额外造成2点法术伤害③。",
+                    "zheZhiPaoGuan_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（自身没有</span><span style=\"color:#9A7027\">【光羽】</span><span class='tiaoJian'>）</span>回收其他角色的全部<span style=\"color:#9A7027\">【光羽】</span>，依座次对原持有者造成等同于其原有<span style=\"color:#9A7027\">【光羽】</span>数量的法术伤害③；再对其中1名原有2枚<span style=\"color:#9A7027\">【光羽】</span>的角色额外造成2点法术伤害③。",
                     "zheZhiFanLingZhuang": "被动【反灵装·一番】",
-                    "zheZhiFanLingZhuang_info": "你的治疗上限-2；你造成与承受的所有伤害各额外+1。",
+                    "zheZhiFanLingZhuang_info": "你的【治疗】上限-2；你造成与承受的所有伤害+1。",
                     "zheZhiJuJue": "被动【救世魔王·拒绝】",
-                    "zheZhiJuJue_info": "<span class='tiaoJian'>（其他角色对你造成实际伤害后⑤）</span>将自身1枚<span class='lan'>【黑羽】</span>移给伤害来源，再将1枚移给目标队友；然后由你对两者各造成1点法术伤害③。<span class='tiaoJian'>（该目标在本次转移前已有<span class='lan'>【黑羽】</span>）</span>其本次伤害+1。",
+                    "zheZhiJuJue_info": "<span class='tiaoJian'>（其他角色对你造成实际伤害后⑤）</span>将自身1枚<span style=\"color:#655078\">【黑羽】</span>移给伤害来源，再将1枚移给目标队友；然后由你对两者各造成1点法术伤害③。<span class='tiaoJian'>（目标在本次转移前已有</span><span style=\"color:#655078\">【黑羽】</span><span class='tiaoJian'>）</span>其本次伤害+1。",
                     "zheZhiHeiYuShu": "法术【救世魔王·黑羽】",
-                    "zheZhiHeiYuShu_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对一名对手造成等同于其<span class='lan'>【黑羽】</span>数量的法术伤害③，再将自身1枚<span class='lan'>【黑羽】</span>移给该角色。",
+                    "zheZhiHeiYuShu_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对1名对手造成等同于其<span style=\"color:#655078\">【黑羽】</span>数量的法术伤害③，再将自身1枚<span style=\"color:#655078\">【黑羽】</span>移给该角色。",
                     "zheZhiJueMie": "法术【救世魔王·绝灭】",
-                    "zheZhiJueMie_info": "<span class='tiaoJian'>（<span class='lan'>【宝石】</span>）</span>回收其他角色的全部<span class='lan'>【黑羽】</span>，依座次对原持有者造成其原有黑羽数量一半、向上取整的法术伤害③；然后对自己造成黑羽总数一半、向上取整的法术伤害③。",
+                    "zheZhiJueMie_info": "<span style=\"color:#E02B17\">【宝石】</span>回收其他角色的全部<span style=\"color:#655078\">【黑羽】</span>，依座次对原持有者造成其原有<span style=\"color:#655078\">【黑羽】</span>数量一半（向上取整）的法术伤害③；然后对自己造成<span style=\"color:#655078\">【黑羽】</span>总数一半（向上取整）的法术伤害③。",
                     "zheZhiYiShiHuiGui": "被动【意识回归】",
-                    "zheZhiYiShiHuiGui_info": "自身每实际减少1枚<span class='lan'>【黑羽】</span>，自身黑羽上限同步-1，最低0。<span class='tiaoJian'>（自身<span class='lan'>【黑羽】</span>降为0）</span>在当前技能完整结算后免费强制释放【救世魔王·绝灭】，将光羽上限恢复至4并获得4枚<span class='lan'>【光羽】</span>，变回普通折纸。",
+                    "zheZhiYiShiHuiGui_info": "自身每实际减少1枚<span style=\"color:#655078\">【黑羽】</span>，自身<span style=\"color:#655078\">【黑羽】</span>上限同步-1。<span class='tiaoJian'>（自身</span><span style=\"color:#655078\">【黑羽】</span><span class='tiaoJian'>降为0）</span>在当前技能完整结算后免费强制释放【救世魔王·绝灭】，将<span style=\"color:#9A7027\">【光羽】</span>上限恢复至4并获得4枚<span style=\"color:#9A7027\">【光羽】</span>，变回普通折纸。",
                     "siMiNaiBingJing_info": "四糸乃的专属指示物，上限为5。",
                     "siMiNaiDongJie": "(专)【冻结】",
-                    "siMiNaiDongJie_info": "专属计数卡，每名角色上限为2。<br>·1层：<span class='tiaoJian'>（拥有者即将开始额外【攻击行动】或【法术行动】时）</span>移除其全部<span class='lan'>【冻结】</span>，取消该行动并结束其回合；<br>·达到2层：四糸乃对其造成2点法术伤害③，然后移除其全部<span class='lan'>【冻结】</span>。",
+                    "siMiNaiDongJie_info": "四糸乃专属标记。<span class='tiaoJian'>（拥有者即将开始额外【攻击行动】或【法术行动】时）</span>移除<span style=\"color:#666666\">【冻结】</span>，取消该行动并结束其回合。",
                     "shenWeiLingZhuangSiFan": "被动【神威灵装·四番】",
-                    "shenWeiLingZhuangSiFan_info": "<span class='tiaoJian'>（游戏开始时）</span>+2<span class='lan'>【冰晶】</span>。<span class='tiaoJian'>（发动【冰之祈愿】或执行【特殊行动】后）</span>+1<span class='lan'>【冰晶】</span>。",
+                    "shenWeiLingZhuangSiFan_info": "<span class='tiaoJian'>（游戏开始时）</span>+2<span style=\"color:#8C6AA6\">【冰晶】</span>。<span class='tiaoJian'>（发动【冰之祈愿】或执行【特殊行动】后）</span>+1<span style=\"color:#8C6AA6\">【冰晶】</span>。",
                     "bingJieTuXi": "法术【冰结吐息】",
-                    "bingJieTuXi_info": "<span class='tiaoJian'>（弃置1张水系或光系牌【展示】）</span>对一名没有【冻结】的目标对手造成1点法术伤害③，然后对其施加1<span class='lan'>【冻结】</span>。",
+                    "bingJieTuXi_info": "<span class='tiaoJian'>（弃置1张水系或光系牌【展示】）</span>对1名没有<span style=\"color:#666666\">【冻结】</span>的目标对手造成1点法术伤害③，然后对其施加<span style=\"color:#666666\">【冻结】</span>。",
                     "bingZhiShouHu": "响应【冰之守护】",
-                    "bingZhiShouHu_info": "<span class='tiaoJian'>（一名其他队友即将承受伤害时④）</span>摸1张牌【强制】，使本次伤害-1。",
+                    "bingZhiShouHu_info": "<span class='tiaoJian'>（1名其他队友即将承受伤害时④）</span>摸1张牌【强制】，使本次伤害-1。",
                     "siMiNaiDeEZuoJu": "响应【四糸奈的恶作剧】",
-                    "siMiNaiDeEZuoJu_info": "<span class='tiaoJian'>（成为其他角色主动攻击的目标时①，移除1<span class='lan'>【冰晶】</span>）</span>若该攻击未命中，对攻击者施加1<span class='lan'>【冻结】</span>。",
+                    "siMiNaiDeEZuoJu_info": "<span class='tiaoJian'>（成为其他角色主动攻击的目标时①，移除1</span><span style=\"color:#8C6AA6\">【冰晶】</span><span class='tiaoJian'>）</span>若该攻击未命中，对攻击者施加<span style=\"color:#666666\">【冻结】，</span><span class='tiaoJian'>（若其已有冻结）</span><span style=\"color:#666666\">对其造成2点法术伤害</span>。",
                     "bingZhiQiYuan": "法术【冰之祈愿】【独】",
-                    "bingZhiQiYuan_info": "可以将带有独有技【治疗术】或【治愈之光】的手牌作为本技能使用。目标角色+1【治疗】并弃置1张牌；若弃置水系或光系牌【展示】，改为+2【治疗】。",
+                    "bingZhiQiYuan_info": "可以将带有独有技【治疗术】或【治愈之光】的手牌作为本技能使用。目标角色+1【治疗】并弃置1张牌；<span class='tiaoJian'>（若弃置水系或光系牌【展示】）</span>额外+1【治疗】。",
                     "bingJieKuiLeiSaDan": "启动【冰结傀儡·撒旦】",
-                    "bingJieKuiLeiSaDan_info": "【水晶】<span class='tiaoJian'>（移除2<span class='lan'>【冰晶】</span>）</span>选择一项：<br>·【冰结结界】：所有我方角色各选择弃置1张牌或+1【治疗】；没有可弃置牌时选择治疗，治疗已满仍可选择；<br>·【极寒风暴】：对1至2名目标对手各施加1<span class='lan'>【冻结】</span>。",
+                    "bingJieKuiLeiSaDan_info": "【水晶】<span class='tiaoJian'>（移除2</span><span style=\"color:#8C6AA6\">【冰晶】</span><span class='tiaoJian'>）</span>选择一项：<br>·【冰结结界】：所有我方角色各选择弃置1张牌或+1【治疗】；<br>·【极寒风暴】：对1至2名目标对手各施加<span style=\"color:#666666\">【冻结】，</span><span class='tiaoJian'>（若其已有冻结）</span><span style=\"color:#666666\">对其造成2点法术伤害</span>。",
                     "shiCha": "时差",
                     "shiCha_info": "时崎狂三的专属指示物，每名角色上限为5。<span class='tiaoJian'>（拥有者回合结束时）</span>：<br>·未满：移除1<span class='hong'>【时差】</span>，摸1张牌【强制】；<br>·已满：移除全部<span class='hong'>【时差】</span>，摸3张牌【强制】。",
                     "shiJianJingZhi": "(专)【时间静止】",
-                    "shiJianJingZhi_info": "<span class='tiaoJian'>（拥有者回合结束时）</span>移除【时间静止】并+1<span class='hong'>【时差】</span>；若<span class='hong'>【时差】</span>未满，本次不结算其回合结束效果。",
+                    "shiJianJingZhi_info": "<span class='tiaoJian'>（拥有者回合结束时）</span>移除【时间静止】并+1<span class='hong'>【时差】</span>；<span class='tiaoJian'>（若</span><span class='hong'>【时差】</span><span class='tiaoJian'>未满）</span>本次不结算其回合结束效果。",
                     "keKeDi": "被动【刻刻帝】",
-                    "keKeDi_info": "<span class='tiaoJian'>（对一名角色造成实际伤害后⑤）</span>对其施加1<span class='hong'>【时差】</span>；包括你自己。",
+                    "keKeDi_info": "<span class='tiaoJian'>（对1名角色造成实际伤害后⑤）</span>令其<span class='hong'>【时差】</span>+1。",
                     "baZhiDan": "被动【八之弹】",
-                    "baZhiDan_info": "<span class='tiaoJian'>（承受伤害时④）</span>若<span class='hong'>【时差】</span>未满，本次伤害-1并+1<span class='hong'>【时差】</span>【强制】；伤害减至0时仍获得。",
+                    "baZhiDan_info": "<span class='tiaoJian'>（你承受伤害时④）</span>若<span class='hong'>【时差】</span>未满，+1【时差】，使本次伤害-1。",
                     "yiZhiDan": "响应【一之弹】",
-                    "yiZhiDan_info": "一名队友主动攻击拥有<span class='hong'>【时差】</span>的对手时①，移除目标1<span class='hong'>【时差】</span>。目标摸1张牌【强制】，本次攻击伤害额外+1；若攻击来源不是你，你承受2点法术伤害③，然后对攻击来源施加2<span class='hong'>【时差】</span>。",
+                    "yiZhiDan_info": "<span class='tiaoJian'>（我方角色主动攻击拥有<span class='hong'>【时差】</span>的对手时①）</span>移除攻击目标1<span class='hong'>【时差】</span>，并令其摸1张牌【强制】，本次攻击伤害额外+1；<span class='tiaoJian'>（若攻击来源不是你）</span>你承受2点法术伤害③，然后对攻击来源施加2<span class='hong'>【时差】</span>。",
                     "erZhiDan": "响应【二之弹】",
-                    "erZhiDan_info": "<span class='tiaoJian'>（攻击命中后②）</span>取消本次攻击伤害，改为对目标施加X+1<span class='hong'>【时差】</span>；X为本次攻击原本的实际伤害。X=0时仍可发动，超过上限的部分无效。不能与【七之弹】同时发动。",
+                    "erZhiDan_info": "<span class='tiaoJian'>（攻击命中后②）</span>取消本次攻击伤害，改为对目标施加X+1<span class='hong'>【时差】</span>；X为本次攻击原本的实际伤害。不能与【七之弹】同时发动。",
                     "siZhiDan": "法术【四之弹】",
-                    "siZhiDan_info": "<span class='tiaoJian'>（选择X为1或2，移除2X<span class='hong'>【时差】</span>）</span>+X【治疗】；达到【治疗】上限时仍可发动。",
+                    "siZhiDan_info": "<span class='tiaoJian'>（移除2X</span><span class='hong'>【时差】</span><span class='tiaoJian'>）</span>+X【治疗】。",
                     "qiZhiDan": "响应【七之弹】",
-                    "qiZhiDan_info": "<span class='tiaoJian'>（攻击命中后②）</span>若目标没有【时间静止】，对自己造成2点法术伤害③，然后对目标施加【时间静止】。不能与【二之弹】同时发动。",
+                    "qiZhiDan_info": "<span class='tiaoJian'>（攻击命中后②）</span>对自己造成2点法术伤害③，对目标施加【时间静止】。不能与【二之弹】同时发动。",
                     "shiShiZhiCheng": "启动【噬时之城】",
-                    "shiShiZhiCheng_info": "【水晶】对所有角色各造成1点法术伤害③；若实际支付【宝石】，伤害全部结算后对所有角色各施加1<span class='hong'>【时差】</span>。",
+                    "shiShiZhiCheng_info": "【水晶】对所有角色各造成1点法术伤害③；<span class='tiaoJian'>（若实际支付</span><span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>）</span>伤害全部结算后对所有角色各施加1<span class='hong'>【时差】</span>。",
                     "qinLiLingLi": "灵力",
                     "qinLiLingLi_info": "五河琴里的专属指示物，上限为4。",
                     "shuangSeFaDai": "被动【双色发带】",
-                    "shuangSeFaDai_info": "<span class='tiaoJian'>（游戏开始时）</span>以【白色发带】放置。<span class='tiaoJian'>（你的回合开始时）</span>可以翻面。<br><br><span class='greentext'>【白色发带】</span><br>·【治疗】上限+1；<br>·【妹妹形态】【回合限定】：<span class='tiaoJian'>（承受其他角色造成的实际伤害后⑤）</span>若有可弃置牌，弃置1张牌；然后+1【治疗】。没有可弃置牌或已达到上限时仍可发动。<br><br><span class='yellowtext'>【黑色发带】</span><br>·【司令形态】：<span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后）</span>可以移除3<span class='hong'>【灵力】</span>，令其获得1个同类型额外行动，然后翻面；<br>·【司令调度】【回合限定】：<span class='tiaoJian'>（一名有可弃置牌的队友摸牌后）</span>可以弃置1张牌，令其弃置1张牌，然后重新摸1张牌。",
+                    "shuangSeFaDai_info": "<span class='tiaoJian'>（游戏开始时）</span>以【白色发带】放置。<span class='tiaoJian'>（你的回合开始时）</span>可以翻面。<br><br><span class='greentext'>【白色发带】</span><br>·【治疗】上限+1；<br>·<span class='greentext'>响应【妹妹形态】【回合限定】</span><br><span class='tiaoJian'>（承受其他角色造成的实际伤害后⑤）</span>若有可弃置牌，弃置1张牌；然后+1【治疗】。没有可弃置牌或已达到上限时仍可发动。<br><br><span class='yellowtext'>【黑色发带】</span><br>·<span class='greentext'>响应【司令形态】</span><br><span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后）</span>可以移除3<span style=\"color:#8E44AD\">【灵力】</span>，令其获得1个同类型额外行动，然后翻面；<br>·<span class='greentext'>响应【司令调度】【回合限定】</span><br><span class='tiaoJian'>（队友摸牌后）</span>你（有可弃置牌时）弃置1张牌，令其（有可弃置牌时）弃置1张牌；你摸1张牌。",
                     "baiSeFaDai": "(专)【白色发带】",
-                    "baiSeFaDai_info": "【治疗】上限+1。<br>【妹妹形态】【回合限定】：<span class='tiaoJian'>（承受其他角色造成的实际伤害后⑤）</span>若有可弃置牌，弃置1张牌；然后+1【治疗】。没有可弃置牌或已达到上限时仍可发动。",
+                    "baiSeFaDai_info": "【治疗】上限+1。<br><span class='greentext'>响应【妹妹形态】【回合限定】</span><br><span class='tiaoJian'>（承受其他角色造成的实际伤害后⑤）</span>若有可弃置牌，弃置1张牌；然后+1【治疗】。没有可弃置牌或已达到上限时仍可发动。",
                     "heiSeFaDai": "(专)【黑色发带】",
-                    "heiSeFaDai_info": "【司令形态】：<span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后）</span>可以移除3<span class='hong'>【灵力】</span>，令其获得1个同类型额外行动，然后翻面。<br>【司令调度】【回合限定】：<span class='tiaoJian'>（一名有可弃置牌的队友摸牌后）</span>可以弃置1张牌，令其弃置1张牌，然后重新摸1张牌。",
+                    "heiSeFaDai_info": "<span class='greentext'>响应【司令形态】</span><br><span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后）</span>可以移除3<span style=\"color:#8E44AD\">【灵力】</span>，令其获得1个同类型额外行动，然后翻面。<br><span class='greentext'>响应【司令调度】【回合限定】</span><br><span class='tiaoJian'>（队友摸牌后）</span>你（有可弃置牌时）弃置1张牌，令其（有可弃置牌时）弃置1张牌；你摸1张牌。",
                     "qinLiYanLing": "被动【炎灵】",
-                    "qinLiYanLing_info": "<span class='tiaoJian'>（你每次造成实际伤害后⑤，或每次承受其他角色造成的实际伤害后⑤）</span>+1<span class='hong'>【灵力】</span>。两类触发均不限次数；你对自己造成的伤害只触发前者。",
+                    "qinLiYanLing_info": "<span class='tiaoJian'>（你每次造成或受到实际伤害后⑤）</span>+1<span style=\"color:#8E44AD\">【灵力】</span>。",
                     "lingLiShiKong": "被动【灵力失控】",
-                    "lingLiShiKong_info": "<span class='hong'>【灵力】</span>达到上限时，将【双色发带】翻至【白色发带】；若已经是该形态，承受1点法术伤害③，然后移除1<span class='hong'>【灵力】</span>。处于【白色发带】且已有4<span class='hong'>【灵力】</span>时，再次满足【炎灵】的承受伤害条件，也视为再次达到上限。",
+                    "lingLiShiKong_info": "<span style=\"color:#8E44AD\">【灵力】</span>达到上限时，将【双色发带】翻至【白色发带】；若已经是该形态，承受1点法术伤害③，然后移除1<span style=\"color:#8E44AD\">【灵力】</span>。",
                     "zhuoLanJianGui": "响应【灼烂歼鬼】",
-                    "zhuoLanJianGui_info": "<span class='tiaoJian'>（主动攻击前①，移除1<span class='hong'>【灵力】</span>）</span>选择一项：<br>·【斧】：本次攻击伤害额外+1；<br>·【炮】：指定攻击目标以外的一名对手；若本次攻击命中，对其造成2点法术伤害③。<br><span class='tiaoJian'>（【炎魔形态】下）</span>无需移除<span class='hong'>【灵力】</span>，两项同时生效；没有合法炮目标时只结算【斧】。",
+                    "zhuoLanJianGui_info": "<span class='tiaoJian'>（主动攻击前①，移除1</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>）</span>选择一项：<br>·【斧】：本次攻击伤害额外+1；<br>·【炮】：指定攻击目标以外的1名对手；<span class='tiaoJian'>（若本次攻击命中）</span>对其造成2点法术伤害③。",
                     "yanMoXianXian": "启动【炎魔显现】",
-                    "yanMoXianXian_info": "【水晶】<span class='tiaoJian'>（移除3<span class='hong'>【灵力】</span>）</span>额外+1【攻击行动】，然后【横置】并进入【炎魔形态】，持续到本回合结束。",
+                    "yanMoXianXian_info": "【水晶】<span class='tiaoJian'>（移除3</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>）</span>额外+1【攻击行动】，然后【横置】并进入【炎魔形态】，持续到本回合结束。<br><span class='tiaoJian'>（处于【炎魔形态】时）</span>你发动【灼烂歼鬼】无需移除【灵力】，两个效果同时生效，<span class='tiaoJian'>（你的攻击造成伤害后③）</span>你+1【治疗】。<br><span class='tiaoJian'>（回合结束时）</span>你【重置】，脱离【炎魔形态】。",
                     "yanMoXingTai": "炎魔形态",
-                    "yanMoXingTai_info": "【灼烂歼鬼】无需移除<span class='hong'>【灵力】</span>且两项同时生效。<span class='tiaoJian'>（主动或应战攻击每造成一次实际伤害）</span>+1【治疗】。<span class='tiaoJian'>（回合结束时）</span>【重置】并退出。",
+                    "yanMoXingTai_info": "【灼烂歼鬼】无需移除<span style=\"color:#8E44AD\">【灵力】</span>且两项同时生效。<span class='tiaoJian'>（主动或应战攻击每造成1次实际伤害）</span>+1【治疗】。<span class='tiaoJian'>（回合结束时）</span>【重置】并退出。",
                     "meiMeiXingTai": "响应【妹妹形态】",
-                    "meiMeiXingTai_info": "【回合限定】<span class='tiaoJian'>（处于【白色发带】，承受其他角色造成的实际伤害后⑤）</span>若有可弃置牌，弃置1张牌；然后+1【治疗】。",
+                    "meiMeiXingTai_info": "【回合限定】<span class='tiaoJian'>（处于【白色发带】，承受其他角色造成的实际伤害后⑤）</span>弃置1张牌，+1【治疗】。",
                     "siLingXingTai": "响应【司令形态】",
-                    "siLingXingTai_info": "<span class='tiaoJian'>（处于【黑色发带】时）</span>队友的【攻击行动】或【法术行动】结束后，可以移除3<span class='hong'>【灵力】</span>，令其获得1个同类型额外行动，然后将【双色发带】翻面。",
+                    "siLingXingTai_info": "<span class='tiaoJian'>（处于【黑色发带】，队友的【攻击行动】或【法术行动】结束后）</span>移除3<span style=\"color:#8E44AD\">【灵力】</span>，令其获得1个同类型额外行动，然后将【双色发带】翻面。",
                     "siLingDiaoDu": "响应【司令调度】",
-                    "siLingDiaoDu_info": "【回合限定】<span class='tiaoJian'>（处于【黑色发带】，一名有可弃置牌的队友摸牌后）</span>可以弃置1张牌，令其弃置1张牌，然后重新摸1张牌。",
+                    "siLingDiaoDu_info": "【回合限定】<span class='tiaoJian'>（处于【黑色发带】，队友摸牌后）</span>你（有可弃置牌时）弃置1张牌，令其（有可弃置牌时）弃置1张牌；你摸1张牌。",
                     "shiXiangLingLi": "灵力",
                     "shiXiangLingLi_info": "夜刀神十香与反转·十香的专属指示物，上限为5。",
                     "fanZhuanLingLi": "反转灵力",
-                    "fanZhuanLingLi_info": "夜刀神十香的专属指示物，上限为5；每当消耗【灵力】时，获得等量【反转灵力】。",
+                    "fanZhuanLingLi_info": "夜刀神十香的专属指示物，上限为5；每当消耗<span style=\"color:#8E44AD\">【灵力】</span>时，获得等量【反转灵力】。",
                     "shenWeiLingZhuangShiFan": "被动【神威灵装·十番】",
-                    "shenWeiLingZhuangShiFan_info": "<span class='tiaoJian'>（游戏开始时）</span>将【鏖杀公】以【王座形态】放置，并+2<span class='lan'>【灵力】</span>。<br>·【王座形态】：承受实际伤害后⑤，+1<span class='lan'>【灵力】</span>；<br>·【剑刃形态】：攻击命中后②，+1<span class='lan'>【灵力】</span>。",
+                    "shenWeiLingZhuangShiFan_info": "<span class='tiaoJian'>（游戏开始时）</span>将【鏖杀公】以【王座形态】放置，并+2<span style=\"color:#8E44AD\">【灵力】</span>。<br>·【王座形态】：承受实际伤害后⑤，+1<span style=\"color:#8E44AD\">【灵力】</span>；<br>·【剑刃形态】：攻击命中后②，+1<span style=\"color:#8E44AD\">【灵力】</span>。",
                     "aoShaGongWangZuo": "(专)【鏖杀公·王座形态】",
-                    "aoShaGongWangZuo_info": "<span class='tiaoJian'>（承受实际伤害后⑤）</span>+1<span class='lan'>【灵力】</span>；可以发动【王座显现】【灵装护壁】与【公主降临】。",
+                    "aoShaGongWangZuo_info": "<span class='tiaoJian'>（承受实际伤害后⑤）</span>+1<span style=\"color:#8E44AD\">【灵力】</span>；可以发动【王座显现】【灵装护壁】与【公主降临】。",
                     "aoShaGongJianRen": "(专)【鏖杀公·剑刃形态】",
-                    "aoShaGongJianRen_info": "<span class='tiaoJian'>（攻击命中后②）</span>+1<span class='lan'>【灵力】</span>；可以发动【鏖杀公】与【鏖杀公·最后之剑】。",
+                    "aoShaGongJianRen_info": "<span class='tiaoJian'>（攻击命中后②）</span>+1<span style=\"color:#8E44AD\">【灵力】</span>；可以发动【鏖杀公】与【鏖杀公·最后之剑】。",
                     "wangZuoXianXian": "响应【王座显现】",
-                    "wangZuoXianXian_info": "<span class='tiaoJian'>（【王座形态】下，应战攻击前①，移除1<span class='lan'>【灵力】</span>）</span>本次攻击伤害额外+1；若命中，攻击结算结束后翻至【剑刃形态】。",
+                    "wangZuoXianXian_info": "<span class='tiaoJian'>（【王座形态】下，应战攻击前①，移除1</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>）</span>本次攻击伤害额外+1；<span class='tiaoJian'>（若命中）</span>攻击结算结束后翻至【剑刃形态】。",
                     "lingZhuangHuBi": "响应【灵装护壁】",
-                    "lingZhuangHuBi_info": "<span class='tiaoJian'>（【王座形态】下，即将承受伤害时④，选择X并移除X<span class='lan'>【灵力】</span>、弃置X张牌；0≤X≤2且不超过本次伤害）</span>使本次伤害-X。X=0时仍可发动。",
+                    "lingZhuangHuBi_info": "<span class='tiaoJian'>（【王座形态】下，即将承受伤害时④）</span>移除X<span style=\"color:#8E44AD\">【灵力】</span>，弃置X张牌，X最大为2，使本次伤害-X。",
                     "gongZhuJiangLin": "法术【公主降临】",
-                    "gongZhuJiangLin_info": "<span class='tiaoJian'>（【王座形态】下，移除1<span class='lan'>【灵力】</span>）</span>将【鏖杀公】翻至【剑刃形态】，然后额外+1【攻击行动】。",
+                    "gongZhuJiangLin_info": "<span class='tiaoJian'>（【王座形态】下，移除1</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>）</span>将【鏖杀公】翻至【剑刃形态】，然后额外+1【攻击行动】。",
                     "aoShaGong": "响应【鏖杀公】",
-                    "aoShaGong_info": "<span class='tiaoJian'>（【剑刃形态】下，主动攻击前①，选择并移除X<span class='lan'>【灵力】</span>，X最大为2）</span><br>·X=1：本次攻击伤害额外+1；<br>·X=2：本次攻击无视【圣盾】，且目标无法使用【圣光】或【暗灭】抵挡，仍可用符合条件的普通攻击牌应战。<br><span class='tiaoJian'>（该【攻击行动】结束后）</span>若<span class='lan'>【灵力】</span>为0，翻至【王座形态】。",
+                    "aoShaGong_info": "<span class='tiaoJian'>（【剑刃形态】下，主动攻击前①，选择并移除X</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>，X最大为2）</span><br>·X=1：本次攻击伤害额外+1；<br>·X=2：本次攻击无视【圣盾】，且目标无法使用【圣光】或【暗灭】。<br><span class='tiaoJian'>（【攻击行动】结束后）</span>若<span style=\"color:#8E44AD\">【灵力】</span>为0，翻至【王座形态】。",
                     "huangDouFenMianBao": "启动【黄豆粉面包】",
-                    "huangDouFenMianBao_info": "【水晶】<span class='tiaoJian'>（弃置1张牌）</span>选择+1【治疗】或+2<span class='lan'>【灵力】</span>；达到对应上限时仍可选择。",
+                    "huangDouFenMianBao_info": "【水晶】<span class='tiaoJian'>（弃置1张牌）</span>选择+1【治疗】或+2<span style=\"color:#8E44AD\">【灵力】</span>。",
                     "aoShaGongZuiHouZhiJian": "响应【鏖杀公·最后之剑】",
-                    "aoShaGongZuiHouZhiJian_info": "【宝石】<span class='tiaoJian'>（【剑刃形态】下，【攻击行动】结束后，移除3<span class='lan'>【灵力】</span>）</span>从【剑锋】【斩空】【剑压】中选择两项，然后额外+1【攻击行动】：<br>·【剑锋】：主动攻击伤害额外+1；<br>·【斩空】：主动攻击无法被应战；<br>·【剑压】：<span class='tiaoJian'>（主动攻击命中并结算后）</span>对攻击目标以外的所有对手各造成2点法术伤害③。<br>该额外行动不能发动【鏖杀公】或再次发动本技能；行动结束后翻至【王座形态】并清除上述效果。",
+                    "aoShaGongZuiHouZhiJian_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（【剑刃形态】下，【攻击行动】结束后，移除3</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>）</span>从【剑锋】【斩空】【剑压】中选择两项，然后额外+1【攻击行动】，本次攻击行动不能发动【鏖杀公】：<br>·【剑锋】：主动攻击伤害额外+1；<br>·【斩空】：主动攻击无法被应战；<br>·【剑压】：<span class='tiaoJian'>（主动攻击命中并结算后）</span>对攻击目标以外的所有对手各造成2点法术伤害③。<br><span class='tiaoJian'>（行动结束后）</span>将【鏖杀公】翻至【王座形态】。",
                     "jueWangFanZhuan": "响应【绝望反转】",
-                    "jueWangFanZhuan_info": "每当消耗<span class='lan'>【灵力】</span>时，获得等量<span class='hong'>【反转灵力】</span>。<span class='tiaoJian'>（反转灵力达到上限，且你承受实际伤害导致己方士气下降后⑤）</span>移除你全部【治疗】与<span class='hong'>【反转灵力】</span>，将<span class='lan'>【灵力】</span>调整至5，然后变为【反转·十香】。",
+                    "jueWangFanZhuan_info": "每当消耗<span style=\"color:#8E44AD\">【灵力】</span>时，获得等量<span class='hong'>【反转灵力】</span>。<span class='tiaoJian'>（【反转灵力】达到上限，你承受实际伤害导致己方士气下降后⑤）</span>移除你全部【治疗】与<span class='hong'>【反转灵力】</span>，将<span style=\"color:#8E44AD\">【灵力】</span>调整至5，然后变为【反转·十香】。",
                     "fanLingZhuangShiFan": "被动【反灵装·十番】",
                     "fanLingZhuangShiFan_info": "你的【治疗】上限-2；你造成与承受的所有伤害额外+1。",
                     "huiMieChongDong": "被动【毁灭冲动】",
-                    "huiMieChongDong_info": "【回合限定】<span class='tiaoJian'>（你攻击造成实际伤害后⑤）</span>+1<span class='lan'>【灵力】</span>，额外+1【攻击行动】。",
+                    "huiMieChongDong_info": "【回合限定】<span class='tiaoJian'>（你攻击造成实际伤害后⑤）</span>+1<span style=\"color:#8E44AD\">【灵力】</span>，额外+1【攻击行动】。",
                     "baoNueGong": "响应【暴虐公】",
-                    "baoNueGong_info": "<span class='tiaoJian'>（主动攻击前①，移除至多2点<span class='lan'>【灵力】</span>）</span>每移除1点，本次攻击伤害额外+1。攻击行动结束后，对自己造成1点法术伤害③。与【暴虐公·终焉之剑】不能同时发动。",
+                    "baoNueGong_info": "<span class='tiaoJian'>（主动攻击前①，移除至多2</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>）</span>每移除1<span style=\"color:#8E44AD\">【灵力】</span>，本次攻击伤害额外+1。<span class='tiaoJian'>（【攻击行动】结束后）</span>对自己造成1点法术伤害③。与【暴虐公·终焉之剑】不能同时发动。",
                     "baoNueGongZhongYanZhiJian": "响应【暴虐公·终焉之剑】",
-                    "baoNueGongZhongYanZhiJian_info": "【宝石】×1<span class='tiaoJian'>（主动攻击前①，移除3点<span class='lan'>【灵力】</span>）</span>本次攻击无法被应战、无视【圣盾】，攻击伤害额外+2。若攻击命中，攻击结算后对其余所有对手各造成1点法术伤害③。然后对自己造成2点法术伤害③，并结束【反转形态】。与【暴虐公】不能同时发动。",
+                    "baoNueGongZhongYanZhiJian_info": "<span style=\"color:#E02B17\">【宝石】</span>×1<span class='tiaoJian'>（主动攻击前①，移除3</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>）</span>本次攻击无法被应战、无视【圣盾】，攻击伤害额外+2。<span class='tiaoJian'>（若命中）</span>对其余所有对手各造成1点法术伤害③，对自己造成2点法术伤害③，并结束【反转形态】。与【暴虐公】不能同时发动。",
                     "yiShiHuiGui": "被动【意识回归】",
-                    "yiShiHuiGui_info": "<span class='tiaoJian'>（你的<span class='lan'>【灵力】</span>降为0）</span>结束【反转形态】，将<span class='lan'>【灵力】</span>调整至0，并以【王座形态】放置【鏖杀公】。",
+                    "yiShiHuiGui_info": "<span class='tiaoJian'>（你的</span><span style=\"color:#8E44AD\">【灵力】</span><span class='tiaoJian'>降为0）</span>结束【反转形态】，将<span style=\"color:#8E44AD\">【灵力】</span>调整至0，并以【王座形态】放置【鏖杀公】。",
                     "zuiHouZhiJianXingDong": "鏖杀公·最后之剑",
                     "zuiHouZhiJianXingDong_info": "下一次额外【攻击行动】获得最后之剑所选择的两项效果；该行动结束或被取消后翻至【王座形态】并清除效果。",
                 },
@@ -3573,7 +3678,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"永夜残响"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.6",
+            "version": "2.3",
         },
         "files": {
             "character": [

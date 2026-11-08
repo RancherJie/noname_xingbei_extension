@@ -408,38 +408,31 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                                 "filter": function(event, player) {
                             return game.hasPlayer(function(current) {
                                 return current != player &&
-                                    current.side == player.side &&
-                                    current.countCards('h', function(card) {
-                                        return lib.filter.cardDiscardable(
-                                            card,
-                                            current
-                                        );
-                                    }) > 0;
+                                    current.side == player.side;
                             });
                         },
                                 "cost": async function(event, trigger, player) {
                             event.result = await player.chooseTarget(
-                                '【我是奶龙】：可以令一名其他队友弃置1张手牌',
+                                '【我是奶龙】：选择一名队友令其弃置1张手牌',
                                 function(card, player, target) {
                                     return target != player &&
-                                        target.side == player.side &&
-                                        target.countCards('h', function(card) {
-                                            return lib.filter.cardDiscardable(
-                                                card,
-                                                target
-                                            );
-                                        }) > 0;
+                                        target.side == player.side;
                                 }
                             ).set('ai', function(target) {
-                                return get.attitude(
-                                    _status.event.player,
-                                    target
-                                ) > 0 ? 1 : 0;
+                                var player = _status.event.player;
+                                var canDiscard = target.countCards('h', function(card) {
+                                    return lib.filter.cardDiscardable(card, target);
+                                }) > 0;
+                                return canDiscard && get.attitude(player, target) > 0 ? 1 : 0;
                             }).forResult();
                         },
                                 "content": async function(event, trigger, player) {
                             var target = event.targets[0];
                             if(!target || !target.isIn()) return;
+                            var discardable = target.countCards('h', function(card) {
+                                return lib.filter.cardDiscardable(card, target);
+                            }) > 0;
+                            if(!discardable) return;
                             var next = target.chooseToDiscard(
                                 'h',
                                 1,
@@ -466,14 +459,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                         event.player != player;
                 },
                         "content": async function(event, trigger, player) {
-                    var bonus = Math.max(1, player.needsToDiscard(1));
-                    player.storage.naiLongLinShiShouPai = bonus;
-                    player.addSkill('naiLongLinShiShouPai');
-
-                    var cards = [];
-                    try {
-                        cards = await player.draw(1).forResult();
-                        if(cards.length) {
+                    var cards = await player.draw(1).forResult();
+                    if(cards.length) {
                             await player.showCards(
                                 cards,
                                 '【不是装唐，是真唐】：展示摸到的牌'
@@ -489,18 +476,6 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                                     );
                                 trigger.changeDamageNum(-1);
                             }
-                        }
-                    } finally {
-                        player.removeSkill('naiLongLinShiShouPai');
-                    }
-
-                    var overflow = player.qiPai();
-                    if(overflow) {
-                        overflow.set(
-                            'naiLongSkillSource',
-                            player.playerid
-                        );
-                        await overflow;
                     }
                 },
                     },
@@ -545,9 +520,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                             var type = get.type(card, target);
                             var actionCards = target.countCards('h', function(current) {
                                 var currentType = get.type(current, target);
-                                return currentType == 'gongJi' || currentType == 'faShu';
+                                return (currentType == 'gongJi' || currentType == 'faShu') && target.hasUseTarget(current);
                             });
-                            if((type == 'gongJi' || type == 'faShu') && actionCards <= 1) {
+                            if(target === _status.event.player && target.playerid === _status.event.naiLongSkillSource && target.hasUseTarget(card) && actionCards <= 1) {
                                 return -20;
                             }
                             return 8 - get.value(card, target);
@@ -560,6 +535,11 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                         return lib.filter.cardDiscardable(card, player);
                     });
                     if(discardableHand <= 2) return false;
+                    var hand = player.getCards('h');
+                    var usable = hand.filter(function(card) { return player.hasUseTarget(card); });
+                    if(!usable.length || !hand.some(function(card) {
+                        return lib.filter.cardDiscardable(card, player) && usable.some(function(keep) { return keep !== card; });
+                    })) return false;
                     if(lib.skill._heCheng &&
                         lib.skill._heCheng.filter(event, player) &&
                         (get.shiQi(!player.side) <= 1 ||
@@ -1547,71 +1527,57 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
                         },
                         "markimage": "extension/电啸龙吟/mark_teShuReBang.png",
                     },
-                    "naiLongLinShiShouPai": {
-                        "charlotte": true,
-                        "popup": false,
-                        "mod": {
-                            "maxHandcardFinal": function(player, num) {
-                        return num +
-                            (player.storage.naiLongLinShiShouPai || 0);
-                    },
-                        },
-                        "onremove": function(player) {
-                    delete player.storage.naiLongLinShiShouPai;
-                },
-                    },
                 },
                 "translate": {
                     "hongWen": "红温",
                     "hongWen_info": "电棍Otto的专属指示物，上限为3。",
                     "baiYinWanQi": "被动【白银晚期】",
-                    "baiYinWanQi_info": "<span class='tiaoJian'>（承受实际伤害后⑤）</span>+1<span class='hong'>【红温】</span>。达到上限时，移除全部<span class='hong'>【红温】</span>并【横置】，进入【白银晚期】状态：你造成和承受的伤害额外+1，且不能获得<span class='hong'>【红温】</span>。持续到你的下个行动阶段结束，届时【重置】并退出。",
+                    "baiYinWanQi_info": "<span class='tiaoJian'>（承受实际伤害后⑤）</span>+1<span class='hong'>【红温】</span>。<br><span class='tiaoJian'>（</span><span class='hong'>【红温】</span><span class='tiaoJian'>达到上限时）</span>移除全部<span class='hong'>【红温】</span>并【横置】，进入【白银晚期】状态：你造成和承受的伤害额外+1，且不能获得<span class='hong'>【红温】</span>。<span class='tiaoJian'>（下个行动阶段结束）</span>【重置】。",
                     "baiYinWanQiZhuangTai": "白银晚期",
                     "baiYinWanQiZhuangTai_info": "你造成和承受的伤害额外+1；你不能获得<span class='hong'>【红温】</span>。持续到你的下个行动阶段结束。",
                     "shuaiOttoShuai": "响应【帅otto帅】",
-                    "shuaiOttoShuai_info": "<span class='tiaoJian'>（主动攻击前①）</span>可以对自己造成1点法术伤害③，令本次攻击伤害额外+2。",
+                    "shuaiOttoShuai_info": "<span class='tiaoJian'>（主动攻击前①）</span>对自己造成1点法术伤害③，本次攻击伤害额外+2。",
                     "zunNiHuoJia": "法术【尊尼获加】",
-                    "zunNiHuoJia_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对一名没有【房管】的目标对手施加【房管】。",
-                    "fangGuan": "(专)【房管】",
-                    "fangGuan_info": "持有者下个行动阶段内首次主动攻击只能以电棍Otto为目标，该【攻击行动】结束后移除。<span class='tiaoJian'>（其行动阶段结束时）</span>若【房管】仍存在，电棍Otto对其造成2点法术伤害③，然后移除。",
+                    "zunNiHuoJia_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>对1名目标对手施加【房管】。",
+                    "fangGuan": "专属【房管】",
+                    "fangGuan_info": "持有者下个行动阶段内主动攻击只能以电棍Otto为目标，该【攻击行动】结束后移除。<span class='tiaoJian'>（其行动阶段结束时）</span>若【房管】仍存在，电棍Otto对其造成2点法术伤害③，移除此卡。",
                     "dianGunShengJing": "响应【电棍圣经】",
-                    "dianGunShengJing_info": "【宝石】<span class='tiaoJian'>（【白银晚期】下，因承受伤害导致士气下降时）</span>对目标对手造成X点法术伤害③，对其他所有对手各造成1点法术伤害③；X为本次士气下降数。上述伤害均享受【白银晚期】加成，随后【重置】并退出该形态。",
+                    "dianGunShengJing_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（【白银晚期】下，因承受伤害导致士气下降时）</span>对目标对手造成X点法术伤害③，对其他所有对手各造成1点法术伤害③，然后【重置】，X为本次士气下降数。",
                     "woShiNaiLong": "被动【我是奶龙】",
-                    "woShiNaiLong_info": "角色因你的技能弃牌后，+1【治疗】；每次弃牌事件限一次。<br><span class='tiaoJian'>（你的攻击命中后②）</span>可以令一名有手牌的其他队友弃置1张手牌。",
+                    "woShiNaiLong_info": "<span class='tiaoJian'>（目标角色因你的技能弃牌后）</span>该角色+1【治疗】；<br><span class='tiaoJian'>（你的攻击命中后②）</span>令1名队友弃置1张手牌。",
                     "buShiZhuangTangShiZhenTang": "响应【不是装唐，是真唐】",
-                    "buShiZhuangTangShiZhenTang_info": "<span class='tiaoJian'>（成为其他角色攻击的目标时①）</span>摸1张牌【强制】并展示：若与本次攻击同系，保留该牌且本次攻击无法应战；否则弃置该牌，本次攻击伤害-1。然后执行标准爆牌；此次爆牌弃牌视为因本技能弃置。",
+                    "buShiZhuangTangShiZhenTang_info": "<span class='tiaoJian'>（成为其他角色攻击的目标时①）</span>摸1张牌【强制】并展示：<span class='tiaoJian'>（若与本次攻击同系）</span>保留该牌且本次攻击无法应战；否则弃置该牌，本次攻击伤害-1。",
                     "naiLongDaXiao": "启动【奶龙大笑】",
-                    "naiLongDaXiao_info": "【水晶】从你开始，每名角色按座次依次弃置1张手牌；无法弃置者跳过。",
+                    "naiLongDaXiao_info": "<span style=\"color:#0C9CE6\">【水晶】</span>从你开始，每名角色按座次依次弃置1张手牌。",
                     "suanFaTuiJian": "被动【算法推荐】",
-                    "suanFaTuiJian_info": "游戏开始时没有【热榜】。<span class='tiaoJian'>（角色回合结束时）</span>记录其本回合最后完成的行动类型：没有【热榜】或类型不同时，放置或替换为对应【热榜】；<span class='tiaoJian'>（类型相同且该角色不是你时）</span>你+1<span class='lan'>【流量】</span>，其+1【治疗】。你自己的同类行动只维持【热榜】。",
+                    "suanFaTuiJian_info": "游戏开始时没有【热榜】。<span class='tiaoJian'>（角色回合结束时）</span>记录其本回合最后完成的行动类型：<span class='tiaoJian'>（没有【热榜】或类型不同时）</span>放置或替换为对应【热榜】；<span class='tiaoJian'>（类型相同且该角色不是你时）</span>你+1<span style=\"color:#B33D75\">【流量】</span>，其+1【治疗】。",
                     "guoQiZhuBao": "被动【过气主包】",
-                    "guoQiZhuBao_info": "<span class='tiaoJian'>（回合结束时，若<span class='lan'>【流量】</span>＞0）</span>移除1点，然后+1【治疗】。",
+                    "guoQiZhuBao_info": "<span class='tiaoJian'>（回合结束时，若</span><span style=\"color:#B33D75\">【流量】</span><span class='tiaoJian'>＞0）</span>移除1点，你+1【治疗】。",
                     "guanZhuTaFeiMiao": "被动【关注塔菲喵】",
-                    "guanZhuTaFeiMiao_info": "<span class='tiaoJian'>（拥有3<span class='lan'>【流量】</span>时，其他角色回合结束后）</span>若其最后完成的行动类型与【热榜】不同，不替换【热榜】，改为对其造成2点法术伤害③。",
+                    "guanZhuTaFeiMiao_info": "<span class='tiaoJian'>（拥有3</span><span style=\"color:#B33D75\">【流量】</span><span class='tiaoJian'>时，其他角色回合结束后）</span>若其最后完成的行动类型与【热榜】不同，不替换【热榜】，改为对其造成2点法术伤害③。",
                     "qianShiHeiTaoYing": "被动【前世·黑桃影】",
-                    "qianShiHeiTaoYing_info": "<span class='tiaoJian'>（你的主动攻击被成功应战时）</span>应战攻击的目标+1【治疗】。<span class='tiaoJian'>（本次应战攻击命中时）</span>其实际伤害由你承受，你+1<span class='lan'>【流量】</span>；<span class='tiaoJian'>（未命中时）</span>你+1【治疗】。仅响应对手直接应战你的主动攻击产生的攻击，不响应你的应战攻击及其后续应战。",
+                    "qianShiHeiTaoYing_info": "<span class='tiaoJian'>（你的主动攻击被成功应战时）</span>应战攻击的目标+1【治疗】。<span class='tiaoJian'>（本次应战攻击命中时）</span>其实际伤害由你承受，你+1<span style=\"color:#B33D75\">【流量】</span>；<span class='tiaoJian'>（未命中时）</span>你+1【治疗】。",
                     "qianShiYiBaoShuTiaoXiXi": "响应【前世·一包薯条嘻嘻】",
-                    "qianShiYiBaoShuTiaoXiXi_info": "<span class='tiaoJian'>（你的回合开始时）</span>移除1<span class='lan'>【流量】</span>，可以将1张手牌面朝下置于角色旁，作为【薯条】。你可以将【薯条】如手牌般打出或使用。",
+                    "qianShiYiBaoShuTiaoXiXi_info": "<span class='tiaoJian'>（你的回合开始时）</span>移除1<span style=\"color:#B33D75\">【流量】</span>，将1张手牌面朝下置于角色旁，作为【薯条】。你可以将【薯条】如手牌般打出或使用。",
                     "yuanShengYao": "响应【原生摇】",
-                    "yuanShengYao_info": "【水晶】<span class='tiaoJian'>（拥有3<span class='lan'>【流量】</span>时，完整结算一个与【热榜】同类型的合法行动后，移除3<span class='lan'>【流量】</span>）</span>摸1张牌【强制】，移除【热榜】，结束当前回合并立即开始一个新的完整回合。新回合中可以再次发动。",
+                    "yuanShengYao_info": "【水晶】<span class='tiaoJian'>（拥有3</span><span style=\"color:#B33D75\">【流量】</span><span class='tiaoJian'>时，完整结算1个与【热榜】同类型的合法行动后，移除3</span><span style=\"color:#B33D75\">【流量】</span><span class='tiaoJian'>）</span>摸1张牌【强制】，移除【热榜】，结束当前回合并立即开始1个新的完整回合。",
                     "yongChuTaFeiLiuLiang": "流量",
                     "yongChuTaFeiLiuLiang_info": "永雏塔菲的专属指示物，上限为3。",
-                    "gongJiReBang": "(专)【攻击热榜】",
-                    "gongJiReBang_info": "记录【攻击行动】；三种【热榜】合计上限为1。",
-                    "faShuReBang": "(专)【法术热榜】",
-                    "faShuReBang_info": "记录【法术行动】；三种【热榜】合计上限为1。",
-                    "teShuReBang": "(专)【特殊热榜】",
-                    "teShuReBang_info": "记录【特殊行动】；三种【热榜】合计上限为1。",
-                    "yongChuTaFeiShuTiao": "(专)【薯条】",
+                    "gongJiReBang": "专属【攻击热榜】",
+                    "gongJiReBang_info": "记录【攻击行动】；3种【热榜】合计上限为1。",
+                    "faShuReBang": "专属【法术热榜】",
+                    "faShuReBang_info": "记录【法术行动】；3种【热榜】合计上限为1。",
+                    "teShuReBang": "专属【特殊热榜】",
+                    "teShuReBang_info": "记录【特殊行动】；3种【热榜】合计上限为1。",
+                    "yongChuTaFeiShuTiao": "专属【薯条】",
                     "yongChuTaFeiShuTiao_info": "永雏塔菲的专属牌，面朝下置于角色旁且仅自己可见；可以如手牌般打出或使用。",
-                    "naiLongLinShiShouPai": "不是装唐，是真唐",
                 },
             },
             "intro": "添加角色奶龙、电棍Otto、永雏塔菲。",
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.8",
+            "version": "1.5",
         },
         "files": {
             "character": [
