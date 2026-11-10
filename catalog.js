@@ -409,7 +409,7 @@ extension["永夜残响"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.16",
+	"version": "2.17",
 	"files": [
 		"LICENSE",
 		"README.md",

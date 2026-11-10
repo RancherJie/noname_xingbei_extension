@@ -3670,7 +3670,7 @@
                         "cost": async function(event, trigger, player) {
                     event.result = await player.chooseBool(
                         '是否发动【司令调度】？'
-                    ).set('prompt2', '你弃置1张牌，他弃置一张牌，然后你摸1张牌。')
+                    ).set('prompt2', '你弃置1张牌，然后令其弃1张牌，摸1张牌【强制】。')
                         .set('ai', function() {
                             var player = _status.event.player;
                             return player.countCards('h') <
@@ -3701,7 +3701,7 @@
                             return 6 - get.value(card);
                         });
                     }
-                    if(player.isIn()) await player.draw(1);
+                    if(target && target.isIn()) await target.draw(1);
                 },
                     },
                 },
@@ -3774,13 +3774,13 @@
                     "qinLiBaiSeFaDaiInfo": "专属【白色发带】",
                     "qinLiBaiSeFaDaiInfo_info": "【治疗】上限+1。<br><span class='greentext'>响应【妹妹形态】【回合限定】</span><br><span class='tiaoJian'>（承受其他角色造成的实际伤害后⑤）</span>你弃置1张牌；+1【治疗】。",
                     "qinLiHeiSeFaDaiInfo": "专属【黑色发带】",
-                    "qinLiHeiSeFaDaiInfo_info": "<span class='greentext'>响应【司令形态】</span><br><span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后，移除3<span style=\"color:#8E44AD\">【灵力】</span>）</span>令其获得1个同类型额外行动，然后翻面。<br><span class='greentext'>响应【司令调度】【回合限定】</span><br><span class='tiaoJian'>（队友摸牌后）</span>你弃置1张牌，他弃置一张牌，然后摸1张牌。",
+                    "qinLiHeiSeFaDaiInfo_info": "<span class='greentext'>响应【司令形态】</span><br><span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后，移除3<span style=\"color:#8E44AD\">【灵力】</span>）</span>令其获得1个同类型额外行动，然后翻面。<br><span class='greentext'>响应【司令调度】【回合限定】</span><br><span class='tiaoJian'>（队友摸牌后）</span>你弃置1张牌，然后令其弃1张牌，摸1张牌【强制】。",
                     "shuangSeFaDai": "被动【双色发带】",
                     "shuangSeFaDai_info": "<span class='tiaoJian'>（游戏开始时）</span>以【白色发带】放置，反面为【黑色发带】。<span class='tiaoJian'>（你的回合开始时）</span>可以翻面。",
                     "baiSeFaDai": "专属【白色发带】",
                     "baiSeFaDai_info": "【治疗】上限+1。<br><span class='greentext'>响应【妹妹形态】【回合限定】</span><br><span class='tiaoJian'>（承受其他角色造成的实际伤害后⑤）</span>你弃置1张牌；+1【治疗】。",
                     "heiSeFaDai": "专属【黑色发带】",
-                    "heiSeFaDai_info": "<span class='greentext'>响应【司令形态】</span><br><span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后，移除3<span style=\"color:#8E44AD\">【灵力】</span>）</span>令其获得1个同类型额外行动，然后翻面。<br><span class='greentext'>响应【司令调度】【回合限定】</span><br><span class='tiaoJian'>（队友摸牌后）</span>你弃置1张牌，他弃置一张牌，然后摸1张牌。",
+                    "heiSeFaDai_info": "<span class='greentext'>响应【司令形态】</span><br><span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后，移除3<span style=\"color:#8E44AD\">【灵力】</span>）</span>令其获得1个同类型额外行动，然后翻面。<br><span class='greentext'>响应【司令调度】【回合限定】</span><br><span class='tiaoJian'>（队友摸牌后）</span>你弃置1张牌，然后令其弃1张牌，摸1张牌【强制】。",
                     "qinLiYanLing": "被动【炎灵】",
                     "qinLiYanLing_info": "<span class='tiaoJian'>（你每次造成或受到实际伤害后⑤）</span>+1<span style=\"color:#8E44AD\">【灵力】</span>。",
                     "lingLiShiKong": "被动【灵力失控】",
@@ -3796,7 +3796,7 @@
                     "siLingXingTai": "响应【司令形态】",
                     "siLingXingTai_info": "<span class='tiaoJian'>（队友的【攻击行动】或【法术行动】结束后，移除3<span style=\"color:#8E44AD\">【灵力】</span>）</span>令其获得1个同类型额外行动，然后翻面。",
                     "siLingDiaoDu": "响应【司令调度】【回合限定】",
-                    "siLingDiaoDu_info": "<span class='tiaoJian'>（队友摸牌后）</span>你弃置1张牌，他弃置一张牌，然后摸1张牌。",
+                    "siLingDiaoDu_info": "<span class='tiaoJian'>（队友摸牌后）</span>你弃置1张牌，然后令其弃1张牌，摸1张牌【强制】。",
                     "shiXiangLingLi": "灵力",
                     "shiXiangLingLi_info": "夜刀神十香与反转·十香的专属指示物，上限为5。",
                     "fanZhuanLingLi": "反转灵力",
@@ -3839,7 +3839,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.16",
+            "version": "2.17",
         },
         "files": {
             "character": [
