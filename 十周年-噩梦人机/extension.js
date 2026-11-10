@@ -1268,7 +1268,7 @@
             trigger: { global: "chengShouShangHai" },
             priority: 5,
             filter: function (event, player) { return event.player && event.player != player && event.player.side == player.side && event.num > 0 && player.zhiLiao > 0; },
-            check: function (event, player) { return get.damageEffect2(event.player, event.source, event.num) < 0; },
+            check: function (event, player) { return get.damageEffect2(event.player, player, event.num) < 0; },
             content: async function (event, trigger, player) {
                 await player.changeZhiLiao(-1);
                 trigger.changeDamageNum(-1);
