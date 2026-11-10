@@ -343,9 +343,20 @@ body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .player {
     box-shadow: 0 2px 6px rgba(22, 10, 4, .4) !important;
     filter: none !important;
 }
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .player > .wmb-wb-frame-left {
+    filter: none !important;
+}
 body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card,
 body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card:hover {
     filter: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card.selectable,
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card.selected {
+    box-shadow: none !important;
+    outline: 2px solid #d0a55c;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client .wmb-wb-click-ripple {
+    display: none !important;
 }
 body.wmb-ui-waterbear.wmb-ui-mobile-client .wmb-wb-hit-fx {
     box-shadow: 0 0 8px var(--wmb-line-color) !important;

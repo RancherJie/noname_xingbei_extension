@@ -13,9 +13,15 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.19";
+    var extensionVersion = "2.20";
     var observer = null;
     var decorateTimer = null;
+    var cardDecorationFrame = null;
+    var pendingCardNodes = [];
+    var pendingPromptNodes = [];
+    var pendingGlobalUiNodes = [];
+    var pendingIdentityNodes = [];
+    var pendingSelectionDecoration = false;
     var cardDefinitionsApplied = false;
     var combatLines = [];
     var combatLineHookInstalled = false;
@@ -261,10 +267,10 @@
         toggleClass(document.body, "wmb-ui-has-scoreboard", board && board.isConnected);
         if (!board) return;
         board.classList.add("wmb-scoreboard");
-        board.setAttribute(
-            "data-wmb-title",
-            isWaterbearTheme() ? "战局纪要" : "仙缘 · 战局"
-        );
+        var title = isWaterbearTheme() ? "战局纪要" : "仙缘 · 战局";
+        if (board.getAttribute("data-wmb-title") !== title) {
+            board.setAttribute("data-wmb-title", title);
+        }
 
         var rows = board.querySelectorAll("tr");
         if (rows[1]) rows[1].classList.add("wmb-team-red");
@@ -274,9 +280,11 @@
             board.querySelectorAll("td:nth-child(2) > img").forEach(function (image) {
                 var source = image.getAttribute("src") || "";
                 if (source.indexOf("baoShi") !== -1) {
-                    image.src = imageRoot + "baoShi_xianxia.png";
+                    var gemImage = imageRoot + "baoShi_xianxia.png";
+                    if (image.getAttribute("src") !== gemImage && image.src !== gemImage) image.src = gemImage;
                 } else if (source.indexOf("shuiJing") !== -1) {
-                    image.src = imageRoot + "shuiJing_xianxia.png";
+                    var crystalImage = imageRoot + "shuiJing_xianxia.png";
+                    if (image.getAttribute("src") !== crystalImage && image.src !== crystalImage) image.src = crystalImage;
                 }
                 image.classList.add("wmb-starstone");
             });
@@ -616,35 +624,58 @@
         cardDefinitionsApplied = true;
     }
 
-    function decorateLightMarks() {
-        if (!isXianJianTheme() || !ui.arena) return;
-        ui.arena.querySelectorAll(".player .card.mark").forEach(function (mark) {
+    function matchingNodes(root, selector) {
+        if (!root) return [];
+        var nodes = [];
+        if (root.nodeType === 1 && root.matches(selector)) nodes.push(root);
+        if (root.querySelectorAll) {
+            Array.prototype.push.apply(nodes, root.querySelectorAll(selector));
+        }
+        return nodes;
+    }
+
+    function decorateLightMarks(rootNode) {
+        if (!isXianJianTheme()) return;
+        var root = rootNode || ui.arena;
+        if (!root) return;
+        matchingNodes(root, ".player .card.mark").forEach(function (mark) {
             var skill = mark.name && lib.skill[mark.name];
             if (!skill || typeof skill.markimage != "string" ||
                 skill.markimage.indexOf("extension/" + extensionName + "/image/") !== 0) return;
             if (skill.markimage.indexOf("huangDeng_xianxia.png") === -1 &&
                 skill.markimage.indexOf("lanDeng_xianxia.png") === -1) return;
-            if (mark.setBackgroundImage) mark.setBackgroundImage(skill.markimage);
+            if (mark.dataset.wmbMarkImage === skill.markimage) return;
+            if (mark.setBackgroundImage) {
+                mark.setBackgroundImage(skill.markimage);
+                mark.dataset.wmbMarkImage = skill.markimage;
+            }
         });
     }
 
-    function decorateCards() {
-        if (!isXianJianTheme() || !ui.arena) return;
+    function decorateCards(rootNode) {
+        if (!isXianJianTheme()) return;
         if (!configValue("cardArt", true)) return;
+        var root = rootNode || ui.arena;
+        if (!root) return;
         var imageRoot = "extension/" + extensionName + "/image/card/";
-        ui.arena.querySelectorAll(".card").forEach(function (card) {
+        matchingNodes(root, ".card").forEach(function (card) {
             var name = card.name;
             if (!name || !cardArtMap[name] || card.dataset.wmbCardArt === name) return;
             if (card.node && card.node.image && card.node.image.setBackgroundImage) {
-                card.node.image.setBackgroundImage(imageRoot + cardArtMap[name]);
+                var currentImage = card.node.image.style && card.node.image.style.backgroundImage || "";
+                if (currentImage.indexOf(cardArtMap[name]) === -1) {
+                    card.node.image.setBackgroundImage(imageRoot + cardArtMap[name]);
+                }
                 card.dataset.wmbCardArt = name;
             }
         });
     }
 
-    function decorateTeamIdentities() {
-        if (!isCustomTheme() || !ui.arena) return;
-        ui.arena.querySelectorAll(".player .identity").forEach(function (identity) {
+    function decorateTeamIdentities(rootNode) {
+        if (!isCustomTheme()) return;
+        var root = rootNode || ui.arena;
+        if (!root) return;
+        matchingNodes(root, ".player .identity").forEach(function (identity) {
             var text = (identity.textContent || "").replace(/\s/g, "");
             var isRed = text.indexOf("红") !== -1;
             var isBlue = text.indexOf("蓝") !== -1;
@@ -743,8 +774,10 @@
         return true;
     }
 
-    function decorateActionResponsePrompts() {
-        document.querySelectorAll("#arena > .dialog, #window > .dialog.popped").forEach(function (dialog) {
+    function decorateActionResponsePrompts(rootNode) {
+        var dialogs = rootNode ? matchingNodes(rootNode, ".dialog") :
+            document.querySelectorAll("#arena > .dialog, #window > .dialog.popped");
+        dialogs.forEach(function (dialog) {
             var text = (dialog.textContent || "").replace(/\s+/g, "");
             var actionPrompt = text.indexOf("[攻击行动]或者[法术行动]") !== -1;
             var event = _status.event;
@@ -768,24 +801,25 @@
         });
     }
 
-    function decorateGlobalUi() {
+    function decorateGlobalUi(rootNode) {
         if (!isCustomTheme()) return;
-        document.querySelectorAll("#system1 > div, #system2 > div").forEach(function (button) {
+        var root = rootNode || document;
+        matchingNodes(root, "#system1 > div, #system2 > div").forEach(function (button) {
             button.classList.add("wmb-system-button");
         });
-        document.querySelectorAll(".dialog.popped, .menubg.charactercard").forEach(function (detail) {
+        matchingNodes(root, ".dialog.popped, .menubg.charactercard").forEach(function (detail) {
             detail.classList.add("wmb-detail-panel");
         });
-        document.querySelectorAll(".player.connect").forEach(function (player) {
+        matchingNodes(root, ".player.connect").forEach(function (player) {
             player.classList.add("wmb-connect-player");
         });
-        document.querySelectorAll(".connectbutton").forEach(function (button) {
+        matchingNodes(root, ".connectbutton").forEach(function (button) {
             button.classList.add("wmb-connect-button");
         });
-        document.querySelectorAll(".dialog.fullwidth.fullheight.fixed").forEach(function (rooms) {
+        matchingNodes(root, ".dialog.fullwidth.fullheight.fixed").forEach(function (rooms) {
             rooms.classList.add("wmb-room-list");
         });
-        document.querySelectorAll(".connectevents").forEach(function (button) {
+        matchingNodes(root, ".connectevents").forEach(function (button) {
             button.classList.add("wmb-connect-hall-button");
         });
     }
@@ -1041,6 +1075,7 @@
                 ".control, .menubutton, .button, .dialog .textbutton.selectable, .card, .wmb-system-button, .connectbutton"
             );
             if (!target) return;
+            if (document.body.classList.contains("wmb-ui-mobile-client") && target.matches(".card")) return;
             var rect = target.getBoundingClientRect();
             var ripple = document.createElement("span");
             ripple.className = "wmb-wb-click-ripple";
@@ -1080,6 +1115,52 @@
         }, document.body && document.body.classList.contains("wmb-ui-mobile-client") ? 120 : 0);
     }
 
+    function addPendingNode(list, node) {
+        if (list.indexOf(node) === -1) list.push(node);
+    }
+
+    function queueIncrementalDecoration() {
+        if (cardDecorationFrame !== null) return;
+        cardDecorationFrame = requestAnimationFrame(function () {
+            cardDecorationFrame = null;
+            var cards = pendingCardNodes;
+            var prompts = pendingPromptNodes;
+            var globalUi = pendingGlobalUiNodes;
+            var identities = pendingIdentityNodes;
+            var selectionChanged = pendingSelectionDecoration;
+            pendingCardNodes = [];
+            pendingPromptNodes = [];
+            pendingGlobalUiNodes = [];
+            pendingIdentityNodes = [];
+            pendingSelectionDecoration = false;
+            cards.forEach(function (node) {
+                decorateCards(node);
+                decorateLightMarks(node);
+            });
+            prompts.forEach(function (node) { decorateActionResponsePrompts(node); });
+            globalUi.forEach(function (node) {
+                decorateGlobalUi(node);
+                observeDialogClassChanges(node);
+            });
+            identities.forEach(function (node) { decorateTeamIdentities(node); });
+            if (selectionChanged) decorateTargetSelection();
+        });
+    }
+
+    function observeClassChanges(node) {
+        if (!observer || !node || node.nodeType !== 1 || node._wmbUiClassObserved) return;
+        node._wmbUiClassObserved = true;
+        observer.observe(node, {
+            attributes: true,
+            attributeFilter: ["class"],
+            attributeOldValue: true
+        });
+    }
+
+    function observeDialogClassChanges(root) {
+        matchingNodes(root, ".dialog").forEach(observeClassChanges);
+    }
+
     function isTransientWaterbearFx(node) {
         if (!node || node.nodeType !== 1 || !node.classList) return false;
         return node.classList.contains("wmb-wb-attack-line") ||
@@ -1095,35 +1176,115 @@
     }
 
     function observeUiChanges(records) {
-        var decoratedNodeSelector = ".player, .card, .dialog, .identity, .zhanJi, .touchinfo, " +
-            ".connectbutton, .connectevents, .menubg.charactercard, .wmb-scoreboard";
+        var needsFullDecoration = false;
+        var incrementalWork = false;
+        var scoreboardChanged = false;
+        var scoreboardAdded = false;
+        var majorUiSelector = ".player, .connectbutton, .connectevents, .menubg.charactercard";
+        var scoreboardSelector = ".zhanJi, .touchinfo, .wmb-scoreboard";
 
-        function containsDecoratedNode(node) {
-            if (!node || node.nodeType !== 1 || !node.classList || isTransientWaterbearFx(node)) return false;
-            return node.matches(decoratedNodeSelector) || !!node.querySelector(decoratedNodeSelector);
-        }
-
-        var needsDecoration = records.some(function (record) {
+        records.forEach(function (record) {
+            if (needsFullDecoration) return;
             if (record.type === "attributes" && record.target && record.target.classList) {
-                if (record.target === ui.arena || record.target.matches(".dialog, .identity")) return true;
+                if (record.target === ui.arena) {
+                    pendingSelectionDecoration = true;
+                    incrementalWork = true;
+                    return;
+                }
+                if (record.target.matches(".dialog")) {
+                    addPendingNode(pendingPromptNodes, record.target);
+                    addPendingNode(pendingGlobalUiNodes, record.target);
+                    incrementalWork = true;
+                    return;
+                }
                 if (record.target.matches(".player")) {
                     var previousClasses = (record.oldValue || "").split(/\s+/);
-                    return ["selectable", "selected", "current_action", "glow_phase", "linked", "minskin"]
+                    var selectionChanged = ["selectable", "selected"]
                         .some(function (name) {
                             return record.target.classList.contains(name) || previousClasses.includes(name);
                         });
+                    if (selectionChanged) {
+                        pendingSelectionDecoration = true;
+                        incrementalWork = true;
+                    }
+                    return;
                 }
-                return false;
+                if (record.target.matches(".identity")) {
+                    addPendingNode(pendingIdentityNodes, record.target);
+                    incrementalWork = true;
+                }
+                return;
             }
             if (record.target && record.target.nodeType === 1) {
-                if (record.target.matches("#system1, #system2, .dialog, .identity")) return true;
-                if (record.target.closest(".wmb-scoreboard, .zhanJi, .touchinfo")) return true;
+                var scoreboard = record.target.closest(".wmb-scoreboard, .zhanJi, .touchinfo");
+                if (scoreboard) {
+                    scoreboardChanged = true;
+                    return;
+                }
+                if (record.target.matches("#system1, #system2")) {
+                    needsFullDecoration = true;
+                    return;
+                }
+                if (record.target.matches(".dialog")) {
+                    addPendingNode(pendingPromptNodes, record.target);
+                    addPendingNode(pendingGlobalUiNodes, record.target);
+                    incrementalWork = true;
+                    return;
+                }
+                if (record.target.matches(".identity")) {
+                    addPendingNode(pendingIdentityNodes, record.target);
+                    incrementalWork = true;
+                }
             }
-            var changed = Array.prototype.slice.call(record.addedNodes || [])
-                .concat(Array.prototype.slice.call(record.removedNodes || []));
-            return changed.some(containsDecoratedNode);
+            Array.prototype.forEach.call(record.removedNodes || [], function (node) {
+                if (node.nodeType === 1 &&
+                    (node.matches(majorUiSelector) || node.querySelector(majorUiSelector))) {
+                    needsFullDecoration = true;
+                }
+            });
+            Array.prototype.forEach.call(record.addedNodes || [], function (node) {
+                if (!node || node.nodeType !== 1 || !node.classList || isTransientWaterbearFx(node)) return;
+                if (node.matches(majorUiSelector) || node.querySelector(majorUiSelector)) {
+                    needsFullDecoration = true;
+                    return;
+                }
+                if (node.matches(scoreboardSelector) || node.querySelector(scoreboardSelector)) {
+                    scoreboardChanged = true;
+                    scoreboardAdded = true;
+                }
+                if (node.matches(".dialog") || node.querySelector(".dialog")) {
+                    addPendingNode(pendingPromptNodes, node);
+                    addPendingNode(pendingGlobalUiNodes, node);
+                    incrementalWork = true;
+                }
+                if (node.matches(".identity") || node.querySelector(".identity")) {
+                    addPendingNode(pendingIdentityNodes, node);
+                    incrementalWork = true;
+                }
+                if (node.matches(".card") || node.querySelector(".card")) {
+                    addPendingNode(pendingCardNodes, node);
+                    incrementalWork = true;
+                }
+            });
         });
-        if (needsDecoration) queueDecoration();
+        if (scoreboardChanged || needsFullDecoration) {
+            decorateScoreboard();
+        }
+        if (scoreboardAdded) ensureMusicPanel();
+        if (needsFullDecoration) {
+            pendingCardNodes = [];
+            pendingPromptNodes = [];
+            pendingGlobalUiNodes = [];
+            pendingIdentityNodes = [];
+            pendingSelectionDecoration = false;
+            if (cardDecorationFrame !== null) {
+                cancelAnimationFrame(cardDecorationFrame);
+                cardDecorationFrame = null;
+            }
+            queueDecoration();
+        } else if (incrementalWork) {
+            queueIncrementalDecoration();
+        }
     }
 
     function decorateArena() {
@@ -1148,11 +1309,13 @@
             // 联机大厅和对局会重建大块界面，监听根节点才能跨场景持续生效。
             observer.observe(document.documentElement, {
                 childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ["class"],
-                attributeOldValue: true
+                subtree: true
             });
+        }
+        if (observer) {
+            observeClassChanges(ui.arena);
+            document.querySelectorAll("#arena .player, #arena > .dialog, #window > .dialog")
+                .forEach(observeClassChanges);
         }
     }
 
