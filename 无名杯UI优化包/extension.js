@@ -432,7 +432,10 @@
         var size = visibleLayoutSize();
         var mobile = lib.device === "android" || lib.device === "ios" ||
             /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        var small = mobile;
+        var screenWidth = window.screen && window.screen.width || window.innerWidth;
+        var screenHeight = window.screen && window.screen.height || window.innerHeight;
+        var small = mobile && Math.min(screenWidth, screenHeight) <= 700;
+        toggleClass(document.body, "wmb-ui-mobile-client", mobile);
         toggleClass(document.body, "wmb-ui-small-screen", small);
         document.body.style.setProperty("--wmb-layout-width", size.width + "px");
         document.body.style.setProperty("--wmb-layout-height", size.height + "px");
@@ -1128,7 +1131,7 @@
 
     return {
         name: extensionName,
-        version: "2.13",
+        version: "2.14",
         editable: false,
         precontent: function () {
             migrateExtensionIdentityConfigs();
@@ -1200,7 +1203,7 @@
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.13"
+            version: "2.14"
         },
         files: {
             character: [],
