@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -294,7 +293,18 @@ import { game } from "../../noname.js";
 
 /* AUDIO_PACK_RUNTIME_END */
 // 百年战争·序章：直接维护本文件中的角色、技能、翻译与资源配置。
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"百年战争·序章","sha256":"5f0c5aa306f074c0b4710605d04358bc6dbdac3115574f27bb96ce06a295fe90"}, function (lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"百年战争·序章","sha256":"5f0c5aa306f074c0b4710605d04358bc6dbdac3115574f27bb96ce06a295fe90"}, function (lib, game, ui, get, ai, _status) {
     'use strict';
 
     const bnzzQi_assetStem = id => String(id).replace(/^bnzz_qi_/, '');
@@ -5294,3 +5304,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"百年战争�
     extension.package.skill.skill.bnzz_qi_zhenYanXingTai.intro.content = extension.package.skill.translate.bnzz_qi_zhenYanXingTai_info;
     return extension;
 }));
+});

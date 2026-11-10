@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -293,7 +292,18 @@ import { game } from "../../noname.js";
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语音包","sha256":"b057884d5d24046ea781c4fab4d53c4365084006eafcd7f19a820c939aa349d3"}, function (lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语音包","sha256":"b057884d5d24046ea781c4fab4d53c4365084006eafcd7f19a820c939aa349d3"}, function (lib, game, ui, get, ai, _status) {
     "use strict";
 
     var extensionName = "十周年语音包";
@@ -1920,3 +1930,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语�
         }
     };
 }));
+});

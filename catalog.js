@@ -21,7 +21,7 @@ extension["无名杯UI优化包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.11",
+	"version": "2.12",
 	"files": [
 		"README.md",
 		"extension.css",
@@ -72,7 +72,7 @@ extension["十周年语音包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.16",
+	"version": "6.17",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -101,7 +101,7 @@ extension["创世纪"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.15",
+	"version": "2.16",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -145,7 +145,7 @@ extension["十周年-AI优化版"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.11",
+	"version": "1.12",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -161,7 +161,7 @@ extension["十周年-噩梦人机"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.11",
+	"version": "1.12",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -458,7 +458,7 @@ extension["宿命挽歌"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.38",
+	"version": "2.39",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -512,7 +512,7 @@ extension["峡谷幻音"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.18",
+	"version": "1.19",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -549,7 +549,7 @@ extension["永夜残响"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.12",
+	"version": "2.13",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -584,7 +584,7 @@ extension["bigcowcow"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.19",
+	"version": "2.20",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -622,7 +622,7 @@ extension["电啸龙吟"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.14",
+	"version": "1.15",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -652,7 +652,7 @@ extension["轮回遗梦"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.9",
+	"version": "1.10",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -712,7 +712,7 @@ extension["百年战争·序章"] = {
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.5-dev",
+	"version": "0.2.6-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",

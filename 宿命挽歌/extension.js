@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -293,7 +292,18 @@ import { game } from "../../noname.js";
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌","sha256":"8653aed9f2ae3086ef70918e25ccfb494850d27c2832073981b3ccbede44e19a"}, function(lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌","sha256":"8653aed9f2ae3086ef70918e25ccfb494850d27c2832073981b3ccbede44e19a"}, function(lib, game, ui, get, ai, _status) {
     // <diy-form-preview>
     // Copies stay inside each standalone expansion; the shared UI hook installs once.
     function installDiyFormPreview(groups, routes) {
@@ -6365,3 +6375,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
         "connect": true,
     };
 }));
+});

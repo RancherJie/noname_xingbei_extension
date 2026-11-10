@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -293,7 +292,18 @@ import { game } from "../../noname.js";
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","sha256":"5ab6f3d966c8f033aee7034b975d0cdd09c8c3d94584081fe753f140622ee16a"}, function(lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","sha256":"5ab6f3d966c8f033aee7034b975d0cdd09c8c3d94584081fe753f140622ee16a"}, function(lib, game, ui, get, ai, _status) {
     // 临时效果牌：创建时不带destroyed标记；必须在效果结算(挂到目标面前)完成后再打标记，
     // 否则addToExpansion会把带destroyed的牌从结算中剔除，导致效果不触发。
     lib.chuangShiJiUseTemporaryEffectCard = async function(player, name, target, nolog) {
@@ -4701,3 +4711,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
     });
     return extension;
 }));
+});

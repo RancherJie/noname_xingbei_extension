@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -293,7 +292,18 @@ import { game } from "../../noname.js";
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦","sha256":"9e50db340b374961fcaec1721f3efc4e4e3f7be017effca3eda6cde3da265f2a"}, function(lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦","sha256":"9e50db340b374961fcaec1721f3efc4e4e3f7be017effca3eda6cde3da265f2a"}, function(lib, game, ui, get, ai, _status) {
     'use strict';
     // <diy-form-preview>
     // Copies stay inside each standalone expansion; the shared UI hook installs once.
@@ -2414,3 +2424,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
         files:{character:['jingTian_moJian.png','jingTian_zhenYaoJian.png','xueJian.png','longKui_blue.png','longKui_red.png','xieJianXian.png','xieLing.png'],card:[],skill:markFiles,audio:V.files.concat(['audio/bgm/yuJianJiangHu.mp3','audio/bgm/yuManTang.mp3','audio/bgm/qingYuAn.mp3','audio/bgm/zhuShaBian.mp3','audio/bgm/huanHunCao.mp3','audio/bgm/linWei.mp3','audio/bgm/linWeiBianDiao.mp3'])},
     };
 }));
+});

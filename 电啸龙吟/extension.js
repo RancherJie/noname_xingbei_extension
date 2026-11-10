@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -293,7 +292,18 @@ import { game } from "../../noname.js";
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟","sha256":"1e751cf1ae5a65197f7789161e44ea6ba7e701b40b08501fabf5939ff2550213"}, function(lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟","sha256":"1e751cf1ae5a65197f7789161e44ea6ba7e701b40b08501fabf5939ff2550213"}, function(lib, game, ui, get, ai, _status) {
     return {
         "name": "电啸龙吟",
         "arenaReady": function(){
@@ -1710,3 +1720,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
         "connect": true,
     };
 }));
+});

@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -293,7 +292,18 @@ import { game } from "../../noname.js";
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音","sha256":"d0f6ac70f8cd06a7cda02f32794e3552ae0f5885ce13a325ae9395895ee67440"}, function(lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音","sha256":"d0f6ac70f8cd06a7cda02f32794e3552ae0f5885ce13a325ae9395895ee67440"}, function(lib, game, ui, get, ai, _status) {
     // 临时效果牌：创建时不带destroyed标记；必须在效果结算(挂到目标面前)完成后再打标记，
     // 否则addToExpansion会把带destroyed的牌从结算中剔除，导致效果不触发。
     lib.xiaGuHuanYinUseTemporaryEffectCard = async function(player, name, target, nolog) {
@@ -2631,3 +2641,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"峡谷幻音"
         "connect": true,
     };
 }));
+});

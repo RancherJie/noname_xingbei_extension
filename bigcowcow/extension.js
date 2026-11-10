@@ -1,4 +1,3 @@
-import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
@@ -293,7 +292,18 @@ import { game } from "../../noname.js";
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","sha256":"50581b1b6c46037b1b6f19bd0372bef1bb526ef73229d0fb882f6e6c54c917c7"}, function(lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","sha256":"50581b1b6c46037b1b6f19bd0372bef1bb526ef73229d0fb882f6e6c54c917c7"}, function(lib, game, ui, get, ai, _status) {
     return {
         "name": "bigcowcow",
         "arenaReady": function(){
@@ -5102,3 +5112,4 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
         "connect": true,
     };
 }));
+});
