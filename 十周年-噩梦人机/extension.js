@@ -361,7 +361,6 @@
     }
 
     function installDefaultCharacterImages() {
-        var mode = nightmareConfig("portraitMode", "chibi");
         var patchedInfos = [];
         var install = function (characterId, info) {
             var imageId = nightmareCharacterImageId(characterId);
@@ -376,12 +375,11 @@
                 if (!Array.isArray(info.trashBin)) info.trashBin = [];
                 tags = info.trashBin;
             }
-            // 每次载入先移除本扩展旧模式留下的头像标签，原版模式不再注入图片。
+            // 每次载入先移除本扩展旧模式留下的头像标签，再固定注入Q版头像。
             for (var i = tags.length - 1; i >= 0; i--) {
                 if (typeof tags[i] == "string" && tags[i].indexOf("ext:" + extensionFolder + "/image/character/") == 0) tags.splice(i, 1);
             }
-            if (mode == "original") return;
-            var folder = mode == "chibi" ? "chibi/default" : "default";
+            var folder = "chibi/default";
             tags.unshift("ext:" + extensionFolder + "/image/character/" + folder + "/" + imageId + ".png");
         };
         // 角色包预载后、正式合并前只存在于 lib.imported.character；先改这份源数据，
@@ -408,7 +406,7 @@
         if (oldCharacterDialog._xingBeiNightmarePortraitRefresh) return;
         var wrappedCharacterDialog = function () {
             // 部分追加角色包会在扩展content之后重新整理角色对象；选将窗口生成前再同步一次，
-            // 避免只有最早载入的十周年主包保留Q版/高清头像标签。
+            // 避免只有最早载入的十周年主包保留Q版头像标签。
             installDefaultCharacterImages();
             return oldCharacterDialog.apply(this, arguments);
         };
@@ -425,12 +423,10 @@
 
         var applyPortrait = function (node) {
             if (!node) return;
-            var mode = nightmareConfig("portraitMode", "chibi");
-            if (mode == "original") return;
             var characterId = node.link || node._link;
             var imageId = nightmareCharacterImageId(characterId);
             if (!imageId || typeof node.setBackgroundImage != "function") return;
-            var folder = mode == "chibi" ? "chibi/default" : "default";
+            var folder = "chibi/default";
             node.setBackgroundImage(
                 "extension/" + extensionFolder + "/image/character/" +
                 folder + "/" + imageId + ".png"
@@ -469,7 +465,7 @@
         var wrappedReinit2 = function () {
             var result = oldReinit2.apply(this, arguments);
             // reinit2会按核心角色图重建头像。联机广播会令每个客户端分别
-            // 执行本方法，因此这里只按本地设置覆盖一次，不再次向外广播。
+            // 执行本方法，因此这里只固定恢复Q版头像，不再次向外广播。
             syncNightmareCharacterImage(this, true);
             return result;
         };
@@ -488,13 +484,11 @@
         if (firstImage && player.node.avatar) slots.push(["avatar", first, firstImage]);
         if (secondImage && player.node.avatar2) slots.push(["avatar2", player.name2, secondImage]);
         if (!slots.length) return;
-        var localMode = nightmareConfig("portraitMode", "chibi");
-        var folder = localMode == "chibi" ? "chibi/" + (nightmare ? "nightmare" : "default") : (nightmare ? "nightmare" : "default");
-        var signature = slots.map(function (entry) { return entry[0] + ":" + entry[1]; }).join("|") + ":" + localMode + ":" + folder;
+        var folder = "chibi/" + (nightmare ? "nightmare" : "default");
+        var signature = slots.map(function (entry) { return entry[0] + ":" + entry[1]; }).join("|") + ":" + folder;
         var imageAlreadyApplied = slots.every(function (entry) {
             var node = player.node[entry[0]];
             if (!node) return false;
-            if (localMode == "original") return !String(node.style.backgroundImage || "").includes("extension/" + extensionFolder + "/image/character/");
             return String(node.style.backgroundImage || "").includes("/" + folder + "/" + entry[2] + ".png");
         });
         if (player.storage && player.storage.xingBeiNightmareCharacterImage == signature && imageAlreadyApplied) return;
@@ -502,16 +496,12 @@
         player.storage.xingBeiNightmareCharacterImage = signature;
         var apply = function (target, imageSlots, useNightmare, name) {
             if (!target || !target.node) return;
-            // 头像偏好只读取当前客户端的本地扩展设置；主机仅广播角色与噩梦状态，
-            // 因而同一联机对局中的玩家可以分别使用原版、高清或Q版。
-            var mode = lib.config["extension_" + name + "_portraitMode"] || "chibi";
-            var folder = mode == "chibi" ? "chibi/" + (useNightmare ? "nightmare" : "default") : (useNightmare ? "nightmare" : "default");
+            // 主机广播角色与噩梦状态；每个客户端都固定使用对应的Q版头像。
+            var folder = "chibi/" + (useNightmare ? "nightmare" : "default");
             imageSlots.forEach(function (entry) {
                 var node = target.node[entry[0]];
                 if (!node) return;
-                if (mode == "original" && typeof node.setBackground == "function") {
-                    node.setBackground(entry[1], "character");
-                } else if (typeof node.setBackgroundImage == "function") {
+                if (typeof node.setBackgroundImage == "function") {
                     node.setBackgroundImage("extension/" + name + "/image/character/" + folder + "/" + entry[2] + ".png");
                 }
             });
@@ -11196,15 +11186,6 @@
             showNightmareSkills: {
                 name: "显示噩梦强化技能",
                 init: true
-            },
-            portraitMode: {
-                name: "角色头像样式（联机仅影响自己）",
-                init: "chibi",
-                item: {
-                    original: "原版",
-                    hd: "高清",
-                    chibi: "Q版"
-                }
             },
             strength: {
                 name: "噩梦强化等级",
