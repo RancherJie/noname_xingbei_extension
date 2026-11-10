@@ -318,7 +318,7 @@ extension["宿命挽歌"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.42",
+	"version": "2.43",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -444,7 +444,7 @@ extension["bigcowcow"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.23",
+	"version": "2.24",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -572,7 +572,7 @@ extension["百年战争·序章"] = {
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.9-dev",
+	"version": "0.2.10-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",

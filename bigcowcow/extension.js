@@ -5104,7 +5104,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.18",
+            "version": "2.24",
         },
         "files": {
             "character": [

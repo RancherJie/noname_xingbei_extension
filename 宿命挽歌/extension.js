@@ -6307,7 +6307,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-			"version": "2.37",
+			"version": "2.43",
         },
         "files": {
             "character": [

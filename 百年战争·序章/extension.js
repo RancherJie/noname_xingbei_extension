@@ -1345,7 +1345,7 @@
 
     const extension = {
         name: '百年战争·序章',
-        version: '0.2.4-dev',
+        version: '0.2.10-dev',
         connect: true,
         editable: false,
         help: {},
@@ -4957,7 +4957,7 @@
                 list: []
             },
             intro: "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
-            author: '北风/蒙牛', diskURL: '', forumURL: '', version: '0.2.4-dev'
+            author: '北风/蒙牛', diskURL: '', forumURL: '', version: '0.2.10-dev'
         },
         files: {
             "character": [
