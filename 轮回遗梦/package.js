@@ -3,7 +3,7 @@ extension["轮回遗梦"] = {
     "author": "蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "1.5",
+    "version": "1.7",
     "files": [
         "README.md",
         "audio-data/manifest.json",

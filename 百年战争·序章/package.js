@@ -3,7 +3,7 @@ extension["百年战争·序章"] = {
     "author": "北风/蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "0.2.1-dev",
+    "version": "0.2.3-dev",
     "files": [
         "README.md",
         "audio-data/manifest.json",

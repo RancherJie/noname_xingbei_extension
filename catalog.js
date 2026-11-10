@@ -67,12 +67,12 @@ extension["无名杯UI优化包"] = {
 };
 
 extension["十周年语音包"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/10",
 	"intro": "十周年角色技能语音扩展。当前收录风之剑圣、狂战士、神箭手、封印师、暗杀者、圣女、守护天使、魔法少女、魔剑士、圣枪骑士、元素师、冒险家、瘟疫法师、仲裁者、神官、祈祷师、贤者、灵符师、格斗家、剑帝、灵魂术士、勇者、血之巫女、蝶舞者、女武神、魔弓、红莲骑士、英灵人形、魔枪、吟游诗人、苍炎魔女、精灵射手、血色剑灵、阴阳师、月之女神、兽灵武士、圣殿骑士、圣庭检察士、圣弓、原初之弓、星坠女巫、战斗法师、猎巫人、女仆长、矜贵之女、染污者、噬神者、结界师、红衣主教、铸律者、游击士、节日魔导、贪婪少女、见习制片、咒符师、怠惰少女与剑之子的全部技能语音。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.12",
+	"version": "6.14",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -101,7 +101,7 @@ extension["创世纪"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.11",
+	"version": "2.13",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -458,7 +458,7 @@ extension["宿命挽歌"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.34",
+	"version": "2.36",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -503,7 +503,7 @@ extension["宿命挽歌"] = {
 		"zhaoLingEr.jpg",
 		"zhaoLingEr_mengShe.png"
 	],
-	"size": "79.28MB"
+	"size": "79.29MB"
 };
 
 extension["峡谷幻音"] = {
@@ -512,7 +512,7 @@ extension["峡谷幻音"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.14",
+	"version": "1.16",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -549,7 +549,7 @@ extension["永夜残响"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.8",
+	"version": "2.10",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -584,7 +584,7 @@ extension["bigcowcow"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.15",
+	"version": "2.17",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -613,7 +613,7 @@ extension["bigcowcow"] = {
 		"yiJi.png",
 		"youLa.png"
 	],
-	"size": "9.60MB"
+	"size": "9.61MB"
 };
 
 extension["电啸龙吟"] = {
@@ -622,7 +622,7 @@ extension["电啸龙吟"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.10",
+	"version": "1.12",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -642,7 +642,7 @@ extension["电啸龙吟"] = {
 		"package.js",
 		"yongChuTaFei.jpg"
 	],
-	"size": "3.05MB"
+	"size": "3.06MB"
 };
 
 
@@ -652,7 +652,7 @@ extension["轮回遗梦"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.5",
+	"version": "1.7",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -712,7 +712,7 @@ extension["百年战争·序章"] = {
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.1-dev",
+	"version": "0.2.3-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",

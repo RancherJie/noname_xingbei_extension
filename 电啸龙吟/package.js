@@ -3,7 +3,7 @@ extension["电啸龙吟"] = {
     "author": "蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "1.10",
+    "version": "1.12",
     "files": [
         "LICENSE",
         "README.md",
@@ -23,5 +23,5 @@ extension["电啸龙吟"] = {
         "package.js",
         "yongChuTaFei.jpg"
     ],
-    "size": "3.05MB"
+    "size": "3.06MB"
 };

@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2, revision 3 (incremental). Source: tools/audio-pack/runtime.js. */
+/* Audio JSON runtime v2, revision 5 (verified download repair and startup progress). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 3) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 5) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -62,6 +62,55 @@
     function buffer(value) {
         return ArrayBuffer.isView(value) ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength) : new Uint8Array(value);
     }
+    async function readVerified(game, path, expected, options) {
+        if (options.onActivity) options.onActivity();
+        async function verify(text) {
+            if (typeof text !== 'string' || (expected.size !== undefined && text.length !== expected.size) || await hash(ascii(text)) !== expected.sha256) {
+                throw new Error('音频资源 SHA-256 不匹配: ' + path.split('/').pop());
+            }
+            return text;
+        }
+        var localError;
+        try { return await verify(await game.promises.readFileAsText(path)); }
+        catch (error) { localError = error; }
+        var sources = (options.sources || []).filter(function (source, index, all) {
+            return typeof source === 'string' && /^https?:\/\//i.test(source) && all.indexOf(source) === index;
+        }).slice(0, 3);
+        if (!sources.length || typeof root.fetch !== 'function') throw localError;
+        if (options.onRepair) options.onRepair(path.split('/').pop());
+        var text, downloadError;
+        for (var source of sources) {
+            if (options.onActivity) options.onActivity();
+            var controller = typeof root.AbortController === 'function' ? new root.AbortController() : null;
+            var timer;
+            try {
+                // The hash-pinned filename/manifest is authoritative, never an HTTP error page.
+                var url = source.replace(/\/?$/, '/') + path.slice('extension/'.length).split('/').map(encodeURIComponent).join('/');
+                text = await Promise.race([
+                    (async function () {
+                        var response = await root.fetch(url, { cache: 'no-store', signal: controller ? controller.signal : undefined });
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        return verify(await response.text());
+                    })(),
+                    new Promise(function (_, reject) {
+                        timer = root.setTimeout(function () {
+                            if (controller) controller.abort();
+                            reject(new Error('下载超时'));
+                        }, 15000);
+                    }),
+                ]);
+                break;
+            } catch (error) { downloadError = error; }
+            finally { root.clearTimeout(timer); }
+        }
+        if (text === undefined) throw new Error('音频资源缺失或损坏，自动补下载失败: ' + path.split('/').pop() + '（' + (downloadError.message || downloadError) + '）');
+        var split = path.lastIndexOf('/'), directory = path.slice(0, split);
+        await game.promises.createDir(directory);
+        await game.promises.writeFile(ascii(text).buffer, directory, path.slice(split + 1));
+        await truncateCordova(path, text.length);
+        // Do not record success until the repaired local file also passes verification.
+        return verify(await game.promises.readFileAsText(path));
+    }
     // Cordova's writeFile does not truncate a previously longer file. Truncate only
     // after writing, then verify the actual bytes with the client's readFile API.
     async function truncateCordova(path, length) {
@@ -86,17 +135,19 @@
         (root.document.body || root.document.documentElement).appendChild(node);
         return {
             update: function (done, total) { node.textContent = name + '：正在还原音频 ' + done + '/' + total + '\n所有扩展完成后自动重启，请勿关闭游戏。'; },
+            repair: function () { node.textContent = name + '：正在补下载缺失或损坏的音频数据包…\n校验通过后继续还原，请勿关闭游戏。'; },
             remove: function () { node.remove(); },
         };
     }
     var queue = Promise.resolve(), pending = new Map();
     var changed = false, failed = false, restartScheduled = false;
+    var preparing = 0, lastActivity = 0;
+    function activity() { lastActivity = Date.now(); }
     async function install(meta, game, options) {
         options = options || {};
         var base = 'extension/' + safe(meta.name);
         var storage = options.storage || root.localStorage;
-        var text = await game.promises.readFileAsText(base + '/audio-data/manifest.json');
-        if (await hash(ascii(text)) !== meta.sha256) throw new Error('音频清单 SHA-256 不匹配，请完整更新扩展');
+        var text = await readVerified(game, base + '/audio-data/manifest.json', meta, options);
         var manifest = JSON.parse(text);
         if (manifest.format !== 2 || !Array.isArray(manifest.files) || !Array.isArray(manifest.bundles)) throw new Error('无效音频清单');
         var key = 'noname-audio-pack-v2:' + meta.name;
@@ -125,8 +176,7 @@
         for (var bundle of manifest.bundles) {
             if (!needed.size || (!legacy && !selected.has(bundle.name))) continue;
             safe(bundle.name);
-            text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
-            if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
+            text = await readVerified(game, base + '/audio-data/' + bundle.name, bundle, options);
             var body = JSON.parse(text);
             if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
             for (var record of body.records) {
@@ -180,14 +230,21 @@
         }
         var task = queue.then(async function () {
             var progress = notice(meta.name);
+            preparing++; activity();
             try {
-                if (await install(meta, game, { onProgress: progress.update })) changed = true;
+                var config = lib.config || {}, sources = config.extension_sources || {};
+                var urls = [sources[config.extension_source]].concat(Object.values(sources));
+                if (await install(meta, game, {
+                    onActivity: activity,
+                    onProgress: function (done, total) { activity(); progress.update(done, total); },
+                    onRepair: progress.repair, sources: urls,
+                })) changed = true;
             } catch (error) {
                 failed = true;
                 console.error('[音频还原失败] ' + meta.name, error);
                 if (root.alert) root.alert(meta.name + ' 音频还原失败，下次启动会重试：' + (error.message || error));
                 throw error;
-            } finally { progress.remove(); }
+            } finally { preparing--; progress.remove(); }
         });
         queue = task.catch(function () {});
         pending.set(meta.name, task);
@@ -195,7 +252,8 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 3, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 5, sha256: sha256, install: install, prepare: prepare,
+        isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
                 var object = factory.apply(this, arguments);
@@ -1577,7 +1635,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"电啸龙吟"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.10",
+            "version": "1.12",
         },
         "files": {
             "character": [
