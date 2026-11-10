@@ -2665,7 +2665,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.17",
+            "version": "1.23",
         },
         "files": {
             "character": [

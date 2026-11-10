@@ -372,7 +372,7 @@ extension["峡谷幻音"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.22",
+	"version": "1.23",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -512,7 +512,7 @@ extension["轮回遗梦"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.14",
+	"version": "1.15",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",

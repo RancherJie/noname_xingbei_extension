@@ -2522,7 +2522,7 @@
             // 这里保持为空，避免单机/联机出现双份武将定义。
             character:{character:{},translate:{},characterTitle:{},characterIntro:{}},
             card:{card:{},translate:{},list:[]},skill:{skill,translate},
-            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',author:'蒙牛',version:'1.11',diskURL:'',forumURL:'',
+            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',author:'蒙牛',version:'1.15',diskURL:'',forumURL:'',
         },
         files:{character:['jingTian_moJian.png','jingTian_zhenYaoJian.png','xueJian.png','longKui_blue.png','longKui_red.png','xieJianXian.png','xieLing.png'],card:[],skill:markFiles,audio:V.files.concat(['audio/bgm/yuJianJiangHu.mp3','audio/bgm/yuManTang.mp3','audio/bgm/qingYuAn.mp3','audio/bgm/zhuShaBian.mp3','audio/bgm/huanHunCao.mp3','audio/bgm/linWei.mp3','audio/bgm/linWeiBianDiao.mp3'])},
     };

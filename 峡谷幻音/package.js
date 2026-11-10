@@ -3,7 +3,7 @@ extension["峡谷幻音"] = {
     "author": "蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "1.17",
+    "version": "1.23",
     "files": [
         "LICENSE",
         "README.md",
