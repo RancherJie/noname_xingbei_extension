@@ -232,9 +232,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         node.classList.toggle(name, !!enabled);
     }
 
+    function scoreboardNode() {
+        var board = ui.shiQiInfo;
+        if (!board || !board.isConnected) board = document.querySelector(".wmb-scoreboard, .zhanJi.table");
+        // Android 1.4.5 puts zhanJi/table on the inner table, desktop on its host.
+        if (board && board.tagName === "TABLE") board = board.closest(".touchinfo");
+        return board;
+    }
+
     function decorateScoreboard() {
         if (!isCustomTheme()) return;
-        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        var board = scoreboardNode();
         toggleClass(document.body, "wmb-ui-has-scoreboard", board && board.isConnected);
         if (!board) return;
         board.classList.add("wmb-scoreboard");
@@ -360,7 +368,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     function positionMusicPanel() {
         if (!musicPanel) return;
-        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        var board = scoreboardNode();
         if (!isXianJianTheme() || _status.over || !board || !board.isConnected ||
             !ui.window || !ui.window.isConnected) {
             musicPanel.hidden = true;
@@ -409,7 +417,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         viewportFrame = null;
         if (!isXianJianTheme() || !document.body) return;
         var size = visibleLayoutSize();
-        var small = window.innerWidth <= 1050 || window.innerHeight <= 600;
+        var mobile = lib.device === "android" || lib.device === "ios" ||
+            /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        var small = mobile && (window.innerWidth <= 1050 || window.innerHeight <= 600);
         toggleClass(document.body, "wmb-ui-small-screen", small);
         document.body.style.setProperty("--wmb-layout-width", size.width + "px");
         document.body.style.setProperty("--wmb-layout-height", size.height + "px");
@@ -494,7 +504,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     function ensureMusicPanel() {
         if (!isXianJianTheme()) return;
-        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        var board = scoreboardNode();
         if (!board || !board.isConnected) return;
         if (!musicPanel) {
             musicPanel = document.createElement("section");
@@ -1105,7 +1115,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "2.9",
+        version: "2.10",
         editable: false,
         precontent: function () {
             migrateExtensionIdentityConfigs();
@@ -1177,7 +1187,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.7"
+            version: "2.10"
         },
         files: {
             character: [],

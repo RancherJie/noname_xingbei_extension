@@ -61,7 +61,7 @@ body.wmb-ui-waterbear .menu,
 body.wmb-ui-waterbear .popup-container > div,
 body.wmb-ui-waterbear .wmb-detail-panel,
 body.wmb-ui-waterbear .wmb-room-list,
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard {
+body.wmb-ui-waterbear .wmb-scoreboard {
     color: #3b2413 !important;
     background:
         linear-gradient(135deg, rgba(255, 229, 167, .42), transparent 31%),
@@ -73,13 +73,14 @@ body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard {
     text-shadow: 0 1px rgba(255, 228, 166, .5) !important;
 }
 
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard {
+body.wmb-ui-waterbear .wmb-scoreboard {
     min-width: 254px;
+    height: auto !important;
     padding: 28px 9px 8px !important;
     border-radius: 4px 12px 4px 12px !important;
 }
 
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard::before {
+body.wmb-ui-waterbear .wmb-scoreboard::before {
     content: attr(data-wmb-title);
     position: absolute;
     top: 5px;
@@ -89,7 +90,7 @@ body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard::before {
     letter-spacing: 4px;
 }
 
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard::after {
+body.wmb-ui-waterbear .wmb-scoreboard::after {
     content: "";
     position: absolute;
     left: 9px;
