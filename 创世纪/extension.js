@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2, revision 5 (verified download repair and startup progress). Source: tools/audio-pack/runtime.js. */
+/* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 5) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 8) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -62,25 +62,26 @@
     function buffer(value) {
         return ArrayBuffer.isView(value) ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength) : new Uint8Array(value);
     }
-    async function readVerified(game, path, expected, options) {
+    async function readVerified(game, path, expected, options, binary) {
         if (options.onActivity) options.onActivity();
         async function verify(text) {
-            if (typeof text !== 'string' || (expected.size !== undefined && text.length !== expected.size) || await hash(ascii(text)) !== expected.sha256) {
-                throw new Error('音频资源 SHA-256 不匹配: ' + path.split('/').pop());
+            var bytes = binary ? buffer(text) : typeof text === 'string' ? ascii(text) : null;
+            if (!bytes || (expected.size !== undefined && bytes.length !== expected.size) || await hash(bytes) !== expected.sha256) {
+                throw new Error('扩展资源 SHA-256 不匹配: ' + path.split('/').pop());
             }
             return text;
         }
         var localError;
-        try { return await verify(await game.promises.readFileAsText(path)); }
+        try { return await verify(await game.promises[binary ? 'readFile' : 'readFileAsText'](path)); }
         catch (error) { localError = error; }
         var sources = (options.sources || []).filter(function (source, index, all) {
             return typeof source === 'string' && /^https?:\/\//i.test(source) && all.indexOf(source) === index;
         }).slice(0, 3);
         if (!sources.length || typeof root.fetch !== 'function') throw localError;
-        if (options.onRepair) options.onRepair(path.split('/').pop());
         var text, downloadError;
         for (var source of sources) {
             if (options.onActivity) options.onActivity();
+            if (options.onRepair) options.onRepair(path.split('/').pop(), source);
             var controller = typeof root.AbortController === 'function' ? new root.AbortController() : null;
             var timer;
             try {
@@ -90,26 +91,29 @@
                     (async function () {
                         var response = await root.fetch(url, { cache: 'no-store', signal: controller ? controller.signal : undefined });
                         if (!response.ok) throw new Error('HTTP ' + response.status);
-                        return verify(await response.text());
+                        return verify(await (binary ? response.arrayBuffer() : response.text()));
                     })(),
                     new Promise(function (_, reject) {
                         timer = root.setTimeout(function () {
                             if (controller) controller.abort();
                             reject(new Error('下载超时'));
-                        }, 15000);
+                        }, 30000);
                     }),
                 ]);
                 break;
             } catch (error) { downloadError = error; }
             finally { root.clearTimeout(timer); }
         }
-        if (text === undefined) throw new Error('音频资源缺失或损坏，自动补下载失败: ' + path.split('/').pop() + '（' + (downloadError.message || downloadError) + '）');
+        if (text === undefined) throw new Error('扩展资源缺失或损坏，自动补下载失败: ' + path.split('/').pop() + '（' + (downloadError.message || downloadError) + '）');
         var split = path.lastIndexOf('/'), directory = path.slice(0, split);
         await game.promises.createDir(directory);
-        await game.promises.writeFile(ascii(text).buffer, directory, path.slice(split + 1));
-        await truncateCordova(path, text.length);
+        var bytes = binary ? buffer(text) : ascii(text);
+        await game.promises.writeFile(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), directory, path.slice(split + 1));
+        await truncateCordova(path, bytes.length);
         // Do not record success until the repaired local file also passes verification.
-        return verify(await game.promises.readFileAsText(path));
+        var verified = await verify(await game.promises[binary ? 'readFile' : 'readFileAsText'](path));
+        if (options.onRepaired) options.onRepaired(path);
+        return verified;
     }
     // Cordova's writeFile does not truncate a previously longer file. Truncate only
     // after writing, then verify the actual bytes with the client's readFile API.
@@ -128,14 +132,14 @@
         });
     }
     function notice(name) {
-        if (!root.document) return { update: function () {}, remove: function () {} };
+        if (!root.document) return { update: function () {}, repair: function () {}, remove: function () {} };
         var node = root.document.createElement('div');
         node.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.9);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;white-space:pre-wrap;text-align:center;';
-        node.textContent = name + '：正在检查音频资源…';
+        node.textContent = name + '：正在检查扩展资源…';
         (root.document.body || root.document.documentElement).appendChild(node);
         return {
             update: function (done, total) { node.textContent = name + '：正在还原音频 ' + done + '/' + total + '\n所有扩展完成后自动重启，请勿关闭游戏。'; },
-            repair: function () { node.textContent = name + '：正在补下载缺失或损坏的音频数据包…\n校验通过后继续还原，请勿关闭游戏。'; },
+            repair: function (file, source) { node.textContent = name + '：正在补下载扩展资源\n' + file + '\n来源：' + new URL(source).hostname + '\n校验通过后继续加载，请勿关闭游戏。'; },
             remove: function () { node.remove(); },
         };
     }
@@ -150,12 +154,20 @@
         var text = await readVerified(game, base + '/audio-data/manifest.json', meta, options);
         var manifest = JSON.parse(text);
         if (manifest.format !== 2 || !Array.isArray(manifest.files) || !Array.isArray(manifest.bundles)) throw new Error('无效音频清单');
+        var assetsChanged = false;
+        if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
+        var assetPaths = new Set();
+        for (var asset of manifest.assets || []) {
+            safe(asset.path);
+            if (!/\.(?:png|jpe?g|webp|gif|svg|css)$/i.test(asset.path) || assetPaths.has(asset.path)) throw new Error('非法静态资源路径: ' + asset.path);
+            assetPaths.add(asset.path);
+            await readVerified(game, base + '/' + asset.path, asset, Object.assign({}, options, {
+                onRepaired: function () { assetsChanged = true; },
+            }), true);
+        }
         var key = 'noname-audio-pack-v2:' + meta.name;
         var previous;
         try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
-        if (!options.force && previous && previous.version === manifest.version && previous.manifest === meta.sha256 && manifest.files.every(function (file) {
-            return previous.files && previous.files[file.path] === file.sha256;
-        })) return false;
         var files = new Map(), needed = new Set(), selected = new Set();
         var bundleNames = new Set(manifest.bundles.map(function (bundle) { return safe(bundle.name); }));
         var hashes = Object.create(null), legacy = false;
@@ -164,7 +176,17 @@
             if (files.has(entry.path)) throw new Error('重复音频路径');
             if (entry.bundles && (!Array.isArray(entry.bundles) || !entry.bundles.length || entry.bundles.some(function (name) { return !bundleNames.has(name); }))) throw new Error('无效音频分包索引');
             files.set(entry.path, entry);
+            // A saved success record survives uninstalling/deleting an extension.
+            // Trust it only after checking the bytes currently present on disk.
+            var cached = false;
             if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
+                try {
+                    if (options.onActivity) options.onActivity();
+                    var existing = buffer(await game.promises.readFile(base + '/' + entry.path));
+                    cached = existing.length === entry.size && await hash(existing) === entry.sha256;
+                } catch (_) {}
+            }
+            if (cached) {
                 hashes[entry.path] = entry.sha256;
             } else {
                 needed.add(entry.path);
@@ -216,7 +238,7 @@
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
         storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
-        return index > 0;
+        return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
         if (pending.has(meta.name)) return pending.get(meta.name);
@@ -241,8 +263,8 @@
                 })) changed = true;
             } catch (error) {
                 failed = true;
-                console.error('[音频还原失败] ' + meta.name, error);
-                if (root.alert) root.alert(meta.name + ' 音频还原失败，下次启动会重试：' + (error.message || error));
+                console.error('[扩展资源准备失败] ' + meta.name, error);
+                if (root.alert) root.alert(meta.name + ' 资源准备失败，下次启动会重试：' + (error.message || error));
                 throw error;
             } finally { preparing--; progress.remove(); }
         });
@@ -252,7 +274,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 5, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 8, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
@@ -270,7 +292,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 /* AUDIO_PACK_RUNTIME_END */
-game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","sha256":"e3e8a5bdb0febd2c1b5a3e6b313ea4e90d5184729bdf1efb0bfa412535293005"}, function(lib, game, ui, get, ai, _status) {
+game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","sha256":"5ab6f3d966c8f033aee7034b975d0cdd09c8c3d94584081fe753f140622ee16a"}, function(lib, game, ui, get, ai, _status) {
     // 临时效果牌：创建时不带destroyed标记；必须在效果结算(挂到目标面前)完成后再打标记，
     // 否则addToExpansion会把带destroyed的牌从结算中剔除，导致效果不触发。
     lib.chuangShiJiUseTemporaryEffectCard = async function(player, name, target, nolog) {
@@ -4550,7 +4572,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"创世纪","s
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.13",
+            "version": "2.14",
         },
         "files": {
             "character": [

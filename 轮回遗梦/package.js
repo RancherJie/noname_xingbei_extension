@@ -3,7 +3,7 @@ extension["轮回遗梦"] = {
     "author": "蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "1.7",
+    "version": "1.8",
     "files": [
         "README.md",
         "audio-data/manifest.json",
@@ -54,5 +54,5 @@ extension["轮回遗梦"] = {
         "xieLing.png",
         "xueJian.png"
     ],
-    "size": "34.39MB"
+    "size": "34.40MB"
 };

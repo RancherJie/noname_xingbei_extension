@@ -3,7 +3,7 @@ extension["宿命挽歌"] = {
     "author": "蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "2.36",
+    "version": "2.37",
     "files": [
         "LICENSE",
         "README.md",

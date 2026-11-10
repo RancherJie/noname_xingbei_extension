@@ -3,7 +3,7 @@ extension["bigcowcow"] = {
     "author": "蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "2.17",
+    "version": "2.18",
     "files": [
         "LICENSE",
         "README.md",
