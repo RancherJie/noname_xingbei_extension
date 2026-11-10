@@ -21,7 +21,7 @@ extension["无名杯UI优化包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.9",
+	"version": "2.10",
 	"files": [
 		"README.md",
 		"extension.css",
