@@ -16,12 +16,12 @@ extension["织梦者"] = {
 };
 
 extension["无名杯UI优化包"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/11",
 	"intro": "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志的美术语言。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.15",
+	"version": "2.16",
 	"files": [
 		"README.md",
 		"extension.css",

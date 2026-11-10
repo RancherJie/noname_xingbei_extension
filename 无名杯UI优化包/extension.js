@@ -13,6 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
+    var extensionVersion = "2.16";
     var observer = null;
     var decorateTimer = null;
     var combatLines = [];
@@ -758,8 +759,23 @@
             var text = (dialog.textContent || "").replace(/\s+/g, "");
             var actionPrompt = text.indexOf("[攻击行动]或者[法术行动]") !== -1;
             var event = _status.event;
-            var responsePrompt = !!(event && event.name === "chooseToUse" &&
-                (text.indexOf("响应") !== -1 || event.responded === true));
+            var chooseUseOrResponse = false;
+            for (var depth = 0; event && depth < 6; depth++) {
+                if (event.name === "chooseToUse" || event.name === "chooseToRespond") {
+                    chooseUseOrResponse = true;
+                    break;
+                }
+                if (typeof event.getParent !== "function") break;
+                try {
+                    var parent = event.getParent();
+                    if (!parent || parent === event) break;
+                    event = parent;
+                } catch (error) {
+                    break;
+                }
+            }
+            var responsePrompt = chooseUseOrResponse || text.indexOf("受到") === 0 ||
+                text.indexOf("响应") === 0;
             toggleClass(dialog, "wmb-action-response-prompt", actionPrompt || responsePrompt);
         });
     }
@@ -1142,17 +1158,27 @@
 
     function loadStyle() {
         if (!isCustomTheme()) return;
-        if (document.querySelector("link[data-wmb-ui-style]")) return;
-        var style = lib.init.css(
-            lib.assetURL + "extension/" + extensionName,
-            isWaterbearTheme() ? "waterbear" : "extension"
-        );
-        if (style) style.setAttribute("data-wmb-ui-style", "true");
+        var styleTheme = isWaterbearTheme() ? "waterbear" : "extension";
+        var currentStyles = document.querySelectorAll("link[data-wmb-ui-style]");
+        for (var index = 0; index < currentStyles.length; index++) {
+            var currentStyle = currentStyles[index];
+            if (currentStyle.getAttribute("data-wmb-ui-version") === extensionVersion &&
+                currentStyle.getAttribute("data-wmb-ui-theme") === styleTheme) return;
+            currentStyle.remove();
+        }
+        var styleUrl = lib.assetURL + "extension/" + extensionName + "/" +
+            styleTheme + ".css?v=" + encodeURIComponent(extensionVersion);
+        var style = lib.init.css(styleUrl);
+        if (style) {
+            style.setAttribute("data-wmb-ui-style", "true");
+            style.setAttribute("data-wmb-ui-version", extensionVersion);
+            style.setAttribute("data-wmb-ui-theme", styleTheme);
+        }
     }
 
     return {
         name: extensionName,
-        version: "2.15",
+        version: extensionVersion,
         editable: false,
         precontent: function () {
             migrateExtensionIdentityConfigs();
@@ -1224,7 +1250,7 @@
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.15"
+            version: extensionVersion
         },
         files: {
             character: [],

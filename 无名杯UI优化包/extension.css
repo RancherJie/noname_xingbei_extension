@@ -1116,15 +1116,12 @@ body.wmb-ui-optimized.wmb-ui-small-screen .dialog .textbutton {
     padding: 7px 9px !important;
     font-size: 16px;
 }
-body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner {
-    top: calc(50% + var(--wmb-skill-offset, 0px));
-}
 body.wmb-ui-optimized.wmb-ui-small-screen .wmb-xj-skill-banner {
     min-width: 0;
     max-width: calc(var(--wmb-layout-width) - 48px);
-    padding: 8px 24px;
-    font-size: 19px;
-    letter-spacing: 2px;
+    padding: 12px 24px;
+    font-size: 23px;
+    letter-spacing: 3px;
     white-space: normal;
     overflow-wrap: anywhere;
 }
@@ -1145,16 +1142,6 @@ body.wmb-ui-optimized.wmb-ui-small-screen #arena .player > .count {
 
 /* 核心行动/响应提示是 chooseToUse 创建的弹窗，与扩展技能提示条是不同节点。 */
 body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt {
-    top: 50% !important;
-    left: 50% !important;
-    right: auto !important;
-    bottom: auto !important;
-    box-sizing: border-box !important;
-    width: min(88vw, 520px) !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: 120px !important;
-    transform: translate(-50%, -50%) !important;
     background: rgba(16, 26, 25, .14) !important;
     border: 1px solid rgba(184, 148, 88, .38) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .12) !important;
@@ -1162,14 +1149,14 @@ body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-r
     -webkit-backdrop-filter: none !important;
 }
 body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt > .content-container {
-    position: relative !important;
-    top: auto !important;
-    height: auto !important;
-    min-height: 0 !important;
     background: transparent !important;
 }
 body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt .content {
     background: transparent !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner::before,
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner::after {
+    display: none !important;
 }
 body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-scoreboard,
 body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table,
@@ -1203,4 +1190,13 @@ body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table tr:not(:first-child) td
     height: 20px !important;
     padding: 0 1px !important;
     font-size: 12px !important;
+}
+
+/* 手机/模拟器的选择行动控制组以屏幕中线定位，并略微上移。 */
+body.wmb-ui-optimized.wmb-ui-mobile-client.wmb-ui-small-screen #arena #control,
+body.wmb-ui-optimized.wmb-ui-mobile-client.wmb-ui-small-screen.wmb-ui-has-scoreboard #arena #control {
+    left: 50% !important;
+    width: calc(100% - 16px) !important;
+    bottom: calc(170px + var(--wmb-arena-overflow, 0px)) !important;
+    transform: translateX(-50%) !important;
 }
