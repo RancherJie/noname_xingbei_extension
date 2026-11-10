@@ -1161,7 +1161,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"百年战争�
 
     const extension = {
         name: '百年战争·序章',
-        version: '0.2.0-dev',
+        version: '0.2.1-dev',
         connect: true,
         editable: false,
         help: {},
@@ -4749,12 +4749,12 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"百年战争�
                     "bnzz_qi_shuFu_info": '专属指示物，上限是5。',
                     "bnzz_qi_guangWang": '光网',
                     "bnzz_qi_guangWang_description": "专属【光网】",
-                    "bnzz_qi_guangWang_description_info": "<!--diy-skill-description-->默认处于未激发状态。<br><span class='greentext'>响应【导魔】</span><br><span style=\"color:#E6B85C\">（织魔者的队友在自己的回合造成法术伤害时③）</span>织魔者可以令本次伤害+1，并对织魔者造成1点法术伤害③；该次伤害不能再次发动【导魔】。同名导魔不能同时触发。<br><span class='greentext'>被动【诱捕】</span><br><span style=\"color:#E6B85C\">（织魔者的对手从手牌打出光系牌时，若此牌未激发）</span>织魔者对他造成3点法术伤害③，移除此牌。<br><span class='greentext'>被动【破网】</span><br><span style=\"color:#E6B85C\">（织魔者的回合开始时，若此牌已激发）</span>移除此牌。",
+                    "bnzz_qi_guangWang_description_info": "<!--diy-skill-description-->默认处于未激发状态。<br><span class='greentext'>响应【导魔】</span><br><span style=\"color:#E6B85C\">（织魔者的队友在自己的回合造成法术伤害时③）</span>令本次伤害+1，对织魔者造成1点法术伤害③，该次伤害不能再次发动【导魔】。同名导魔不能同时触发。<br><span class='greentext'>被动【诱捕】</span><br><span style=\"color:#E6B85C\">（织魔者的对手从手牌打出光系牌时，若此牌未激发）</span>织魔者对他造成3点法术伤害③，移除此牌。<br><span class='greentext'>被动【破网】</span><br><span style=\"color:#E6B85C\">（织魔者的回合开始时，若此牌已激发）</span>移除此牌。",
                     "bnzz_qi_anWang": '暗网',
                     "bnzz_qi_anWang_description": "专属【暗网】",
-                    "bnzz_qi_anWang_description_info": "<!--diy-skill-description-->默认处于未激发状态。<br><span class='greentext'>响应【导魔】</span><br><span style=\"color:#E6B85C\">（织魔者的队友在自己的回合造成法术伤害时③）</span>织魔者可以令本次伤害+1，并对织魔者造成1点法术伤害③；该次伤害不能再次发动【导魔】。同名导魔不能同时触发。<br><span class='greentext'>被动【诱捕】</span><br><span style=\"color:#E6B85C\">（织魔者的对手从手牌打出暗系牌时，若此牌未激发）</span>织魔者对他造成3点法术伤害③，移除此牌。<br><span class='greentext'>被动【破网】</span><br><span style=\"color:#E6B85C\">（织魔者的回合开始时，若此牌已激发）</span>移除此牌。",
+                    "bnzz_qi_anWang_description_info": "<!--diy-skill-description-->默认处于未激发状态。<br><span class='greentext'>响应【导魔】</span><br><span style=\"color:#E6B85C\">（织魔者的队友在自己的回合造成法术伤害时③）</span>令本次伤害+1，对织魔者造成1点法术伤害③，该次伤害不能再次发动【导魔】。同名导魔不能同时触发。<br><span class='greentext'>被动【诱捕】</span><br><span style=\"color:#E6B85C\">（织魔者的对手从手牌打出暗系牌时，若此牌未激发）</span>织魔者对他造成3点法术伤害③，移除此牌。<br><span class='greentext'>被动【破网】</span><br><span style=\"color:#E6B85C\">（织魔者的回合开始时，若此牌已激发）</span>移除此牌。",
                     "bnzz_qi_daoMo": '响应【导魔】',
-                    "bnzz_qi_daoMo_info": "<!--diy-skill-description--><span style=\"color:#E6B85C\">（织魔者的队友在自己的回合造成法术伤害时③）</span>织魔者可以令本次伤害+1，并对织魔者造成1点法术伤害；该次伤害不能再次发动【导魔】。同名导魔不能同时触发。",
+                    "bnzz_qi_daoMo_info": "<!--diy-skill-description--><span style=\"color:#E6B85C\">（织魔者的队友在自己的回合造成法术伤害时③）</span>令本次伤害+1，对织魔者造成1点法术伤害，该伤害不能再次发动【导魔】。同名导魔不能同时触发。",
                     "bnzz_qi_youBu": '被动【诱捕】',
                     "bnzz_qi_youBu_info": "（织魔者的对手从手牌打出对应网的系别牌时，若网未激发）受到织魔者造成的3点法术伤害，并移除该网。"
                 }
@@ -4773,7 +4773,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"百年战争�
                 list: []
             },
             intro: "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
-            author: '北风/蒙牛', diskURL: '', forumURL: '', version: '0.2.0-dev'
+            author: '北风/蒙牛', diskURL: '', forumURL: '', version: '0.2.1-dev'
         },
         files: {
             "character": [

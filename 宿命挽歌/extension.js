@@ -1019,6 +1019,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                         4.5,
                         [
                             "niTianWenDao",
+                            "baiYueFengMo",
                             "shuiMoShouHeTi",
                             "mieJueYiJi",
                             "duoHun",
@@ -1041,6 +1042,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                         4.5,
                         [
                             "niTianWenDao",
+                            "baiYueFengMo",
                             "shuiMoShouZhiQu",
                             "shuiMoShouZhiNu",
                             "nvWaZhiXue",
@@ -1070,6 +1072,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             "guiJiangJunGuiJiang",
                             "xueMoShenGong",
                             "yinQi",
+                            "guiJiangJunShiDu",
                             "suMingWanGeBgm",
                         ],
                         [
@@ -1121,7 +1124,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                 },
                 "translate": {
                     "fengMo": "封魔",
-                    "fengMo_info": "<span class='tiaoJian'>（位于角色旁时）</span>你无法发动响应技与法术；拥有者的回合结束时移除。",
+                    "fengMo_info": "持有者无法发动响应技与法术；<span class='tiaoJian'>（其回合结束时）</span>移除。",
                 },
                 "list": [],
             },
@@ -1438,8 +1441,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                         "markimage": "extension/宿命挽歌/mark_shiDu.png",
                         "group": ["shiDuRuTi", "shiHua"],
                         "intro": {
-                            "name": "尸毒",
+                            "name": "专属【尸毒】",
                             "content": "mark",
+                            "mark": function(dialog, storage, player) { return "当前层数：" + player.countZhiShiWu("shiDu") + "<br>" + lib.translate.guiJiangJunShiDu_info; },
                             "max": 3,
                         },
                         "onremove": "storage",
@@ -1541,6 +1545,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                             });
                         },
                     },
+                    "guiJiangJunShiDu": {"charlotte": true, "nopop": true, "popup": false},
+                    "baiYueFengMo": {"charlotte": true, "nopop": true, "popup": false},
                     "jiangJunZhong": {
                         "group": [
                             "jiangJunZhong_kaiJu",
@@ -5412,17 +5418,11 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                                 if(player.countNengLiang('shuiJing') <= 0) return;
                                 await player.removeNengLiang('shuiJing', 1);
                             }
-                            var discardable = player.countCards('h', function(card) {
-                                return lib.filter.cardDiscardable(card, player);
-                            });
-                            if(discardable > 0) {
-                                var maxDiscard = Math.min(2, discardable);
+                            if(player.countCards('h') >= 2) {
                                 await player.chooseToDiscard(
-                                    'h', maxDiscard, true,
-                                    '水魔兽护体：弃置' + maxDiscard + '张手牌'
-                                ).set('filterCard', function(card, player) {
-                                    return lib.filter.cardDiscardable(card, player);
-                                }).set('ai', function(card) {
+                                    'h', 2, true,
+                                    '水魔兽护体：弃置2张手牌'
+                                ).set('ai', function(card) {
                                     var player = _status.event.player;
                                     if(get.type(card, player) != 'gongJi') return -1;
                                     return get.name(card, player) == 'anMie' ? 1 : 10;
@@ -5919,7 +5919,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                                 }
                             },
                         },
-                        "intro": {"name": "专属【封魔】", "content": "你无法发动响应技与法术；你的回合结束时移除。"},
+                        "intro": {"name": "专属【封魔】", "content": function() { return lib.translate.baiYueFengMo_info; }},
                     },
                 },
                 "translate": {
@@ -5927,34 +5927,38 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                     "huYaoNv": "狐妖女",
                     "yinLongCangZhen": "被动【隐龙藏珍】",
                     "yinLongCangZhen_info": "你的能量上限+2。<span class='tiaoJian'>（你的回合结束时）</span>选择+1<span style=\"color:#E02B17\">【宝石】</span>或+2<span class='lan'>【水晶】</span>。<span class='tiaoJian'>（其他角色对你造成伤害导致你方士气下降）</span>伤害来源可以取得你能量区的1颗星石。",
-                    "kuangSheLianZhan": "响应【狂蛇连斩】",
-                    "kuangSheLianZhan_info": "【回合限定】<span class='tiaoJian'>（你的【攻击行动】结束后）</span>+1【攻击行动】。",
+                    "kuangSheLianZhan": "响应【狂蛇连斩】【回合限定】",
+                    "kuangSheLianZhan_info": "<span class='tiaoJian'>（你的【攻击行动】结束后）</span>+1【攻击行动】。",
                     "suMingXianYueZhan": "响应【弦月斩】",
-                    "suMingXianYueZhan_info": "<span class='tiaoJian'><span class='lan'>【水晶】</span>（你的主动攻击命中后②）</span>对所有其他对手各造成等同于本次攻击伤害的攻击伤害。",
-                    "meiYingLianXi": "响应【魅影连袭】",
-                    "meiYingLianXi_info": "【回合限定】<span class='tiaoJian'>（你的【法术行动】结束后）</span>+1【法术行动】。",
+                    "suMingXianYueZhan_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（你的主动攻击命中后②）</span>对所有其他对手各造成等同于本次攻击伤害的攻击伤害。",
+                    "meiYingLianXi": "响应【魅影连袭】【回合限定】",
+                    "meiYingLianXi_info": "<span class='tiaoJian'>（你的【法术行动】结束后）</span>+1【法术行动】。",
                     "suMingHuiMeng": "法术【回梦】",
                     "suMingHuiMeng_info": "<span class='tiaoJian'>（弃置1张法术牌）</span>指定1名对手，翻开并弃置牌库顶1张牌【展示】；若为法术牌，对其使用【虚弱】，否则对其使用【中毒】。",
                     "suMingLeiZhou": "法术【雷咒】",
                     "suMingLeiZhou_info": "<span class='tiaoJian'>（弃置1张元素师独有技）</span>对1名对手造成1点法术伤害③；<span class='tiaoJian'>（若费用牌为雷系）</span>此伤害+1。",
                     "suMingWuLeiZhou": "响应【五雷咒】",
-                    "suMingWuLeiZhou_info": "<span class='tiaoJian'><span class='lan'>【水晶】</span>（你造成正数法术伤害时）</span>对另一名对手造成等同于本次伤害的法术伤害③。",
+                    "suMingWuLeiZhou_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（你造成正数法术伤害时）</span>对另一名对手造成等同于本次伤害的法术伤害③。",
                     "yinLongXiangYi": "启动【隐龙相依】",
                     "yinLongXiangYi_info": "<span style=\"color:#E02B17\">【宝石】</span>在【蛇妖男】与【狐妖女】之间切换。",
                     "jiangJunZhong": "被动【将军冢】",
                     "jiangJunZhong_info": "你无法获得<span class='hong'>【尸毒】</span>。<span class='tiaoJian'>（其他角色每获得或增加1层<span class='hong'>【尸毒】</span>后）</span>你+1<span class='hong'>【阴气】</span>。",
                     "lianYuZhua": "响应【炼狱爪】",
-                    "lianYuZhua_info": "<span class='tiaoJian'>（攻击命中后②）</span>移除2<span class='hong'>【阴气】</span>，或弃置1张土系牌【展示】，令此攻击伤害+1，并使攻击目标+1<span class='hong'>【尸毒】</span>。",
+                    "lianYuZhua_info": "<span class='tiaoJian'>（攻击命中后②，移除2<span style=\"color:#CB690B\">【阴气】</span>或弃置1张土系牌【展示】）</span>本次攻击伤害+1，攻击目标+1<span style=\"color:#CB690B\">【尸毒】</span>。",
                     "shiDuZhangQi": "法术【尸毒瘴气】",
                     "shiDuZhangQi_info": "<span class='tiaoJian'>（弃置1张法术牌【展示】）</span>使1名没有<span class='hong'>【尸毒】</span>的角色+1<span class='hong'>【尸毒】</span>。然后除其外，其他已有<span class='hong'>【尸毒】</span>的角色各摸1张牌并+1<span class='hong'>【尸毒】</span>。",
                     "guiJiangJunGuiJiang": "响应【鬼降】",
                     "guiJiangJunGuiJiang_info": "<span class='tiaoJian'>（目标对手主动攻击命中我方角色时，移除5</span><span class='hong'>【阴气】</span><span class='tiaoJian'>）</span>立即取消原目标的此次伤害，改为对另一名目标对手结算等量攻击伤害，并使其+1<span class='hong'>【尸毒】</span>。<span class='tiaoJian'>（攻击来源为【僵尸】时）</span>改为只需移除3<span class='hong'>【阴气】</span>。",
                     "xueMoShenGong": "法术【血魔神功】",
                     "xueMoShenGong_info": "<span style=\"color:#E02B17\">【宝石】</span>移除所有角色的全部<span class='hong'>【尸毒】</span>，依次对每名因此失去<span class='hong'>【尸毒】</span>的角色造成X+1点法术伤害③；X为从该角色处实际移除的层数。<br><span class='tiaoJian'>（每有1名对手因此实际承受伤害）</span>你+1【治疗】；<span class='tiaoJian'>（若至少移除5层</span><span class='hong'>【尸毒】</span><span class='tiaoJian'>）</span>+1【法术行动】。",
+                    "guiJiangJunShiDu": "专属【尸毒】",
+                    "guiJiangJunShiDu_info": "<span style=\"color:#CB690B\">【尸毒】</span>上限为3层。<br><span class='greentext'>被动【尸毒入体】</span><br><span class='tiaoJian'>（持有者回合开始时）</span>选择一项：<br>·+1<span style=\"color:#CB690B\">【尸毒】</span>；<br>·承受等同于<span style=\"color:#CB690B\">【尸毒】</span>层数的法术伤害③。<br><span class='greentext'>被动【尸化】</span><br><span class='tiaoJian'>（<span style=\"color:#CB690B\">【尸毒】</span>增加至3层）</span>立即【重置】，将手牌调整至4张，转化为【僵尸】。",
+                    "baiYueFengMo": "专属【封魔】",
+                    "baiYueFengMo_info": "持有者无法发动响应技与法术；<span class='tiaoJian'>（其回合结束时）</span>移除。",
                     "yinQi": "阴气",
                     "yinQi_info": "<span class='hong'>【阴气】</span>为鬼将军的专属指示物，上限为5。",
                     "shiDu": "专属【尸毒】",
-                    "shiDu_info": "<span class='hong'>【尸毒】</span>上限为3层。<span class='tiaoJian'>（回合开始时）</span>选择一个效果发动：<br>·<span class='hong'>【尸毒】</span>+1<br>·承受等同于<span class='hong'>【尸毒】</span>层数的法术伤害<br><span class='tiaoJian'>（增加至3层时）</span>立即转化为【僵尸】。",
+                    "shiDu_info": "<span style=\"color:#CB690B\">【尸毒】</span>上限为3层。<br><span class='greentext'>被动【尸毒入体】</span><br><span class='tiaoJian'>（持有者回合开始时）</span>选择一项：<br>·+1<span style=\"color:#CB690B\">【尸毒】</span>；<br>·承受等同于<span style=\"color:#CB690B\">【尸毒】</span>层数的法术伤害③。<br><span class='greentext'>被动【尸化】</span><br><span class='tiaoJian'>（<span style=\"color:#CB690B\">【尸毒】</span>增加至3层）</span>立即【重置】，将手牌调整至4张，转化为【僵尸】。",
                     "shiDuRuTi": "被动【尸毒入体】",
                     "shiHua": "被动【尸化】",
                     "fuShiZhiQu": "被动【腐尸之躯】",
@@ -6004,7 +6008,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                     "hongShui": "洪水",
                     "hongShui_info": "<span class='hong'>【洪水】</span>为水魔兽·拜月教主的专属指示物，初始上限为8。",
                     "fengMo": "专属【封魔】",
-                    "fengMo_info": "<span class='tiaoJian'>（位于角色旁时）</span>你无法发动响应技与法术；拥有者的回合结束时移除。",
+                    "fengMo_info": "持有者无法发动响应技与法术；<span class='tiaoJian'>（其回合结束时）</span>移除。",
                     "wuLingXianShu": "被动【五灵仙术】",
                     "wuLingXianShu_bingDong": "[法术]冰咒",
                     "wuLingXianShu_yunShi": "[法术]土咒",
@@ -6050,12 +6054,12 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                     "wanJianJue_info": "<span class='tiaoJian'>（【攻击行动】结束后，移除4</span><span class='hong'>【剑】</span><span class='tiaoJian'>）</span>视为对2个目标先后发动1次暗系攻击，攻击伤害-1；本回合不能再发动【醉仙望月步】。",
                     "xianFengYunTiShu": "响应【仙风云体术】",
                     "xianFengYunTiShu_info": "<span class='tiaoJian'>（受到可应战的攻击时①）</span>摸1张牌【展示】。",
-                    "zuiXianWangYueBu": "响应【醉仙望月步】",
-                    "zuiXianWangYueBu_info": "【回合限定：2】<span class='tiaoJian'>（【攻击行动】结束后，移除1</span><span class='hong'>【剑】</span><span class='tiaoJian'>）</span>翻开牌库顶1张牌【展示】，可以获得该牌。获得攻击牌时，+1【攻击行动】。本回合不能再发动【万剑诀】。",
+                    "zuiXianWangYueBu": "响应【醉仙望月步】【回合限定：2】",
+                    "zuiXianWangYueBu_info": "<span class='tiaoJian'>（【攻击行动】结束后，移除1</span><span class='hong'>【剑】</span><span class='tiaoJian'>）</span>翻开牌库顶1张牌【展示】，可以获得该牌。获得攻击牌时，+1【攻击行动】。本回合不能再发动【万剑诀】。",
                     "xiaoYaoShenJian": "启动【逍遥神剑】",
                     "xiaoYaoShenJian_info": "<span class='lan'>【水晶】</span>+2<span class='hong'>【剑】</span>，摸2张牌。",
                     "jiuShenZhou": "法术【酒神咒】",
-                    "jiuShenZhou_info": "<span class='tiaoJian'>（<span class='lan'>【水晶】</span>×X，移除所有能量）</span>对目标角色与自己造成等同于能量数量+2的法术伤害；【横置】并持续到下个回合开始时【重置】，期间手牌上限恒定为4。",
+                    "jiuShenZhou_info": "<span class='tiaoJian'>（</span><span class='lan'>【水晶】</span><span class='tiaoJian'>×X，移除所有能量）</span>对目标角色与自己造成等同于能量数量+2的法术伤害；【横置】并持续到下个回合开始时【重置】，期间手牌上限恒定为4。",
                     "liXiaoYaoRouQingXiaGu": "被动【柔情侠骨】",
                     "liXiaoYaoRouQingXiaGu_info": "<span class='tiaoJian'>（赵灵儿或林月如在场时）</span>【天罡战气】的伤害加成改为+1；<span class='tiaoJian'>（她们提炼后）</span>可以直接获得其1个星石；【醉仙望月步】优先由她们依次选择是否弃置1张手牌【展示】进行判定，你获得该判定牌。",
                     "liXiaoYaoRouQingXiaGuZhaoLingEr": "被动【柔情侠骨】",
@@ -6081,7 +6085,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                     "tongQianBiao": "响应【铜钱镖】",
                     "tongQianBiao_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（攻击时）</span>对目标角色造成1点法术伤害，+1<span class='hong'>【气劲】</span>；<span class='tiaoJian'>（若因此导致士气下降）</span>额外+1<span class='hong'>【气劲】</span>。",
                     "qianKunYiZhi": "法术【乾坤一掷】",
-                    "qianKunYiZhi_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（移除全部能量）</span>对目标角色造成X点法术伤害；X＝⌈<span style=\"color:#E02B17\">【宝石】</span>数÷2⌉＋⌈【水晶】数÷4⌉＋1。可以额外移除我方全部星石与全部星杯，每移除2颗星石或1个星杯，伤害+1。",
+                    "qianKunYiZhi_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（移除全部能量）</span>对目标角色造成X点法术伤害；X＝⌈<span style=\"color:#E02B17\">【宝石】</span>数÷2⌉＋⌈<span class='lan'>【水晶】</span>数÷4⌉＋1。可以额外移除我方全部星石与全部星杯，每移除2颗星石或1个星杯，伤害+1。",
                     "linYueRuRouQingXiaGu": "被动【柔情侠骨】",
                     "linYueRuRouQingXiaGu_info": "<span class='tiaoJian'>（李逍遥或赵灵儿在场时）</span>【真元护体】可以对其发动；<span class='tiaoJian'>（你执行【特殊行动】时，若赵灵儿的能量少于2）</span>令其获得【林家千金】产生的<span class='lan'>【水晶】</span>。",
                     "qiJing": "气劲",
@@ -6103,8 +6107,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
                     "jinCanWang_info": "<span class='tiaoJian'>（弃置5张不同系的</span><span style=\"color:#537D28\">【蛊】</span><span class='tiaoJian'>）</span>目标角色+2<span style=\"color:#E02B17\">【宝石】</span>，你+1<span style=\"color:#E02B17\">【宝石】</span>。",
                     "baoZhaGu": "法术【爆炸蛊】",
                     "baoZhaGu_info": "<span class='tiaoJian'>（弃置1张火系</span><span style=\"color:#537D28\">【蛊】</span><span class='tiaoJian'>）</span>对目标施加【爆炸蛊】。<span class='tiaoJian'>（其承受火系攻击或火系法术伤害后⑤）</span>再承受2点法术伤害③，随后移除【爆炸蛊】。",
-                    "sanShiGu": "法术【三尸蛊】",
-                    "sanShiGu_info": "【回合限定】<span class='tiaoJian'>（弃置1张法术</span><span style=\"color:#537D28\">【蛊】</span><span class='tiaoJian'>）</span>视为对目标使用1次【中毒】，然后+1【攻击行动】或【法术行动】。",
+                    "sanShiGu": "法术【三尸蛊】【回合限定】",
+                    "sanShiGu_info": "<span class='tiaoJian'>（弃置1张法术</span><span style=\"color:#537D28\">【蛊】</span><span class='tiaoJian'>）</span>视为对目标使用1次【中毒】，然后+1【攻击行动】或【法术行动】。",
                     "yinGu": "响应【隐蛊】",
                     "yinGu_info": "<span class='tiaoJian'>（己方士气即将下降时，弃置1张光系</span><span style=\"color:#537D28\">【蛊】</span><span class='tiaoJian'>）</span>取消此次士气下降。",
                     "wanGuShiTian": "法术【万蛊蚀天】",
@@ -6119,7 +6123,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"宿命挽歌"
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-			"version": "2.29",
+			"version": "2.34",
         },
         "files": {
             "character": [

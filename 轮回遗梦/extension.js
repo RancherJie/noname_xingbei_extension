@@ -214,6 +214,124 @@
 /* AUDIO_PACK_RUNTIME_END */
 game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦","sha256":"3b58b60369d107d8a00b154dedaaf7b9825bd432440263d4a07e8734874f85e6"}, function(lib, game, ui, get, ai, _status) {
     'use strict';
+    // <diy-form-preview>
+    // Copies stay inside each standalone expansion; the shared UI hook installs once.
+    function installDiyFormPreview(groups, routes) {
+        var preview = lib.diyFormPreview;
+        if(!preview) {
+            preview = lib.diyFormPreview = { groups: Object.create(null) };
+        }
+        groups.forEach(function(group) {
+            group.forEach(function(id) { preview.groups[id] = group.slice(); });
+        });
+        preview.routes = preview.routes || Object.create(null);
+        Object.assign(preview.routes, routes || {});
+        if(preview.installed) return;
+        var createCharacter = ui.create.buttonPresets.character;
+        var characterCard = ui.click.charactercard;
+        preview.installed = true;
+        preview.forms = function(id) {
+            return (preview.groups[id] || []).filter(function(name) {
+                return !!lib.character[name] || Object.keys(lib.characterPack).some(function(pack) {
+                    return !!lib.characterPack[pack][name];
+                });
+            });
+        };
+        function listen(button, action) {
+            button.setAttribute('role', 'button');
+            button.tabIndex = 0;
+            function activate(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                ui.click.touchpop();
+                action();
+            }
+            button.addEventListener(lib.config.touchscreen ? 'touchend' : 'click', activate);
+            button.addEventListener('keydown', function(event) {
+                if(event.key === 'Enter' || event.key === ' ') activate(event);
+            });
+        }
+        ui.create.buttonPresets.character = function() {
+            var node = createCharacter.apply(this, arguments);
+            var forms = node && preview.forms(node.link);
+            if(!node) return node;
+            var existing = node.querySelector('.diy-form-preview');
+            if((!forms || forms.length < 2) && !preview.routes[node.link]) {
+                if(existing) existing.remove();
+                return node;
+            }
+            if(existing) return node;
+            var button = ui.create.div('.button.replaceButton.diy-form-preview', node);
+            button.textContent = preview.routes[node.link] ? '武器预览' : '形态预览';
+            Object.assign(button.style, { width: 'auto', padding: '0 5px', fontSize: '13px' });
+            listen(button, function() {
+                var list = preview.forms(node.link);
+                if(preview.routes[node.link]) {
+                    ui.click.charactercard(node.link, null, true);
+                } else if(list.length > 1) {
+                    ui.click.charactercard(list[(list.indexOf(node.link) + 1) % list.length], null, true);
+                }
+            });
+            return node;
+        };
+        ui.click.charactercard = function(name, source, noedit, resume) {
+            var previous = ui.window.lastElementChild;
+            var result = characterCard.apply(this, arguments);
+            var layer = ui.window.lastElementChild;
+            var forms = preview.forms(name);
+            var routes = preview.routes[name];
+            if(layer === previous || !layer || (forms.length < 2 && !routes)) return result;
+            var panel = layer.querySelector('.charactercard');
+            if(!panel) return result;
+            var portrait = panel.querySelector('.ava');
+            if(!portrait) return result;
+            var button = ui.create.div('.menubutton.large.diy-form-preview', portrait);
+            button.textContent = routes ? '切换预览武器' : '切换预览形态';
+            Object.assign(button.style, { position: 'absolute', left: '0', bottom: '0', width: '100%', height: '30px', lineHeight: '30px', margin: '0', fontSize: '16px', zIndex: '3' });
+            var caption = ui.create.div('.diy-form-preview-caption', portrait);
+            caption.textContent = name === forms[0] ? '初始形态' : '转化形态，无法直接开局';
+            Object.assign(caption.style, { position: 'absolute', left: '0', bottom: '34px', width: '100%', textAlign: 'center', fontSize: '13px', lineHeight: '22px', color: '#fff', background: 'rgba(0,0,0,0.65)', pointerEvents: 'none', zIndex: '3' });
+            if(routes && routes.length) {
+                var index = 0;
+                var skills = panel.querySelector('.characterskill');
+                var intro = panel.querySelector('.intro2');
+                var routeButton = skills && ui.create.div('.menubutton.large.diy-weapon-route', skills);
+                if(routeButton) skills.prepend(routeButton);
+                function showRoute() {
+                    var route = routes[index];
+                    (portrait.querySelector('.avatar') || portrait).setBackgroundImage('extension/轮回遗梦/' + route.image);
+                    caption.textContent = route.name + '预览，开局仍需选剑';
+                    if(routeButton) routeButton.textContent = route.name + '专属与路线';
+                    if(intro) {
+                        if(skills) {
+                            var active = skills.querySelector('.active');
+                            if(active) active.classList.remove('active');
+                        }
+                        if(routeButton) routeButton.classList.add('active');
+                        intro.innerHTML = route.content();
+                        intro.scrollTop = 0;
+                    }
+                }
+                if(routeButton) listen(routeButton, showRoute);
+                listen(button, function() {
+                    index = (index + 1) % routes.length;
+                    showRoute();
+                });
+                showRoute();
+                return result;
+            }
+            listen(button, function() {
+                var next = forms[(forms.indexOf(name) + 1) % forms.length];
+                // Only the independent detail panel changes. The source card,
+                // selection IDs, player and skin settings are never passed in.
+                var oldLayer = ui.window.lastElementChild;
+                ui.click.charactercard(next, null, true, resume);
+                if(ui.window.lastElementChild !== oldLayer) layer.remove();
+            });
+            return result;
+        };
+    }
+    // </diy-form-preview>
     const menuTrack='ext:轮回遗梦/audio/bgm/yuJianJiangHu.mp3';
     const sharedMenuKey='lhym_suMing_menu_random';
     const sharedMenuTracks=['ext:宿命挽歌/audio/bgm/yunGuHeFeng.mp3',menuTrack];
@@ -688,41 +806,17 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             if(name==='幻水惊雷') p.addGongJi();
             if(name==='风水流转'||name==='极咒返阴阳') p.addGongJiOrFaShu();
         },
+        skillText(id, title) {
+            return "<span class='greentext'>" + (title || get.translation(id)) + '</span><br>' +
+                get.translation(id + '_info').replace(/^(【回合限定】)/, '');
+        },
         routeText(p) {
             const s=H.state(p);
-            if(s.weapon==='魔剑') {
-                return [
-                    get.translation('lhym_renJian')+'：'+get.translation('lhym_renJian_info'),
-                    get.translation('lhym_jingHua')+'：'+get.translation('lhym_jingHua_info'),
-                    get.translation('lhym_moJianJi')+'：'+get.translation('lhym_moJianJi_info'),
-                    get.translation('lhym_canYing')+'：'+get.translation('lhym_canYing_info'),
-                    get.translation('lhym_yinYang')+'：'+get.translation('lhym_yinYang_info'),
-                    get.translation('lhym_jianPo')+'：'+get.translation('lhym_jianPo_info'),
-                    get.translation('lhym_qianNianGongMing')+'：'+get.translation('lhym_qianNianGongMing_info'),
-                ].join('<br><br>');
-            }
+            if(s.weapon==='魔剑') return ['lhym_renJian','lhym_jingHua','lhym_moJianJi','lhym_canYing','lhym_yinYang','lhym_jianPo','lhym_qianNianGongMing'].map(id=>H.skillText(id)).join('<br><br>');
             if(s.weapon==='镇妖剑') {
-                const items = [
-                    get.translation('lhym_zhaoDan')+'：'+get.translation('lhym_zhaoDan_info'),
-                    get.translation('lhym_chongZhu')+'：'+get.translation('lhym_chongZhu_info'),
-                    get.translation('lhym_shenShuZhaoDan')+'：'+get.translation('lhym_shenShuZhaoDan_info'),
-                ];
-                if(s.branches.length) {
-                    items.push('<b>当前修复</b>：'+s.stage+'/3阶段');
-                    const branchNames={
-                        lhym_fengMang:'被动【锋芒毕露】',
-                        lhym_houFa:'被动【后发制人】',
-                        lhym_poZhen:'响应【镇妖破阵】',
-                        lhym_lianZhan:'响应【御剑追锋】',
-                        lhym_leiDong:'被动【九霄雷动】',
-                        lhym_baHuang:'响应【剑荡八荒】',
-                    };
-                    for(const branch of s.branches) {
-                        items.push((branchNames[branch]||get.translation(branch))+'：'+get.translation(branch+'_info'));
-                    }
-                } else {
-                    items.push('<b>当前修复</b>：'+s.stage+'/3阶段');
-                }
+                const items=['lhym_zhaoDan','lhym_chongZhu','lhym_shenShuZhaoDan'].map(id=>H.skillText(id));
+                items.push('<b>当前修复</b>：'+s.stage+'/3阶段');
+                for(const id of s.branches) items.push(H.skillText(id, get.translation(id)));
                 return items.join('<br><br>');
             }
             return '尚未选择武器';
@@ -974,7 +1068,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 const linked=H.state(p).weapon==='魔剑'&&t.hasSkill('lhym_qianNian');
                 return t!==p&&(t.countCards('h')>0||(linked&&t.getExpansions('lhym_canYingPai').length>0));
             }),
-            check:(e,p)=>{ var H = lib.lunHuiYiMeng; return !H.preferPurify(p) && p.countCards('h')<p.getHandcardLimit()-1 &&
+            check:(e,p)=>{ var H = lib.lunHuiYiMeng; return p.getCards('h').some(c=>p.hasUseTarget(c)) && !H.preferPurify(p) && p.countCards('h')<p.getHandcardLimit()-1 &&
                 (H.state(p).weapon==='魔剑'?H.faces(p).length>0:H.state(p).stage<3); },
             content:async function(event,trigger,player) { V.say(player,'jingTian/huiYan',event);
                 const ts=(await player.chooseTarget('慧眼识珍：选择交牌的角色',true,(c,p,t)=>{
@@ -1229,19 +1323,19 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             },
         },
         lhym_moRoute:{
-            charlotte:true,mark:true,markimage:'extension/轮回遗梦/mark_route_moJian.png',intro:{content:()=>H.recipes.map(r=>'<b>'+r[0]+'</b>（'+r[1].map(x=>H.labels[x]).join('、')+'）：'+colorResourceKeywords(r[2])).join('<br>')}},
+            charlotte:true,mark:true,markimage:'extension/轮回遗梦/mark_route_moJian.png',intro:{content:()=>H.recipes.map(r=>"<span class='greentext'>法术【"+r[0]+"】</span><br>（"+r[1].map(x=>H.labels[x]).join('、')+'）：'+colorResourceKeywords(r[2])).join('<br>')}},
         lhym_zhenRoute:{
-            charlotte:true,mark:true,markimage:'extension/轮回遗梦/mark_route_zhenYaoJian.png',intro:{content:()=>H.branches.map((bs,i)=>'<b>'+['续接剑身','重铸剑锋','神剑复明'][i]+'</b>：'+[1,1,2][i]+'龙精石＋'+(i+1)+'雷系手牌。二选一：<br>'+bs.map(x=>get.translation(x)+'：'+get.translation(x+'_info')).join('<br>')).join('<br><br>')}},
+            charlotte:true,mark:true,markimage:'extension/轮回遗梦/mark_route_zhenYaoJian.png',intro:{content:()=>H.branches.map((bs,i)=>'<b>'+['续接剑身','重铸剑锋','神剑复明'][i]+'</b>：'+[1,1,2][i]+'龙精石＋'+(i+1)+'雷系手牌。二选一：<br>'+bs.map(x=>H.skillText(x,get.translation(x))).join('<br>')).join('<br><br>')}},
     };
     skill.lhym_moJianMark={
         charlotte:true,mark:true,markimage:'extension/轮回遗梦/mark_moJian.png',
         group:['lhym_soul','lhym_renJian','lhym_jingHua','lhym_moJianJi','lhym_canYing','lhym_yinYang','lhym_jianPo','lhym_qianNianGongMing'],
-        intro:{name:'魔剑专属',content:(s,p)=>H.routeText(p)}
+        intro:{name:'专属【魔剑】',content:(s,p)=>H.routeText(p)}
     };
     skill.lhym_zhenYaoJianMark={
         charlotte:true,mark:true,markimage:'extension/轮回遗梦/mark_zhenYaoJian.png',
         group:['lhym_zhaoDan','lhym_chongZhu','lhym_fengMang','lhym_houFa','lhym_poZhen','lhym_lianZhan','lhym_leiDong','lhym_baHuang','lhym_shenShuZhaoDan'],
-        intro:{name:'镇妖剑专属',content:(s,p)=>H.routeText(p)}
+        intro:{name:'专属【镇妖剑】',content:(s,p)=>H.routeText(p)}
     };
     const lampFileElement={shui:'shui',huo:'huo',lei:'lei',feng:'feng',di:'tu'};
     for(const element of H.elements) for(const status of ['empty','yin','yang','both']) {
@@ -1258,31 +1352,31 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
     };
     const descriptions = {
         lhym_shuangJian:['被动【双剑宿缘】','（游戏开始时）选择魔剑或镇妖剑，获得对应武器及专属技能；本局不能更改。'],
-        lhym_yongAn:['被动【永安当】','能量上限+2。（游戏开始时）+2【水晶】。（执行特殊行动后）+1【宝石】。'],
-        lhym_dianDang:['响应【典当】','（获得【宝石】时）可将每颗【宝石】改为2【水晶】。'],
-        lhym_feiLong:['被动【飞龙探云手】','不能提炼。（其他角色提炼结算后）翻开并弃置牌库顶1张牌【展示】；若为法术牌，取得该角色此次提炼获得且仍持有的1颗星石。'],
+        lhym_yongAn:['被动【永安当】',"<!--diy-skill-description-->能量上限+2。<span style=\"color:#E6B85C\">（游戏开始时）</span>+2<span class='lan'>【水晶】</span>。<span style=\"color:#E6B85C\">（执行【特殊行动】后）</span>+1<span style=\"color:#E02B17\">【宝石】</span>。"],
+        lhym_dianDang:['响应【典当】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（获得<span style=\"color:#E02B17;font-weight:bold\">【宝石】</span>时）</span>将每颗<span style=\"color:#E02B17;font-weight:bold\">【宝石】</span>改为2<span class=\"lan\">【水晶】</span>。"],
+        lhym_feiLong:['被动【飞龙探云手】',"<!--diy-skill-description-->你无法执行【提炼】。<span style=\"color:#E6B85C\">（其他角色提炼结算后）</span>翻开并弃置牌库顶1张牌【展示】；若为法术牌，取得该角色此次提炼获得且仍持有的1颗星石。"],
         lhym_zhuJian:['被动【铸剑】','（造成实际伤害后）+1【龙精石】。'],
-        lhym_longJing:['龙精石','上限4，用于魔剑净化或镇妖剑修复。'],
+        lhym_longJing:["专属【龙精石】","<!--diy-skill-description-->上限4，用于【魔剑净化】或镇妖剑修复。"],
         lhym_sword:['双剑宿缘','本局武器及永久培养记录。'],
-        lhym_huiYan:['启动【慧眼识珍】','【水晶】选择一名有手牌的目标，其选择1张手牌交给你【展示】；若你选择魔剑，没有手牌但拥有【剑中残影】的龙葵仍可被选择，并可用1张【剑中残影】代替手牌。<br>若该牌符合魔剑未激活面或镇妖剑下一阶段材料要求，该角色+1【宝石】。'],
-        lhym_yinDan:['法术【倾国银弹波】','（至少持有1【宝石】和1【水晶】）移除全部能量，选择【宝石】数名不同对手，各造成【水晶】数点法术伤害③。'],
-        lhym_soul:['剑魂','上限10；超出时选择要丢弃的剑魂。景天与操控龙葵的玩家可以查看牌面，其他玩家只能看到张数；不能直接作为手牌使用。'],
-        lhym_renJian:['被动【人剑相应】','（你使用或弃置非光暗实体手牌后）若该牌结算后仍在弃牌区，暗置为剑魂。'],
+        lhym_huiYan:['启动【慧眼识珍】',"<!--diy-skill-description--><span class=\"lan\">【水晶】</span>选择1名有手牌的其他角色，其选择1张手牌交给你【展示】；<br><span style=\"color:#e6b85c\">（若该牌符合魔剑未激活面或镇妖剑下一阶段材料要求）</span>该角色+1<span style=\"color:#E02B17;font-weight:bold\">【宝石】</span>。"],
+        lhym_yinDan:['法术【倾国银弹波】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（至少1</span><span style=\"color:#E02B17\">【宝石】</span><span style=\"color:#FFC000\">1</span><span class='lan'>【水晶】</span><span style=\"color:#E6B85C\">）</span>移除全部能量，选择<span style=\"color:#E02B17\">【宝石】</span>数名不同对手，各造成<span class='lan'>【水晶】</span>数点法术伤害③。"],
+        lhym_soul:["专属【剑魂】","<!--diy-skill-description-->暗置实体牌，上限10，超出时选择弃置的<span style=\"color:#9b72e8;font-weight:bold\">【剑魂】</span>；操控龙葵的玩家也可以查看牌面。"],
+        lhym_renJian:['被动【人剑相应】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（你使用或弃置非光暗实体手牌后）</span>若该牌结算后仍在弃牌区，暗置为【剑魂】。"],
         lhym_jingHua:['启动【魔剑净化】','选择1至2个未激活面；每面移除1【龙精石】并展示弃置1张匹配手牌。攻击牌激活阴面，法术牌激活阳面；【暗灭】可激活任意阴面，【圣光】可激活任意阳面。'],
-        lhym_moJianJi:['法术【魔剑技】','（对应属性均已解锁）移除配方所需【剑魂】，发动已解锁魔剑技。详见魔剑路线。<br>单系可额外移除1张同系【剑魂】，使法术伤害+1；<br>多系另弃置1张手牌。'],
-        lhym_canYing:['被动【残影剑】','（主动攻击命中时）+1法术行动。'],
+        lhym_moJianJi:['法术【魔剑技】',"<!--diy-skill-description-->移除配方所需<span style=\"color:#9b72e8;font-weight:bold\">【剑魂】</span>，发动对应魔剑技。详见魔剑路线。<br>单系可额外移除1张同系<span style=\"color:#9b72e8;font-weight:bold\">【剑魂】</span>，使法术伤害+1；多系另弃置1张手牌。"],
+        lhym_canYing:['被动【残影剑】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（主动攻击命中时）</span>+1【法术行动】。"],
         lhym_yinYang:['被动【阴阳五灵】','魔剑有水、火、雷、风、地五系阴阳十面，初始全部未激活；同系双面激活后永久解锁该属性。'],
         lhym_jianPo:['被动【剑魄通灵】','（配方涉及属性全部解锁后）可发动对应魔剑技。'],
         lhym_zhaoDan:['响应【神剑照胆】','（主动攻击时）将本次攻击视为雷系。'],
         lhym_chongZhu:['启动【神剑重铸】','支付修复费用，完成该阶段修复，并从两项强化中选择一项永久获得。详见镇妖剑路线。'],
         lhym_fengMang:['被动【锋芒毕露】','（主动攻击时）攻击伤害+1。'],
         lhym_houFa:['被动【后发制人】','（应战攻击时）攻击伤害+2。'],
-        lhym_poZhen:['响应【镇妖破阵】','【水晶】（主动攻击前①）使本次攻击无法被应战。'],
-        lhym_lianZhan:['响应【御剑追锋】','【回合限定】（攻击行动结束后）+1【攻击行动】。'],
+        lhym_poZhen:['响应【镇妖破阵】',"<!--diy-skill-description--><span class=\"lan\">【水晶】</span><span style=\"color:#e6b85c\">（主动攻击前①）</span>本次攻击无法应战。"],
+        lhym_lianZhan:["响应【御剑追锋】【回合限定】","<!--diy-skill-description--><span style=\"color:#E6B85C\">（【攻击行动】结束后）</span>+1【攻击行动】。"],
         lhym_leiDong:['被动【九霄雷动】','你的雷系攻击伤害+1。'],
         lhym_baHuang:['响应【剑荡八荒】','（攻击命中后②）对另一名对手造成等额攻击伤害。'],
-        lhym_moRoute:['魔剑路线专属','五灵配方与效果，点击标记查看。'],
-        lhym_zhenRoute:['镇妖剑路线专属','三阶段材料与二选一强化，点击标记查看。'],
+        lhym_moRoute:["专属【魔剑路线】",'五灵配方与效果，点击标记查看。'],
+        lhym_zhenRoute:["专属【镇妖剑路线】",'三阶段材料与二选一强化，点击标记查看。'],
     };
     // 仙剑三同伴：实体盖牌始终挂在其所有者名下，花楹持有者只保存公开引用。
     const C=lib.lhymCompanion={
@@ -1388,7 +1482,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
         },
     };
     V.files.push(
-        ...['wuXie','wuXie_gain','liuJie','chuQiao','liHun','jieXing','xieJian','sheXin','miTian','wuXing','qinTi','gouMai','heCheng','tiLian']
+        ...['wuXie','wuXie_gain','liuJie','chuQiao','liHun','xieJian','sheXin','miTian','wuXing','qinTi','gouMai','heCheng','tiLian']
             .map(name=>'audio/skill/xieJianXian/'+name+'.mp3')
     );
     const X=lib.lhymXieJianXian={
@@ -1510,6 +1604,10 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 if(!count)return -100;
                 const n=Math.min(99,old+(t===p?0:1)),enhanced=t===p||count>1;
                 const state=A.snapshot();state.get(p).thought=n;
+                // 预估攻击时扣除仍在手中的出牌；命中响应时牌已离手，不重复扣除。
+                const spent=exclude?p.getCards('h').filter(c=>c===exclude||exclude.cards?.includes(c)).length:0;
+                state.get(p).hand=Math.max(0,state.get(p).hand-spent);
+                const selfHand=state.get(p).hand;
                 if(t!==p)state.get(t).thought--;
                 const damage=enhanced?2:1;
                 const dealt=A.damage(p,t,damage,state,A.bonus(n));
@@ -1524,25 +1622,16 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 const cards=A.attacks(p,exclude).length;
                 const extra=cards>spare?follow*.9:0;
                 if(t===p){
-                    const remaining=Math.max(0,damage-(p.zhiLiao||0));
-                    const boosted=remaining>0?remaining+A.bonus(n):0;
-                    const actual=boosted>=2?boosted-1:boosted;
-                    if(!extra||p.countCards('h')+actual>p.getHandcardLimit()||get.shiQi(p.side)<=7)return -100;
-                    if(extra+dealt<=1)return -100;
-                    score-=1;
+                    const drawn=state.get(p).hand-selfHand;
+                    // 无爆牌时，自伤摸牌本身有收益，且新牌可能兑现追加攻击。
+                    // 不要求手里预留下一张攻击牌，也不因低士气一律拒绝。
+                    if(state.morale.get(p.side)<get.shiQi(p.side))return -100;
+                    const drawValue=Math.max(0,drawn)*1.5;
+                    const freshAttack=drawn>0&&cards<=spare ? .6 : 0;
+                    if(!extra&&!drawValue)return -100;
+                    score+=drawValue+freshAttack;
                 }
                 return score+extra;
-            },
-            recover(p,c){
-                const A=lib.lhymXieJianXian.ai,n=A.thoughts(p);
-                if(!n||p.countCards('h')+1>p.getHandcardLimit())return -100;
-                const spells=p.getCards('h').filter(c=>get.type(c)==='faShu');
-                const name=get.name(c,p),unique=!spells.some(s=>get.name(s,p)===name);
-                const usable=lib.filter.cardEnabled(c,p)&&A.people().some(t=>p.canUseXingBei(c,t));
-                let score=(usable?Math.max(0,get.value(c,p))*.35:0)-1.3+A.delta(p,n,n-1);
-                if(A.isBasic(c)&&p.hasSkill('lhym_liuJieZhiWai')&&p.canUseXingBei(c,p))score+=.9;
-                if(p.canBiShaShuiJing()&&A.sheXin(p,spells.concat(c))>0)score+=unique?1.1:spells.length===2?.6:0;
-                return score;
             },
             isBasic(c){return !!c&&typeof c==='object'&&Object.values(game.jiChuXiaoGuo||{}).some(list=>Array.isArray(list)&&list.includes(get.name(c)));},
             sheXin(p,cards){
@@ -1551,7 +1640,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 if(!cards.length||!p.canBiShaShuiJing())return -100;
                 const rounds=new Set(cards.map(c=>get.name(c,p))).size,weak=cards.length>2?1:0;
                 const old=A.thoughts(p),human=p.hasSkill('lhym_liuJieZhiWai');
-                const n=Math.min(99,old+(human?2*(rounds+weak):0));
+                const n=Math.min(99,old+(human?rounds+weak:0));
                 const state=A.snapshot();state.get(p).hand-=cards.length;state.get(p).thought=n;
                 // Startup preserves the normal attack/spell action; favour using
                 // available material instead of waiting indefinitely for more names.
@@ -1569,7 +1658,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 const gem=p.countNengLiang('baoShi')-(p.countNengLiang('shuiJing')>0?0:1)+returned;
                 // _qiDong disables special actions, so do not discard the only
                 // actionable cards and then rely on purchase/refine/synthesis.
-                if(!A.attacks(p).length&&A.miTian(p,{thought:n,gem,hand:Math.max(0,p.countCards('h')-cards.length)})<=0)return -100;
+                const legalAttack=A.attacks(p).some(c=>!cards.includes(c)&&A.people().some(t=>t!==p&&p.canUseXingBei(c,t)));
+                const legalRecall=A.miTian(p)>0&&A.miTian(p,{thought:n,gem,hand:Math.max(0,p.countCards('h')-cards.length)})>0;
+                if(!legalAttack&&!legalRecall)return -100;
                 return score+(human?1.5:1);
             },
             miTian(p,preview){
@@ -1590,8 +1681,6 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                     const count=A.thoughts(t);
                     score+=A.sign(p,t)*A.delta(t,count,0,p);
                     score+=A.damage(p,t,Math.min(3,count),state,A.bonus(n));
-                    if(count>2)score+=A.basic(p,t,'zhongDu',state,n);
-                    if(count>4)score+=A.basic(p,t,'xuRuo',state,n);
                 }
                 // Compare the immediate attack chain against recalling first. A
                 // dedicated spell action need not compete with an attack action.
@@ -1646,8 +1735,6 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             for(const [target,count] of records){
                 if(!target.isIn())continue;
                 await target.faShuDamage(Math.min(3,count),player,'nocard');
-                if(target.isIn()&&count>2)await lib.lhymXieJianXian.effect(player,'zhongDu',target);
-                if(target.isIn()&&count>4)await lib.lhymXieJianXian.effect(player,'xuRuo',target);
             }
             return true;
         },
@@ -1734,11 +1821,11 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 const A=lib.lhymXieJianXian.ai;
                 if(!A.isBasic(card))return;
                 const n=A.thoughts(target);
-                return [0,A.delta(target,n,Math.min(99,n+2),player),1,player.countEmptyNengLiang()>0?1.2:0];
+                return [0,A.delta(target,n,Math.min(99,n+1),player),1,player.countEmptyNengLiang()>0?1.2:0];
             }}},
             filter:(e,p)=>lib.lhymXieJianXian.isBasicTag(e.jiChuXiaoGuo||e.gaintag?.[0]),
             content:async function(event,trigger,player){
-                lib.lhymVoice.say(player,'xieJianXian/liuJie',event);const source=trigger.source;trigger.cancel();await lib.lhymXieJianXian.add(player,2);
+                lib.lhymVoice.say(player,'xieJianXian/liuJie',event);const source=trigger.source;trigger.cancel();await lib.lhymXieJianXian.add(player,1);
                 if(source?.isIn?.())await source.addNengLiang('baoShi',1);
             },
         },
@@ -1759,20 +1846,6 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             filter:(e,p)=>e.num>=2&&e.source?.isIn?.()&&lib.lhymXieJianXian.thought(p)>0,
             content:async function(event,trigger,player){
                 if(await lib.lhymXieJianXian.move(player,trigger.source,1)){lib.lhymVoice.say(player,'xieJianXian/liHun',event);trigger.changeDamageNum(-1);}
-            },
-        },
-        lhym_jieXingQiShi:{
-            trigger:{global:'useCardAfter'},direct:true,usable:1,
-            filter:(e,p)=>e.player!==p&&get.type(e.card)==='faShu'&&lib.lhymXieJianXian.thought(p)>0&&e.cards?.some(c=>get.position(c,true)==='d'&&get.type(c)==='faShu'),
-            content:async function(event,trigger,player){
-                const pool=trigger.cards.filter(c=>get.position(c,true)==='d'&&get.type(c)==='faShu');
-                const cards=pool.length===1?pool:await player.chooseCardButton(pool,'借形欺世：选择取得的实体法术牌',1)
-                    .set('ai',b=>lib.lhymXieJianXian.ai.recover(_status.event.player,b.link)).forResultLinks()||[];
-                if(!cards.length||!await player.chooseBool('移除1【邪念】，获得'+get.translation(cards[0])+'？')
-                    .set('lhymRecoverScore',lib.lhymXieJianXian.ai.recover(player,cards[0]))
-                    .set('ai',()=>_status.event.lhymRecoverScore>0).forResultBool())return;
-                if(get.position(cards[0],true)!=='d'||!await lib.lhymXieJianXian.remove(player,1))return;
-                player.logSkill('lhym_jieXingQiShi',trigger.player);lib.lhymVoice.say(player,'xieJianXian/jieXing',event);await player.gain(cards[0],'gain2');
             },
         },
         lhym_xieJianZhan:{
@@ -1825,7 +1898,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             },
         },
         lhym_xieLingQinTi:{
-            trigger:{global:'changeShiQiBefore'},forced:true,priority:30,
+            trigger:{global:['changeShiQiBefore','lhymShiQiTransferBefore']},forced:true,priority:30,
             filter:(e,p)=>e.side===p.side&&e.num<0&&get.shiQi(p.side)+e.num<=0,
             content:async function(event,trigger,player){
                 // 队友爆牌优先保底1士气，不消耗侵体的邪念与恢复次数。
@@ -1834,6 +1907,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                     return;
                 }
                 trigger.num=0;
+                if(trigger.zhuanYi&&trigger.result){trigger.result.num=0;trigger.result.cancel=true;}
                 // 免费祢天可触发反伤；外层尚未回血时只保命，不递归再开祢天。
                 if(player._lhymQinTiResolving)return;
                 player._lhymQinTiResolving=true;
@@ -1857,9 +1931,9 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 player.logSkill('lhym_suYuan');V.say(player,'jingTian/flower',event);C.move(snow,player);await player.changeZhiLiao(1,player);
             }},
         lhym_qianNianGongMing:{trigger:{player:'lhym_moJianJiAfter'},direct:true,
-            filter:(e,p)=>H.state(p).weapon==='魔剑'&&game.hasPlayer(t=>t.side===p.side&&t.hasSkill('lhym_shuangSheng')&&C.canTwin(t)),
+            filter:(e,p)=>H.state(p).weapon==='魔剑'&&game.hasPlayer(t=>t.hasSkill('lhym_shuangSheng')&&C.canTwin(t)),
             content:async function(event,trigger,player){
-                for(const kui of game.players.filter(t=>t.side===player.side&&t.hasSkill('lhym_shuangSheng')&&C.canTwin(t))){
+                for(const kui of game.players.filter(t=>t.hasSkill('lhym_shuangSheng')&&C.canTwin(t))){
                     if(await kui.chooseBool('宿缘相应·千年共鸣：无水晶费用发动双生？').set('ai',()=>true).forResultBool()){
                         player.logSkill('lhym_suYuan',kui);V.say(player,'jingTian/resonance',event);kui.logSkill('lhym_shuangSheng');await C.twin(kui,true);
                     }
@@ -1867,11 +1941,13 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             }},
         lhym_huaYing:{
             trigger:{global:'gameStart'},forced:true,
+            derivation:['lhym_flowerGuest','lhym_huaLu','lhym_huaYingEnd'],
             content:async function(event,trigger,player){ V.say(player,'xueJian/huaYing',event);lib.lhymCompanion.move(player,player);},
             group:['lhym_huaLu','lhym_huaYingEnd'],
         },
         lhym_flowerGuest:{
             charlotte:true,
+            derivation:['lhym_huaLu','lhym_huaYingEnd'],
             mark:true,
             marktext:'楹',
             markimage:'extension/轮回遗梦/mark_huaYing.png',
@@ -1897,7 +1973,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                     var count=cards.length;
                     var flower='<span style="color:#f08fbd;font-weight:bold">【花露】</span>';
 
-                    dialog.addText('唯一专属，可以在角色之间移动。');
+                    dialog.addText(get.translation('lhym_flowerGuest_info'));
                     dialog.addText('当前携带'+count+'/2张'+flower+'。');
 
                     if(count){
@@ -1907,12 +1983,12 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                             dialog.addText(flower);
                             dialog.addAuto(cards);
                         }else{
-                            dialog.addText(flower+'牌面仅雪见可查看。');
+                            // The canonical dew description below defines visibility.
                         }
                     }
 
-                    dialog.addText('雪见的回合结束时，若'+flower+
-                        '不为0，由雪见选择丢弃1张'+flower+'，己方士气-1。');
+                    dialog.addText(get.translation('lhym_huaLu_info'));
+                    dialog.addText(get.translation('lhym_huaYingEnd_info'));
                     return false;
                 }
             }
@@ -1959,14 +2035,14 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                 player.logSkill('lhym_lvBo');V.say(player,'xueJian/lvBo',event);const same=get.xiBie(cs[0])===get.xiBie(trigger.card);await C.spend(player,cs,'lhym_huaLu');
                 if(same)trigger.changeDamageNum(1);else trigger.lhym_flowerMove=true;
             },group:'lhym_lvBoHit'},
-        lhym_lvBoHit:{trigger:{source:'gongJiMingZhong'},direct:true,filter:e=>e.lhym_flowerMove===true,
-            content:async function(event,trigger,player){if(await player.chooseBool('绿波红露斩：移动花楹并治疗？').set('ai',()=>true).forResultBool())await C.healMove(player,1);}},
+        lhym_lvBoHit:{trigger:{source:'gongJiMingZhong'},forced:true,filter:e=>e.lhym_flowerMove===true,
+            content:async function(event,trigger,player){await C.healMove(player,1);}},
         lhym_tianLing:{type:'faShu',enable:'faShu',filter:(e,p)=>p.canBiShaShuiJing(),filterTarget:(c,p,t)=>p.side!==t.side,
             content:async function(event,trigger,player){ V.say(player,'xueJian/tianLing',event);await player.removeBiShaShuiJing();let n=1,count=0;const cards=C.dew(player).slice();
                 if(cards.length&&await player.chooseBool('天灵千裂破：移除全部花露追加效果？').set('ai',()=>true).forResultBool()){
-                    count=cards.length;n+=count===1?1:get.xiBie(cards[0])===get.xiBie(cards[1])?2:0;await C.spend(player,cards,'lhym_huaLu');
+                    count=cards.length;n+=count===2&&get.xiBie(cards[0])===get.xiBie(cards[1])?2:1;await C.spend(player,cards,'lhym_huaLu');
                 }await event.target.faShuDamage(n,player,'nocard');if(player.isIn())await C.healMove(player,1);
-            },ai:{order:5.5,shuiJing:true,result:{target:(p,t)=>-H.damageScore(p,t,C.dew(p).length?2:1)}}},
+            },ai:{order:5.5,shuiJing:true,result:{target:(p,t)=>{const cards=C.dew(p);return -H.damageScore(p,t,cards.length===2&&get.xiBie(cards[0])===get.xiBie(cards[1])?3:cards.length?2:1);}}}},
         lhym_shenShu:{type:'faShu',enable:'faShu',filter:(e,p)=>!p.storage.lhym_shenShu&&game.hasPlayer(t=>H.state(t).weapon==='镇妖剑'&&H.state(t).stage<3),
             filterTarget:(c,p,t)=>t!==p&&H.state(t).weapon==='镇妖剑'&&H.state(t).stage<3,
             content:async function(event,trigger,player){ V.say(player,'xueJian/shenShu',event);const t=event.target,s=H.state(t);if(s.stage>=3||player.storage.lhym_shenShu)return;
@@ -2034,40 +2110,39 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
     });
     skill.lhym_daiJun.group=['lhym_daiJunChoice','lhym_guiLan'];
     Object.assign(descriptions,{
-        lhym_xieNian:['专属【邪念】','专属指示物，上限99，可置于任意角色面前。按持有数量获得以下累计效果：<br>＞5：每回合首次主动攻击无法被应战；<br>＞10：攻击伤害+1；<br>＞15：法术伤害+1；<br>＞20：所有攻击无法被应战；<br>＞25：回合开始时+1【宝石】；<br>＞30：所有伤害额外+1。'],
-        lhym_wuXieJuXing:['被动【五邪聚形】','（游戏开始时）你+5【邪念】。<br>（一名角色因伤害导致士气下降后）伤害来源与该角色各+1【邪念】。'],
-        lhym_liuJieZhiWai:['被动【六界之外】','（你即将获得【基础效果】时）取消该效果，你+2【邪念】，施加者+1【宝石】；若施加者为你，两项均由你获得。'],
-        lhym_xieLingChuQiao:['被动【邪灵出壳】','（己方士气下降至7或以下后）转化为【邪灵】，保留场上所有【邪念】，无条件发动一次【邪灵祢天】。每局限一次。'],
-        lhym_xieQiLiHun:['被动【邪气离魂】','（你即将受到有来源的至少2点伤害时）将你面前1【邪念】移至伤害来源面前，本次伤害-1⑤。来源为你时，【邪念】位置不变。'],
-        lhym_jieXingQiShi:['响应【借形欺世】【回合限定】','（其他角色的实体法术牌结算后）若该牌仍在弃牌区，你可以-1【邪念】，将其加入手牌。'],
-        lhym_xieJianZhan:['响应【邪剑斩】','（你的主动攻击命中后②）你可以指定一名有【邪念】的角色，将其1【邪念】移至你面前，对其造成1点法术伤害③。若其仍有【邪念】，本次伤害+1，你+1【攻击行动】。可以指定自己。'],
-        lhym_sheXinShu:['启动【摄心术】','（【水晶】，手中有法术牌）弃置所有法术手牌。每有一种不同牌名，对所有角色各施加1层【中毒】；若弃置超过2张牌，再对所有角色施加【虚弱】。'],
-        lhym_xieLingMiTian:['法术【邪灵祢天】','（【宝石】）记录其他角色各自的【邪念】数量，再将这些【邪念】全部移至你面前。<br>对这些角色各造成X点法术伤害③，X为其原有【邪念】数量，最多为3；原数量＞2，施加【中毒】；＞4，再施加【虚弱】。'],
+        lhym_xieNian:['专属【邪念】',"<!--diy-skill-description-->上限99，可置于任意角色面前。按持有数量获得以下累计效果：<br>＞5：每回合首次主动攻击无法应战；<br>＞10：攻击伤害+1；<br>＞15：法术伤害+1；<br>＞20：所有攻击无法应战；<br>＞25：回合开始时+1<span style=\"color:#E02B17;font-weight:bold\">【宝石】</span>；<br>＞30：所有伤害额外+1。"],
+        lhym_wuXieJuXing:['被动【五邪聚形】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（游戏开始时）</span>你+5<span style=\"color:#C58AF0\">【邪念】</span>。<br><span style=\"color:#E6B85C\">（1名角色因伤害导致士气下降后）</span>伤害来源与该角色各+1<span style=\"color:#C58AF0\">【邪念】</span>。"],
+        lhym_liuJieZhiWai:['被动【六界之外】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（你即将获得【基础效果】时）</span>取消该效果，你+1<span style=\"color:#C58AF0\">【邪念】</span>，施加者+1<span style=\"color:#E02B17\">【宝石】</span>。"],
+        lhym_xieLingChuQiao:['被动【邪灵出壳】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（己方士气下降至7或以下后）</span>转化为【邪灵】，保留场上所有<span style=\"color:#C58AF0\">【邪念】</span>，无条件发动1次【邪灵祢天】。"],
+        lhym_xieQiLiHun:['被动【邪气离魂】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（你即将受到有来源的至少2点伤害时）</span>将你面前1<span style=\"color:#c58af0;font-weight:bold\">【邪念】</span>移至伤害来源面前，本次伤害-1⑤。"],
+        lhym_xieJianZhan:['响应【邪剑斩】',"<!--diy-skill-description--><span class='tiaoJian'>（你的主动攻击命中后②）</span>指定1名有<span style=\"color:#C58AF0\">【邪念】</span>的角色，将其1<span style=\"color:#C58AF0\">【邪念】</span>移至你面前；<span class='tiaoJian'>（若转移后其仍有<span style=\"color:#C58AF0\">【邪念】</span>）</span>对其造成2点法术伤害③，你+1【攻击行动】；否则对其造成1点法术伤害③。"],
+        lhym_sheXinShu:['启动【摄心术】',"<!--diy-skill-description--><span class='lan'>【水晶】</span><span class='tiaoJian'>（</span><span style=\"color:#E6B85C\">手中有法术牌）</span>弃置所有法术手牌。每有一种不同牌名，对所有角色各施加1层【中毒】；若弃置超过2张牌，再对所有角色施加【虚弱】。"],
+        lhym_xieLingMiTian:['法术【邪灵祢天】',"<!--diy-skill-description--><span style=\"color:#E02B17\">【宝石】</span>将其他角色的<span style=\"color:#C58AF0\">【邪念】</span>全部移至你面前，对这些角色各造成X点法术伤害③，X为其原有<span style=\"color:#C58AF0\">【邪念】</span>数量，最多为3。"],
         lhym_wuXingWuZhi:['被动【无形无质】','你不能获得【基础效果】。<br>（你的回合结束时）你-1【邪念】。'],
-        lhym_xieLingQinTi:['被动【邪灵侵体】','己方其他角色爆牌时，己方士气最低为1。<br>（己方士气即将降至0或以下时）取消此次士气下降，无条件发动一次【邪灵祢天】；然后你-5【邪念】，己方士气+5。若结算后你没有【邪念】，失去本技能。'],
-        lhym_daiJunChoice:['被动【代君出鞘】','残影与借来剑魂发动主动攻击时，选择原系增伤或改系；无论选择哪项，攻击结束后均转为蓝葵。'],
-        lhym_flowerGuest:['花楹','花楹当前持有者；花露仅雪见可查看。'],
-        lhym_lvBoHit:['绿波红露斩·移花','异系花露强化的攻击命中后，可移动花楹并治疗。'],
+        lhym_xieLingQinTi:['被动【邪灵侵体】',"<!--diy-skill-description-->己方其他角色爆牌时，己方士气最低为1。<br><span style=\"color:#E6B85C\">（己方士气即将降至0或以下时）</span>取消此次士气下降，无条件发动1次【邪灵祢天】；然后你-5<span style=\"color:#C58AF0\">【邪念】</span>，己方士气+5。<span style=\"color:#E6B85C\">（若结算后你没有</span><span style=\"color:#C58AF0\">【邪念】</span><span style=\"color:#E6B85C\">）</span>失去本技能。"],
+        lhym_daiJunChoice:['被动【代君出鞘】',"<!--diy-skill-description-->残影与借来【剑魂】发动主动攻击时，选择原系增伤或改系；无论选择哪项，攻击结束后均转为蓝葵。"],
+        lhym_flowerGuest:["专属【花楹】","<!--diy-skill-description-->唯一专属，通常在我方角色间移动；【镇妖剑·神树照胆】可将其跨阵营移至景天面前。"],
+        lhym_lvBoHit:['绿波红露斩·移花',"<!--diy-skill-description-->异系【花露】强化的攻击命中后，移动【花楹】并治疗。"],
         lhym_suYuan:['响应【宿缘相应】','（你发动【典当】时）你可以将其中1枚星石给予【雪见】或【龙葵】。<br>（【雪见】或【龙葵】【提炼】后）你可以获得其本次提炼所得且仍持有的1枚星石。'],
-        lhym_shenShuZhaoDan:['【镇妖剑·神树照胆】','（任意阵营雪见在场）（你的主动攻击命中时②）你可以将【花楹】移至你的角色面前，然后你+1【治疗】。'],
-        lhym_qianNianGongMing:['【魔剑·千年共鸣】','（龙葵在场）（你的【魔剑技】结算结束后）【龙葵】可以无消耗发动一次【双生】。'],
-        lhym_huaYing:['被动【花楹】','（游戏开始时）将【花楹】置于你面前。【花露】随花楹移动，仅你可以查看。<br>（回合结束时）若【花楹】在你面前，你+1【治疗】。'],
-        lhym_huaLu:['【花露】','暗置实体牌，上限为2，仅雪见可以查看。'],
-        lhym_huZhu:['响应【花楹护主】','（【花楹】持有者爆牌时）你可以将其1张应弃手牌暗置为【花露】，该牌不令己方士气下降。每次爆牌至多收取1张；【花露】已达上限时不能发动。'],
-        lhym_huaYingEnd:['花楹·散露','（雪见的回合结束时）若【花露】不为0，由雪见选择丢弃1张【花露】，然后己方士气-1。'],
-        lhym_wuDuGuiYuan:['法术【五毒归元】','（【花露】不为0时）将【花楹】移至一名我方角色面前，该角色选择一项：<br>·移除1张【花露】，并移除自身1个【中毒】或【虚弱】<br>·弃两张牌，将1张【花露】加入手牌<br>若其拥有【五毒珠】，其+2【治疗】。'],
-        lhym_lvBo:['响应【绿波红露斩】','（你攻击时①）你可以展示并移除1张【花露】：<br>·若其与本次攻击系别相同，本次攻击伤害+1<br>·若不同，本次攻击命中后②，你可以将【花楹】移至一名我方角色面前，并使其+1【治疗】。'],
-        lhym_tianLing:['法术【天灵千裂破】','【水晶】对一名对手造成1点法术伤害③；伤害结算后，将【花楹】移至一名我方角色面前，该角色+1【治疗】。<br>你可以额外展示并移除全部【花露】：<br>·移除1张时，本次伤害+1<br>·移除2张且同系时，本次伤害+2。'],
+        lhym_shenShuZhaoDan:["响应【镇妖剑·神树照胆】",'（任意阵营雪见在场）（你的主动攻击命中时②）你可以将【花楹】移至你的角色面前，然后你+1【治疗】。'],
+        lhym_qianNianGongMing:["响应【魔剑·千年共鸣】","<!--diy-skill-description--><span style=\"color:#E6B85C\">（龙葵在场）（你的【魔剑技】结算结束后）</span>【龙葵】可以无消耗发动1次【双生】。"],
+        lhym_huaYing:['被动【花楹】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（游戏开始时）</span>将<span style=\"color:#e5b94f;font-weight:bold\">【花楹】</span>置于你面前。<br><span style=\"color:#e6b85c\">（你的回合结束时）</span>若<span style=\"color:#e5b94f;font-weight:bold\">【花楹】</span>在你面前，你+1【治疗】。"],
+        lhym_huaLu:["专属【花露】","<!--diy-skill-description-->暗置实体牌，上限2；随<span style=\"color:#e5b94f;font-weight:bold\">【花楹】</span>移动，仅雪见可以查看。"],
+        lhym_huZhu:['响应【花楹护主】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（</span><span style=\"color:#E5B94F\">【花楹】</span><span style=\"color:#E6B85C\">持有者爆牌时）</span>将其1张应弃置手牌暗置为<span style=\"color:#F08FBD\">【花露】</span>，该牌不令己方士气下降。"],
+        lhym_huaYingEnd:['花楹·散露',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（雪见的回合结束时）</span>若<span style=\"color:#F08FBD\">【花露】</span>不为0，由雪见选择弃置1张<span style=\"color:#F08FBD\">【花露】</span>，然后己方士气-1。"],
+        lhym_wuDuGuiYuan:['法术【五毒归元】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（</span><span style=\"color:#F08FBD\">【花露】</span><span style=\"color:#E6B85C\">不为0时）</span>将<span style=\"color:#E5B94F\">【花楹】</span>移至1名我方角色面前，该角色选择一项：<br>·移除1张<span style=\"color:#F08FBD\">【花露】</span>，并移除自身1个【中毒】或【虚弱】<br>·弃置2张牌，将1张<span style=\"color:#F08FBD\">【花露】</span>加入手牌<br><span style=\"color:#E6B85C\">（若其拥有</span><span style=\"color:#62C96B\">【五毒珠】</span><span style=\"color:#E6B85C\">）</span>其+2【治疗】。"],
+        lhym_lvBo:['响应【绿波红露斩】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（你攻击时①）</span>展示并移除1张<span style=\"color:#F08FBD\">【花露】</span>：<br><span style=\"color:#E6B85C\">（若其与本次攻击系别相同）</span>本次攻击伤害+1；<br><span style=\"color:#E6B85C\">（若不同，本次攻击命中后②）</span>将<span style=\"color:#E5B94F\">【花楹】</span>移至1名我方角色面前，该角色+1【治疗】。"],
+        lhym_tianLing:['法术【天灵千裂破】',"<!--diy-skill-description--><span class='lan'>【水晶】</span>对1名对手造成1点法术伤害③，将<span style=\"color:#E5B94F\">【花楹】</span>移至1名我方角色面前，该角色+1【治疗】；<span class='tiaoJian'>（若你额外展示并移除全部<span style=\"color:#F08FBD\">【花露】</span>）</span>本次法术伤害+1；<span class='tiaoJian'>（移除2张且同系时）</span>本次法术伤害+2。"],
         lhym_shenShu:['法术【神树献灵】','（每局限1次）（景天选择镇妖剑且尚未完成第三阶段）免除全部材料费用，使其完成下一锻造阶段并选择分支；你的手牌上限永久-2。'],
-        lhym_cangFeng:['被动【藏锋】','（仅蓝葵形态下）（攻击未命中）你可以将本次使用的攻击牌置为【剑中残影】。【剑中残影】已达上限时不能发动。'],
-        lhym_moJianHuTi:['响应【魔剑护体】','（仅蓝葵形态下）（其他队友成为攻击目标时①）你可以展示并打出1张符合正常应战条件的【剑中残影】，代其应战，然后你转为红葵。此次攻击无法发动【藏锋】。'],
-        lhym_daiJun:['被动【代君出鞘】','（仅红葵形态下）你可以使用残影执行主动攻击，但不能以残影支付其他技能费用。（以残影主动攻击时①）选择一项：<br>·保留原系别，本次攻击伤害+1<br>·将本次攻击视为任意系，伤害不变<br>此次攻击结束后转为蓝葵。'],
-        lhym_buYuan:['响应【不愿归去】','（仅红葵形态下）（你以【剑中残影】发动的主动攻击命中后②）你可以将1张手中攻击牌置为【剑中残影】，并取消本次攻击结束后的蓝葵转换。'],
-        lhym_shuangSheng:['启动【双生】','【水晶】转为另一形态，然后选择一项：<br>·将手牌1张攻击牌收入【剑中残影】<br>·将1张残影加入手牌<br>只能选择当前可执行的选项。'],
-        lhym_huanGui:['法术【幻鬼三叠杀】','（仅红葵形态下）（【宝石】）展示并移除1至2张【剑中残影】，指定等量的不同对手，对其各造成2点法术伤害③。<br>若移除的2张牌系别相同，再对另一名未被指定的对手造成2点法术伤害③。'],
-        lhym_qianNian:['响应【千年相随】','（景天对你发动【慧眼识珍】时）你可以展示并交付1张【剑中残影】代替手牌，并免费激活其对应属性面。没有手牌但拥有【剑中残影】时，你仍可被选择。'],
-        lhym_youLan:['响应【幽蓝理魂】','（仅蓝葵形态下）（你的回合开始时）你可以展示1张非光暗手牌，与景天交换1张【剑魂】。'],
-        lhym_hongYing:['法术【红影借锋】【回合限定】','（仅红葵形态下）景天可以展示1张攻击牌【剑魂】，由你使用该牌发动本次攻击；若景天拒绝，你+1【攻击行动】或【法术行动】。<br>本次攻击视为以【剑中残影】发动，可以触发【代君出鞘】与【不愿归去】。该【剑魂】正常进入弃牌区。'],
+        lhym_cangFeng:['被动【藏锋】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（仅蓝葵形态下）</span><span style=\"color:#e6b85c\">（攻击未命中）</span>你可以将本次使用的攻击牌置为<span style=\"color:#7652cc;font-weight:bold\">【剑中残影】</span>。"],
+        lhym_moJianHuTi:['响应【魔剑护体】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（仅蓝葵形态下）</span><span style=\"color:#e6b85c\">（其他队友成为攻击目标时①）</span>展示并打出1张符合正常应战条件的<span style=\"color:#7652cc;font-weight:bold\">【剑中残影】</span>，代其应战，然后你转为红葵。此次攻击无法发动【藏锋】。"],
+        lhym_daiJun:['被动【代君出鞘】',"<!--diy-skill-description--><span style=\"color:#E6B85C\">（仅红葵形态下）</span>你可以使用残影执行主动攻击。（<span style=\"color:#E6B85C\">以残影主动攻击时①）</span>选择一项：<br>·保留原系别，本次攻击伤害+1<br>·将本次攻击视为任意系，伤害不变<br>此次攻击结束后转为蓝葵。"],
+        lhym_buYuan:['响应【不愿归去】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（仅红葵形态下）</span><span style=\"color:#e6b85c\">（你以<span style=\"color:#7652cc;font-weight:bold\">【剑中残影】</span>发动的主动攻击命中后②）</span>将1张手中攻击牌置为<span style=\"color:#7652cc;font-weight:bold\">【剑中残影】</span>，并取消【代君出鞘】的转为蓝葵效果。"],
+        lhym_shuangSheng:['启动【双生】',"<!--diy-skill-description--><span class='lan'>【水晶】</span>转为另一形态，然后选择一项：<br>·将手牌1张攻击牌收入<span style=\"color:#7652CC\">【剑中残影】</span><br>·将1张残影加入手牌"],
+        lhym_huanGui:['法术【幻鬼三叠杀】',"<!--diy-skill-description--><span style=\"color:#E02B17\">【宝石】</span><span style=\"color:#E6B85C\">（仅红葵形态下）</span>展示并移除1至2张<span style=\"color:#7652CC\">【剑中残影】</span>，指定等量的不同对手，对其各造成2点法术伤害③。<br><span style=\"color:#E6B85C\">（若移除的2张牌系别相同）</span>再对另一名未被指定的对手造成2点法术伤害③。"],
+        lhym_qianNian:['响应【千年相随】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（景天对你发动【慧眼识珍】时）</span>展示并交付1张<span style=\"color:#7652cc;font-weight:bold\">【剑中残影】</span>代替手牌，并免费激活其对应属性面。"],
+        lhym_youLan:['响应【幽蓝理魂】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（仅蓝葵形态下）</span><span style=\"color:#e6b85c\">（你的回合开始时）</span>展示1张非光暗手牌，与景天交换1张<span style=\"color:#9b72e8;font-weight:bold\">【剑魂】</span>。"],
+        lhym_hongYing:['法术【红影借锋】【回合限定】',"<!--diy-skill-description--><span style=\"color:#e6b85c\">（仅红葵形态下）</span>景天可以展示1张攻击牌<span style=\"color:#9b72e8;font-weight:bold\">【剑魂】</span>，由你使用该牌发动本次攻击；若景天拒绝，你+1【攻击行动】或【法术行动】。本次攻击视为以<span style=\"color:#7652cc;font-weight:bold\">【剑中残影】</span>发动。"],
         lhym_canYingPai:['专属【剑中残影】','暗置实体牌，上限为4。'],
     });
     const conditionColor = '#e6b85c';
@@ -2085,20 +2160,20 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
     };
     const colorResourceKeywords = text => String(text).replace(/【[^】]+】/g, function(keyword) {
         if(keyword==='【水晶】')return '<span class="lan">'+keyword+'</span>';
-        if(keyword==='【宝石】')return '<span class="hong">'+keyword+'</span>';
+        if(keyword==='【宝石】')return '<span style="color:#E02B17;font-weight:bold">'+keyword+'</span>';
         if(exclusiveResourceColors[keyword])return '<span style="color:'+exclusiveResourceColors[keyword]+';font-weight:bold">'+keyword+'</span>';
         return keyword;
     });
     const translate={};
     for(const [id,[name,info]] of Object.entries(descriptions)) {
         translate[id]=name;
-        translate[id+'_info']=colorResourceKeywords(colorConditions(info));
+        translate[id+'_info']=(info.startsWith('<!--diy-skill-description-->') ? info.slice(28) : colorResourceKeywords(colorConditions(info)));
     }
     translate.lhym_jianZhongRen='剑中人';
     translate.lhym_weiLiBlessing='威力赐福';
     translate.lhym_weiLiBlessing_info='下一次攻击命中时，本次攻击伤害+2，然后移除此效果。';
-    translate.lhym_moJianMark='魔剑专属';
-    translate.lhym_zhenYaoJianMark='镇妖剑专属';
+    translate.lhym_moJianMark='专属【魔剑】';
+    translate.lhym_zhenYaoJianMark='专属【镇妖剑】';
     for(const element of H.elements) for(const status of ['empty','yin','yang','both']) {
         translate['lhym_wuLing_'+element+'_'+status]=H.labels[element]+'灵阴阳灯';
     }
@@ -2110,11 +2185,43 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
     for(const element of ['shui','huo','lei','feng','tu']) for(const status of ['empty','yin','yang','both']) {
         markFiles.push('mark_wuLing_'+element+'_'+status+'.png');
     }
+    // 转移跳过本体的普通士气触发；仅补发侵体专用事件，不改变其他技能规则。
+    function installQinTiTransferHook(){
+        const content=lib.element?.content;
+        if(!content||content.changeShiQi?._lhymQinTiTransferHook)return;
+        const original=content.changeShiQi;
+        if(typeof original!=='function')return;
+        const source=original.toString();
+        const anchor=/if\s*\(!event\.zhuanYi\)\s*event\.trigger\(['"]changeShiQiBefore['"]\);/;
+        if(!anchor.test(source))throw new Error('侵体转移保护：士气结算接口已变化');
+        const patched=source.replace(anchor,"$& else event.trigger('lhymShiQiTransferBefore');");
+        // 原内容为本体 step 函数，保留分步标记，由引擎照常编译。
+        content.changeShiQi=new Function('return ('+patched+')')();
+        content.changeShiQi._lhymQinTiTransferHook=true;
+    }
     return {
         name:'轮回遗梦',connect:true,config:{},
         arenaReady:function() { for(const id of ['lhym_refineBegin','lhym_energyBefore','lhym_energyAfter','lhym_refineEnd','lhym_actionVoice','lhym_bgm']) game.addGlobalSkill(id); },
         content:function(){},
         precontent:function(){
+            installDiyFormPreview([["xieJianXian","xieLing"]], {
+                jingTian: [
+                    {name:'魔剑', image:'jingTian_moJian.png', content:function() {
+                        return '<b>专属【魔剑】</b><br><br>' +
+                            get.translation('lhym_longJing') + '：' + get.translation('lhym_longJing_info') + '<br><br>' +
+                            get.translation('lhym_soul') + '：' + get.translation('lhym_soul_info') + '<br><br>' +
+                            H.routeText({storage:{lhym_sword:{weapon:'魔剑',faces:[],stage:0,branches:[]}}}) +
+                            '<br><br><b>魔剑技配方与效果</b><br>' + skill.lhym_moRoute.intro.content();
+                    }},
+                    {name:'镇妖剑', image:'jingTian_zhenYaoJian.png', content:function() {
+                        return '<b>专属【镇妖剑】</b><br><br>' +
+                            get.translation('lhym_longJing') + '：' + get.translation('lhym_longJing_info') + '<br><br>' +
+                            ['lhym_zhaoDan','lhym_chongZhu','lhym_shenShuZhaoDan'].map(id=>H.skillText(id)).join('<br><br>') +
+                            '<br><br><b>三阶段修复与二选一强化</b><br>' + skill.lhym_zhenRoute.intro.content();
+                    }},
+                ],
+            });
+            installQinTiTransferHook();
             lib.config.all.background_music.add(menuTrack);
             lib.configMenu.audio.config.background_music.item[menuTrack]='御剑江湖';
             if(lib.config.extension_宿命挽歌_enable){
@@ -2172,7 +2279,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
                         name:'lunHuiYiMeng',
                         connect:true,
                         character:{
-                            xieJianXian:[null,'jiGroup',4.5,['lhym_wuXieJuXing','lhym_liuJieZhiWai','lhym_xieLingChuQiao','lhym_xieQiLiHun','lhym_jieXingQiShi','lhym_xieJianZhan','lhym_sheXinShu','lhym_xieLingMiTian','lhym_xieNian'],['des:蜀山五长老排出的邪念聚合体，士气低落时脱壳化为邪灵。','ext:轮回遗梦/xieJianXian.png']],
+                            xieJianXian:[null,'jiGroup',4.5,['lhym_wuXieJuXing','lhym_liuJieZhiWai','lhym_xieLingChuQiao','lhym_xieQiLiHun','lhym_xieJianZhan','lhym_sheXinShu','lhym_xieLingMiTian','lhym_xieNian'],['des:蜀山五长老排出的邪念聚合体，士气低落时脱壳化为邪灵。','ext:轮回遗梦/xieJianXian.png']],
                             xieLing:[null,'jiGroup',4.5,[
                                 'lhym_wuXingWuZhi',
                                 'lhym_xieLingQinTi',
@@ -2221,7 +2328,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"轮回遗梦"
             // 这里保持为空，避免单机/联机出现双份武将定义。
             character:{character:{},translate:{},characterTitle:{},characterIntro:{}},
             card:{card:{},translate:{},list:[]},skill:{skill,translate},
-            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',author:'蒙牛',version:'1.4',diskURL:'',forumURL:'',
+            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',author:'蒙牛',version:'1.5',diskURL:'',forumURL:'',
         },
         files:{character:['jingTian_moJian.png','jingTian_zhenYaoJian.png','xueJian.png','longKui_blue.png','longKui_red.png','xieJianXian.png','xieLing.png'],card:[],skill:markFiles,audio:V.files.concat(['audio/bgm/yuJianJiangHu.mp3','audio/bgm/yuManTang.mp3','audio/bgm/qingYuAn.mp3','audio/bgm/zhuShaBian.mp3','audio/bgm/huanHunCao.mp3','audio/bgm/linWei.mp3','audio/bgm/linWeiBianDiao.mp3'])},
     };
