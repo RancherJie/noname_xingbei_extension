@@ -13,7 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.16";
+    var extensionVersion = "2.17";
     var observer = null;
     var decorateTimer = null;
     var combatLines = [];
@@ -755,7 +755,7 @@
     }
 
     function decorateActionResponsePrompts() {
-        document.querySelectorAll("#window > .dialog.popped").forEach(function (dialog) {
+        document.querySelectorAll(".dialog.popped").forEach(function (dialog) {
             var text = (dialog.textContent || "").replace(/\s+/g, "");
             var actionPrompt = text.indexOf("[攻击行动]或者[法术行动]") !== -1;
             var event = _status.event;
@@ -774,8 +774,7 @@
                     break;
                 }
             }
-            var responsePrompt = chooseUseOrResponse || text.indexOf("受到") === 0 ||
-                text.indexOf("响应") === 0;
+            var responsePrompt = chooseUseOrResponse || /^(受到|受击|响应)/.test(text);
             toggleClass(dialog, "wmb-action-response-prompt", actionPrompt || responsePrompt);
         });
     }
@@ -1159,15 +1158,15 @@
     function loadStyle() {
         if (!isCustomTheme()) return;
         var styleTheme = isWaterbearTheme() ? "waterbear" : "extension";
-        var currentStyles = document.querySelectorAll("link[data-wmb-ui-style]");
+        var currentStyles = document.querySelectorAll(
+            "link[data-wmb-ui-style], link[href*='extension/" + extensionName + "/']"
+        );
         for (var index = 0; index < currentStyles.length; index++) {
-            var currentStyle = currentStyles[index];
-            if (currentStyle.getAttribute("data-wmb-ui-version") === extensionVersion &&
-                currentStyle.getAttribute("data-wmb-ui-theme") === styleTheme) return;
-            currentStyle.remove();
+            currentStyles[index].remove();
         }
         var styleUrl = lib.assetURL + "extension/" + extensionName + "/" +
-            styleTheme + ".css?v=" + encodeURIComponent(extensionVersion);
+            styleTheme + ".css?v=" + encodeURIComponent(extensionVersion) +
+            "&t=" + Date.now();
         var style = lib.init.css(styleUrl);
         if (style) {
             style.setAttribute("data-wmb-ui-style", "true");

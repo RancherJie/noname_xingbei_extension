@@ -1141,18 +1141,21 @@ body.wmb-ui-optimized.wmb-ui-small-screen #arena .player > .count {
 }
 
 /* 核心行动/响应提示是 chooseToUse 创建的弹窗，与扩展技能提示条是不同节点。 */
-body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt {
-    background: rgba(16, 26, 25, .14) !important;
-    border: 1px solid rgba(184, 148, 88, .38) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .12) !important;
+body.wmb-ui-optimized.wmb-ui-small-screen .dialog.popped.wmb-action-response-prompt {
+    background: rgba(16, 26, 25, .025) !important;
+    background-image: none !important;
+    border: 1px solid rgba(184, 148, 88, .14) !important;
+    box-shadow: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
-body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt > .content-container {
+body.wmb-ui-optimized.wmb-ui-small-screen .dialog.popped.wmb-action-response-prompt > .content-container {
     background: transparent !important;
+    background-image: none !important;
 }
-body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt .content {
+body.wmb-ui-optimized.wmb-ui-small-screen .dialog.popped.wmb-action-response-prompt .content {
     background: transparent !important;
+    background-image: none !important;
 }
 body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner::before,
 body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner::after {
@@ -1192,11 +1195,20 @@ body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table tr:not(:first-child) td
     font-size: 12px !important;
 }
 
-/* 手机/模拟器的选择行动控制组以屏幕中线定位，并略微上移。 */
-body.wmb-ui-optimized.wmb-ui-mobile-client.wmb-ui-small-screen #arena #control,
-body.wmb-ui-optimized.wmb-ui-mobile-client.wmb-ui-small-screen.wmb-ui-has-scoreboard #arena #control {
+/* 手机/模拟器仅在普通对局阶段居中行动控制组，选人等流程沿用核心位置。 */
+body.wmb-ui-optimized.wmb-ui-mobile-client.wmb-ui-small-screen
+#arena:not(.choose-character):not(.choose-to-move):not(.discard-player-card):not(.gain-player-card):not(.choose-player-card) #control {
     left: 50% !important;
     width: calc(100% - 16px) !important;
-    bottom: calc(170px + var(--wmb-arena-overflow, 0px)) !important;
+    bottom: calc(160px + var(--wmb-arena-overflow, 0px)) !important;
     transform: translateX(-50%) !important;
+}
+
+/* 行动与受击提示保留文字和原位，去掉遮挡视野的实色底。 */
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-xj-skill-banner {
+    background: rgba(12, 27, 25, .025) !important;
+    border-color: rgba(224, 197, 141, .14) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
