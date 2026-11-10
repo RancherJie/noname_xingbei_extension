@@ -1345,16 +1345,17 @@
 
     const extension = {
         name: '百年战争·序章',
-        version: '0.2.10-dev',
+        version: '0.2.11-dev',
         connect: true,
         editable: false,
         help: {},
         config: {
             voiceAudio: {
                 name: '百年战争角色语音',
-                init: false,
+                init: !!(lib.config.extensions && lib.config.extensions.includes('十周年语音包')),
                 intro: '控制本扩展的技能与购买、提炼、合成语音；关闭后不影响其他扩展。',
                 onclick: function (enabled) {
+                    game.saveConfig('extension_百年战争·序章_voiceAudioDefaultHandled', true);
                     bnzzQiApplyVoiceSkillAudio(enabled === true, extension.package?.skill?.skill);
                 }
             }
@@ -1363,6 +1364,12 @@
         precontent: function ()  {
             // Match the existing expansion action-audio convention.
             const voiceAudioConfigKey = 'extension_百年战争·序章_voiceAudio';
+            const voiceAudioDefaultHandledKey = 'extension_百年战争·序章_voiceAudioDefaultHandled';
+            const hasTenYearAudioPack = Array.isArray(lib.config.extensions) && lib.config.extensions.includes('十周年语音包');
+            if (hasTenYearAudioPack && lib.config[voiceAudioDefaultHandledKey] !== true) {
+                if (lib.config[voiceAudioConfigKey] !== true) game.saveConfig(voiceAudioConfigKey, true);
+                game.saveConfig(voiceAudioDefaultHandledKey, true);
+            }
             bnzzQiApplyVoiceSkillAudio(lib.config[voiceAudioConfigKey] === true, extension.package?.skill?.skill);
             const actionAudioSkill = 'bnzz_qi_sanhua_actionAudio';
             if (!lib.skill[actionAudioSkill]) {
@@ -4957,7 +4964,7 @@
                 list: []
             },
             intro: "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
-            author: '北风/蒙牛', diskURL: '', forumURL: '', version: '0.2.10-dev'
+            author: '北风/蒙牛', diskURL: '', forumURL: '', version: '0.2.11-dev'
         },
         files: {
             "character": [
