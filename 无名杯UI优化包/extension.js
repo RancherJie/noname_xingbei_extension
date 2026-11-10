@@ -245,9 +245,11 @@
 
     function scoreboardNode() {
         var board = ui.shiQiInfo;
-        if (!board || !board.isConnected) board = document.querySelector(".wmb-scoreboard, .zhanJi.table");
-        // Android 1.4.5 puts zhanJi/table on the inner table, desktop on its host.
-        if (board && board.tagName === "TABLE") board = board.closest(".touchinfo");
+        if (!board || !board.isConnected) {
+            board = document.querySelector(".wmb-scoreboard, .touchinfo.zhanJi, .zhanJi.table");
+        }
+        // Some mobile cores put the score table inside .touchinfo; keep a usable host if that wrapper is absent.
+        if (board && board.tagName === "TABLE") board = board.closest(".touchinfo") || board.parentElement;
         return board;
     }
 
@@ -430,7 +432,7 @@
         var size = visibleLayoutSize();
         var mobile = lib.device === "android" || lib.device === "ios" ||
             /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        var small = mobile && (window.innerWidth <= 1050 || window.innerHeight <= 600);
+        var small = mobile;
         toggleClass(document.body, "wmb-ui-small-screen", small);
         document.body.style.setProperty("--wmb-layout-width", size.width + "px");
         document.body.style.setProperty("--wmb-layout-height", size.height + "px");
@@ -1126,7 +1128,7 @@
 
     return {
         name: extensionName,
-        version: "2.10",
+        version: "2.13",
         editable: false,
         precontent: function () {
             migrateExtensionIdentityConfigs();
@@ -1198,7 +1200,7 @@
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.10"
+            version: "2.13"
         },
         files: {
             character: [],
