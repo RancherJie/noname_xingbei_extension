@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 9 (truncate before Cordova writes and verify the result). */
+/* Resource runtime v2, revision 10 (skip full verification when the manifest cache is complete). */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 9) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 10) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -170,6 +170,13 @@
         var data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
         await game.promises.writeFile(data, path.slice(0, split), path.slice(split + 1));
     }
+    async function cachedFileExists(game, path) {
+        try {
+            return await game.promises.checkFile(path) === 1;
+        } catch (_) {
+            return false;
+        }
+    }
     function notice(name) {
         if (!root.document) return { update: function () {}, repair: function () {}, remove: function () {} };
         var node = root.document.createElement('div');
@@ -194,36 +201,76 @@
         var manifest = JSON.parse(text);
         if (manifest.format !== 2 || !Array.isArray(manifest.files) || !Array.isArray(manifest.bundles)) throw new Error('无效音频清单');
         var assetsChanged = false;
+        var key = 'noname-audio-pack-v2:' + meta.name;
+        var previous;
+        try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
+        var assetHashes = Object.create(null);
         if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
         var assetPaths = new Set();
         for (var asset of manifest.assets || []) {
             safe(asset.path);
             if (!/\.(?:png|jpe?g|webp|gif|svg|css)$/i.test(asset.path) || assetPaths.has(asset.path)) throw new Error('非法静态资源路径: ' + asset.path);
             assetPaths.add(asset.path);
-            await readVerified(game, base + '/' + asset.path, asset, Object.assign({}, options, {
-                onRepaired: function () { assetsChanged = true; },
-            }), true);
         }
-        var key = 'noname-audio-pack-v2:' + meta.name;
-        var previous;
-        try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
-        var files = new Map(), needed = new Set(), selected = new Set();
         var bundleNames = new Set(manifest.bundles.map(function (bundle) { return safe(bundle.name); }));
+        var files = new Map(), needed = new Set(), selected = new Set();
         var hashes = Object.create(null), legacy = false;
         for (var entry of manifest.files) {
             safe(entry.path);
             if (files.has(entry.path)) throw new Error('重复音频路径');
             if (entry.bundles && (!Array.isArray(entry.bundles) || !entry.bundles.length || entry.bundles.some(function (name) { return !bundleNames.has(name); }))) throw new Error('无效音频分包索引');
             files.set(entry.path, entry);
-            // A saved success record survives uninstalling/deleting an extension.
-            // Trust it only after checking the bytes currently present on disk.
+        }
+        // Cache entries are written only after full verification. Reuse them for unchanged manifests.
+        var cacheComplete = !options.force && previous && previous.manifest === meta.sha256 && previous.files &&
+            manifest.files.every(function (entry) { return previous.files[entry.path] === entry.sha256; }) &&
+            (manifest.assets || []).every(function (asset) { return previous.assets && previous.assets[asset.path] === asset.sha256; });
+        if (cacheComplete) {
+            var resourcesPresent = true, resourceDirectories = new Set(), rootResources = [];
+            manifest.files.concat(manifest.assets || []).forEach(function (resource) {
+                var slash = resource.path.indexOf('/');
+                if (slash < 0) rootResources.push(resource.path);
+                else resourceDirectories.add(resource.path.slice(0, slash));
+            });
+            for (var resourceDirectory of resourceDirectories) {
+                try {
+                    if (await game.promises.checkDir(base + '/' + resourceDirectory) !== 1) {
+                        resourcesPresent = false;
+                        break;
+                    }
+                } catch (_) {
+                    resourcesPresent = false;
+                    break;
+                }
+            }
+            if (resourcesPresent) {
+                for (var rootResource of rootResources) {
+                    if (!await cachedFileExists(game, base + '/' + rootResource)) {
+                        resourcesPresent = false;
+                        break;
+                    }
+                }
+            }
+            if (resourcesPresent) return false;
+        }
+        for (var asset of manifest.assets || []) {
+            var cachedAsset = false;
+            if (!options.force && previous && previous.assets && previous.assets[asset.path] === asset.sha256) {
+                if (options.onActivity) options.onActivity();
+                cachedAsset = await cachedFileExists(game, base + '/' + asset.path);
+            }
+            if (!cachedAsset) {
+                await readVerified(game, base + '/' + asset.path, asset, Object.assign({}, options, {
+                    onRepaired: function () { assetsChanged = true; },
+                }), true);
+            }
+            assetHashes[asset.path] = asset.sha256;
+        }
+        for (var entry of manifest.files) {
             var cached = false;
             if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
-                try {
-                    if (options.onActivity) options.onActivity();
-                    var existing = buffer(await game.promises.readFile(base + '/' + entry.path));
-                    cached = existing.length === entry.size && await hash(existing) === entry.sha256;
-                } catch (_) {}
+                if (options.onActivity) options.onActivity();
+                cached = await cachedFileExists(game, base + '/' + entry.path);
             }
             if (cached) {
                 hashes[entry.path] = entry.sha256;
@@ -275,7 +322,7 @@
             }
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
-        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes }));
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes, assets: assetHashes }));
         return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
@@ -312,7 +359,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 9, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 10, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
