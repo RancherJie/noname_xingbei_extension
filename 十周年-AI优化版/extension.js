@@ -1,3 +1,4 @@
+import { game } from "../../noname.js";
 game.import("extension", function (lib, game, ui, get, ai, _status) {
     "use strict";
 

@@ -1,3 +1,4 @@
+import { game } from "../../noname.js";
 /* AUDIO_PACK_RUNTIME_BEGIN */
 /* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
 (function (root) {
