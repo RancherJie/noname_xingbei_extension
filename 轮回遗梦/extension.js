@@ -2362,6 +2362,16 @@
                     game.playBackgroundMusic();
                 });
             }
+            // 新安装默认启用独立角色包；后续尊重角色包菜单中的手动开关。
+            const characterPackName = 'lunHuiYiMeng';
+            lib.config.all.characters.add(characterPackName);
+            if (!lib.config.extension_轮回遗梦_characterPackDefaultInitialized) {
+                if (!lib.config.characters.includes(characterPackName)) {
+                    lib.config.characters.add(characterPackName);
+                    game.saveConfig('characters', lib.config.characters);
+                }
+                game.saveConfig('extension_轮回遗梦_characterPackDefaultInitialized', true);
+            }
             // 真正的联机角色包注册。外层扩展 connect:true 只代表扩展允许联机，
             // 角色本身还需要作为 connect:true 的 character pack 注册，才能稳定进入联机选将。
             if(!lib.characterPack?.lunHuiYiMeng && !(lib.imported?.character?.lunHuiYiMeng)) {
@@ -2419,7 +2429,7 @@
             // 这里保持为空，避免单机/联机出现双份武将定义。
             character:{character:{},translate:{},characterTitle:{},characterIntro:{}},
             card:{card:{},translate:{},list:[]},skill:{skill,translate},
-            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',author:'蒙牛',version:'1.8',diskURL:'',forumURL:'',
+            intro:'仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。',author:'蒙牛',version:'1.11',diskURL:'',forumURL:'',
         },
         files:{character:['jingTian_moJian.png','jingTian_zhenYaoJian.png','xueJian.png','longKui_blue.png','longKui_red.png','xieJianXian.png','xieLing.png'],card:[],skill:markFiles,audio:V.files.concat(['audio/bgm/yuJianJiangHu.mp3','audio/bgm/yuManTang.mp3','audio/bgm/qingYuAn.mp3','audio/bgm/zhuShaBian.mp3','audio/bgm/huanHunCao.mp3','audio/bgm/linWei.mp3','audio/bgm/linWeiBianDiao.mp3'])},
     };
