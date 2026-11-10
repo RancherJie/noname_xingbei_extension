@@ -13,7 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.17";
+    var extensionVersion = "2.18";
     var observer = null;
     var decorateTimer = null;
     var combatLines = [];
@@ -755,7 +755,7 @@
     }
 
     function decorateActionResponsePrompts() {
-        document.querySelectorAll(".dialog.popped").forEach(function (dialog) {
+        document.querySelectorAll("#arena > .dialog, #window > .dialog.popped").forEach(function (dialog) {
             var text = (dialog.textContent || "").replace(/\s+/g, "");
             var actionPrompt = text.indexOf("[攻击行动]或者[法术行动]") !== -1;
             var event = _status.event;

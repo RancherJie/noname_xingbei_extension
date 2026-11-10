@@ -21,7 +21,7 @@ extension["无名杯UI优化包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.17",
+	"version": "2.18",
 	"files": [
 		"README.md",
 		"extension.css",
@@ -567,12 +567,12 @@ extension["轮回遗梦"] = {
 };
 
 extension["百年战争·序章"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/11",
 	"intro": "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.10-dev",
+	"version": "0.2.11-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",

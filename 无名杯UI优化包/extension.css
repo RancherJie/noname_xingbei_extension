@@ -1140,8 +1140,8 @@ body.wmb-ui-optimized.wmb-ui-small-screen #arena .player > .count {
     z-index: 130 !important;
 }
 
-/* 核心行动/响应提示是 chooseToUse 创建的弹窗，与扩展技能提示条是不同节点。 */
-body.wmb-ui-optimized.wmb-ui-small-screen .dialog.popped.wmb-action-response-prompt {
+/* chooseToUse 提示由核心放在 arena 下，节点没有 popped 类。 */
+body.wmb-ui-optimized.wmb-ui-mobile-client #window .dialog.wmb-action-response-prompt {
     background: rgba(16, 26, 25, .025) !important;
     background-image: none !important;
     border: 1px solid rgba(184, 148, 88, .14) !important;
@@ -1149,11 +1149,11 @@ body.wmb-ui-optimized.wmb-ui-small-screen .dialog.popped.wmb-action-response-pro
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
-body.wmb-ui-optimized.wmb-ui-small-screen .dialog.popped.wmb-action-response-prompt > .content-container {
+body.wmb-ui-optimized.wmb-ui-mobile-client #window .dialog.wmb-action-response-prompt > .content-container {
     background: transparent !important;
     background-image: none !important;
 }
-body.wmb-ui-optimized.wmb-ui-small-screen .dialog.popped.wmb-action-response-prompt .content {
+body.wmb-ui-optimized.wmb-ui-mobile-client #window .dialog.wmb-action-response-prompt .content {
     background: transparent !important;
     background-image: none !important;
 }
