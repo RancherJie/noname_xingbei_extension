@@ -22,6 +22,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     var musicTracks = [];
     var musicUserPaused = false;
     var musicCollapsed = true;
+    var viewportObserver = null;
+    var viewportFrame = null;
+    var viewportListening = false;
     var cardArtMap = {
         anMie: "anMie_xianxia.png",
         shuiLianZhan: "shuiLianZhan_xianxia.png",
@@ -232,6 +235,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     function decorateScoreboard() {
         if (!isCustomTheme()) return;
         var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        toggleClass(document.body, "wmb-ui-has-scoreboard", board && board.isConnected);
         if (!board) return;
         board.classList.add("wmb-scoreboard");
         board.setAttribute(
@@ -244,7 +248,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         if (rows[2]) rows[2].classList.add("wmb-team-blue");
         if (isXianJianTheme()) {
             var imageRoot = lib.assetURL + "extension/" + extensionName + "/image/";
-            board.querySelectorAll("td:nth-child(2) img").forEach(function (image) {
+            board.querySelectorAll("td:nth-child(2) > img").forEach(function (image) {
                 var source = image.getAttribute("src") || "";
                 if (source.indexOf("baoShi") !== -1) {
                     image.src = imageRoot + "baoShi_xianxia.png";
@@ -252,6 +256,35 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     image.src = imageRoot + "shuiJing_xianxia.png";
                 }
                 image.classList.add("wmb-starstone");
+            });
+            [rows[1], rows[2]].forEach(function (row) {
+                if (!row || !row.cells[1]) return;
+                var cell = row.cells[1];
+                var images = cell.querySelectorAll(":scope > img");
+                var gems = Array.prototype.filter.call(images, function (image) {
+                    return image.getAttribute("src").indexOf("baoShi") !== -1;
+                }).length;
+                var crystals = images.length - gems;
+                var summary = cell.querySelector(".wmb-stone-summary");
+                if (!summary) {
+                    summary = document.createElement("span");
+                    summary.className = "wmb-stone-summary";
+                    ["baoShi", "shuiJing"].forEach(function (name) {
+                        var item = document.createElement("span");
+                        var icon = document.createElement("img");
+                        icon.src = imageRoot + name + "_xianxia.png";
+                        icon.alt = name === "baoShi" ? "宝石" : "水晶";
+                        item.appendChild(icon);
+                        item.appendChild(document.createElement("span"));
+                        summary.appendChild(item);
+                    });
+                    cell.appendChild(summary);
+                }
+                [gems, crystals].forEach(function (count, index) {
+                    var label = summary.children[index].lastChild;
+                    var value = "×" + count;
+                    if (label.textContent !== value) label.textContent = value;
+                });
             });
         }
     }
@@ -336,15 +369,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         }
         var rect = board.getBoundingClientRect();
         var windowRect = ui.window.getBoundingClientRect();
-        var width = musicCollapsed ? 38 : Math.min(264, rect.width);
+        // DOM rectangles include the core's body scale; CSS offsets do not.
+        var scaleX = windowRect.width / ui.window.offsetWidth || 1;
+        var scaleY = windowRect.height / ui.window.offsetHeight || 1;
+        var availableWidth = Math.min(ui.window.clientWidth, visibleLayoutSize().width);
+        var width = musicCollapsed ? 38 : Math.min(264, rect.width / scaleX, availableWidth - 16);
         if (musicPanel.style.width !== width + "px") musicPanel.style.width = width + "px";
         musicPanel.hidden = false;
-        if (rect.top - windowRect.top < musicPanel.offsetHeight + 18) {
+        if ((rect.top - windowRect.top) / scaleY < musicPanel.offsetHeight + 18) {
             musicPanel.hidden = true;
             return;
         }
-        var right = Math.max(8, windowRect.right - rect.right) + "px";
-        var bottom = windowRect.bottom - rect.top + 10 + "px";
+        var right = Math.min(availableWidth - width - 8, Math.max(8, (windowRect.right - rect.right) / scaleX)) + "px";
+        var bottom = (windowRect.bottom - rect.top) / scaleY + 10 + "px";
         if (musicPanel.style.right !== right) musicPanel.style.right = right;
         if (musicPanel.style.bottom !== bottom) musicPanel.style.bottom = bottom;
     }
@@ -355,6 +392,52 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             musicPositionFrame = null;
             positionMusicPanel();
         });
+    }
+
+    function visibleLayoutSize() {
+        var rect = document.body.getBoundingClientRect();
+        var scaleX = rect.width / document.body.offsetWidth || 1;
+        var scaleY = rect.height / document.body.offsetHeight || 1;
+        var viewport = window.visualViewport;
+        return {
+            width: Math.min(document.body.offsetWidth, (viewport ? viewport.width : window.innerWidth) / scaleX),
+            height: Math.min(document.body.offsetHeight, (viewport ? viewport.height : window.innerHeight) / scaleY)
+        };
+    }
+
+    function updateViewportLayout() {
+        viewportFrame = null;
+        if (!isXianJianTheme() || !document.body) return;
+        var size = visibleLayoutSize();
+        var small = window.innerWidth <= 1050 || window.innerHeight <= 600;
+        toggleClass(document.body, "wmb-ui-small-screen", small);
+        document.body.style.setProperty("--wmb-layout-width", size.width + "px");
+        document.body.style.setProperty("--wmb-layout-height", size.height + "px");
+        var arenaBottom = ui.arena ? ui.arena.getBoundingClientRect().bottom : 0;
+        var bodyRect = document.body.getBoundingClientRect();
+        var scale = bodyRect.height / document.body.offsetHeight || 1;
+        document.body.style.setProperty("--wmb-arena-overflow", Math.max(0, arenaBottom - bodyRect.bottom) / scale + "px");
+        scheduleMusicPosition();
+    }
+
+    function scheduleViewportLayout() {
+        if (viewportFrame !== null) return;
+        viewportFrame = requestAnimationFrame(updateViewportLayout);
+    }
+
+    function installViewportLayout() {
+        if (!isXianJianTheme()) return;
+        if (!viewportListening) {
+            viewportListening = true;
+            window.addEventListener("resize", scheduleViewportLayout);
+            window.addEventListener("orientationchange", scheduleViewportLayout);
+            if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleViewportLayout);
+            if (typeof ResizeObserver !== "undefined") {
+                viewportObserver = new ResizeObserver(scheduleViewportLayout);
+                viewportObserver.observe(document.body);
+            }
+        }
+        scheduleViewportLayout();
     }
 
     function syncMusicPanel() {
@@ -975,6 +1058,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     function decorateArena() {
         if (!applyRootClasses()) return;
+        installViewportLayout();
         applyCardDefinitions();
         decorateGlobalUi();
         decorateScoreboard();
@@ -1021,7 +1105,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "2.8",
+        version: "2.9",
         editable: false,
         precontent: function () {
             migrateExtensionIdentityConfigs();
@@ -1093,7 +1177,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.8"
+            version: "2.7"
         },
         files: {
             character: [],

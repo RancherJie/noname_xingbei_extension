@@ -999,3 +999,135 @@ body.wmb-ui-no-motion .wmb-target-order {
         width: 112px !important;
     }
 }
+
+/* The core scales body on phones. Use its visible logical size, not vw/vh. */
+body.wmb-ui-optimized .wmb-stone-summary { display: none; }
+
+body.wmb-ui-optimized.wmb-ui-small-screen .zhanJi.table.wmb-scoreboard {
+    box-sizing: border-box;
+    width: min(280px, calc(var(--wmb-layout-width) - 16px)) !important;
+    min-height: 0;
+    padding: 3px 5px !important;
+    font-size: 14px;
+    line-height: 1.2;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    transform: none;
+}
+
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard::before,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard::after,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:first-child { display: none; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard.bottom-center { transform: translateX(-50%); }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard table { border-spacing: 1px; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:not(:first-child) td {
+    height: 24px;
+    padding: 1px 2px;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td:nth-child(2) { width: 108px !important; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td:first-child::before { content: "士气 "; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td:last-child::before { content: "星杯 "; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td::before { font-size: 12px; color: var(--wmb-muted); }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:not(:first-child) td:first-child span,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:not(:first-child) td:last-child span { font-size: 18px; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard .wmb-starstone { width: 16px !important; height: 16px !important; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td:nth-child(2) > img { display: none; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-stone-summary {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font: 14px/22px "Microsoft YaHei", sans-serif;
+    color: var(--wmb-text);
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-stone-summary > span { display: inline-flex; align-items: center; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-stone-summary img { width: 16px; height: 16px; }
+
+/* Replace the core's single absolute-positioned control row only on small screens. */
+body.wmb-ui-optimized.wmb-ui-small-screen #arena #control {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 6px;
+    box-sizing: border-box;
+    left: 8px;
+    width: calc(100% - 16px);
+    top: auto !important;
+    bottom: 150px;
+    height: auto;
+    max-height: calc(var(--wmb-layout-height) * .28);
+    overflow-y: auto;
+    pointer-events: auto;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #arena #control > .control {
+    position: relative !important;
+    left: auto !important;
+    transform: none !important;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    box-sizing: border-box;
+    max-width: 100%;
+    white-space: normal;
+    flex-shrink: 0;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen.wmb-ui-has-scoreboard #arena #control {
+    width: calc(100% - 304px);
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #control > .control > div {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 32px;
+    padding: 5px 7px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.choose-character #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.choose-to-move #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.discard-player-card #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.gain-player-card #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.choose-player-card #control { bottom: calc(18px + var(--wmb-arena-overflow, 0px)); }
+
+body.wmb-ui-optimized.wmb-ui-small-screen #arena > .dialog:not(.popped):not(.halfleft):not(.halfright):not(.fullheight) {
+    box-sizing: border-box;
+    width: min(520px, calc(100% - 32px)) !important;
+    left: max(16px, calc(50% - 260px)) !important;
+    max-height: calc(var(--wmb-layout-height) - 180px);
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.choose-character > .dialog {
+    top: 50px !important;
+    bottom: 76px !important;
+    height: auto !important;
+    max-height: calc(var(--wmb-layout-height) - 126px);
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #window > .dialog.popped:not(.static),
+body.wmb-ui-optimized.wmb-ui-small-screen .menubg.charactercard {
+    box-sizing: border-box;
+    max-width: calc(var(--wmb-layout-width) - 24px);
+    max-height: calc(var(--wmb-layout-height) - 24px);
+    overflow-y: auto;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .dialog .textbutton {
+    max-width: 100%;
+    margin: 4px 0 !important;
+    padding: 7px 9px !important;
+    font-size: 16px;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-xj-skill-banner {
+    min-width: 0;
+    max-width: calc(var(--wmb-layout-width) - 48px);
+    padding: 8px 24px;
+    font-size: 19px;
+    letter-spacing: 2px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-target-counter {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: calc(var(--wmb-layout-width) - 24px);
+    padding: 5px 10px;
+    font-size: 15px;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-bgm-controls button,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-bgm-restore { height: 32px !important; }
