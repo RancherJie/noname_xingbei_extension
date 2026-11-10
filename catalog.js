@@ -21,7 +21,7 @@ extension["无名杯UI优化包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.8",
+	"version": "2.9",
 	"files": [
 		"README.md",
 		"extension.css",
@@ -63,7 +63,7 @@ extension["无名杯UI优化包"] = {
 		"package.js",
 		"waterbear.css"
 	],
-	"size": "25.89MB"
+	"size": "25.90MB"
 };
 
 extension["十周年语音包"] = {
