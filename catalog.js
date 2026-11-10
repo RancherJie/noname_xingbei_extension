@@ -72,7 +72,7 @@ extension["十周年语音包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.19",
+	"version": "6.20",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -101,7 +101,7 @@ extension["创世纪"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.18",
+	"version": "2.19",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -318,7 +318,7 @@ extension["宿命挽歌"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.41",
+	"version": "2.42",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -372,7 +372,7 @@ extension["峡谷幻音"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.21",
+	"version": "1.22",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -409,7 +409,7 @@ extension["永夜残响"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.15",
+	"version": "2.16",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -444,7 +444,7 @@ extension["bigcowcow"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.22",
+	"version": "2.23",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -482,7 +482,7 @@ extension["电啸龙吟"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.17",
+	"version": "1.18",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -512,7 +512,7 @@ extension["轮回遗梦"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.13",
+	"version": "1.14",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -572,7 +572,7 @@ extension["百年战争·序章"] = {
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.8-dev",
+	"version": "0.2.9-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",

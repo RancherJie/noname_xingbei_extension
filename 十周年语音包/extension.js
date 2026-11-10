@@ -1,5 +1,5 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 10 (skip full verification when the manifest cache is complete). */
+/* Resource runtime v2, revision 10 (verify old cache once, then reuse it). */
 (function (root) {
     'use strict';
     if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 10) return;
@@ -204,6 +204,7 @@
         var key = 'noname-audio-pack-v2:' + meta.name;
         var previous;
         try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
+        var cacheRuntimeMatches = previous && previous.runtime === 10;
         var assetHashes = Object.create(null);
         if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
         var assetPaths = new Set();
@@ -222,7 +223,7 @@
             files.set(entry.path, entry);
         }
         // Cache entries are written only after full verification. Reuse them for unchanged manifests.
-        var cacheComplete = !options.force && previous && previous.manifest === meta.sha256 && previous.files &&
+        var cacheComplete = !options.force && cacheRuntimeMatches && previous && previous.manifest === meta.sha256 && previous.files &&
             manifest.files.every(function (entry) { return previous.files[entry.path] === entry.sha256; }) &&
             (manifest.assets || []).every(function (asset) { return previous.assets && previous.assets[asset.path] === asset.sha256; });
         if (cacheComplete) {
@@ -255,7 +256,7 @@
         }
         for (var asset of manifest.assets || []) {
             var cachedAsset = false;
-            if (!options.force && previous && previous.assets && previous.assets[asset.path] === asset.sha256) {
+            if (!options.force && cacheRuntimeMatches && previous && previous.assets && previous.assets[asset.path] === asset.sha256) {
                 if (options.onActivity) options.onActivity();
                 cachedAsset = await cachedFileExists(game, base + '/' + asset.path);
             }
@@ -270,7 +271,14 @@
             var cached = false;
             if (!options.force && previous && previous.files && previous.files[entry.path] === entry.sha256) {
                 if (options.onActivity) options.onActivity();
-                cached = await cachedFileExists(game, base + '/' + entry.path);
+                if (cacheRuntimeMatches) {
+                    cached = await cachedFileExists(game, base + '/' + entry.path);
+                } else {
+                    try {
+                        var existing = buffer(await game.promises.readFile(base + '/' + entry.path));
+                        cached = existing.length === entry.size && await hash(existing) === entry.sha256;
+                    } catch (_) {}
+                }
             }
             if (cached) {
                 hashes[entry.path] = entry.sha256;
@@ -322,7 +330,7 @@
             }
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
-        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, files: hashes, assets: assetHashes }));
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 10, files: hashes, assets: assetHashes }));
         return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
