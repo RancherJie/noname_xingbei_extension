@@ -1761,7 +1761,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.13",
+            "version": "1.18",
         },
         "files": {
             "character": [

@@ -3839,7 +3839,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.11",
+            "version": "2.16",
         },
         "files": {
             "character": [

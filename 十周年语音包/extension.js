@@ -1376,7 +1376,7 @@
 
     return {
         name: extensionName,
-        version: "6.15",
+        version: "6.20",
         connect: true,
         editable: false,
         config: {
@@ -1397,7 +1397,7 @@
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "6.15"
+            version: "6.20"
         },
         files: {
             character: [],

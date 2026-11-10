@@ -11158,7 +11158,7 @@
 
     return {
         name: extensionName,
-        version: "1.10",
+        version: "1.12",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();
