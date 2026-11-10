@@ -72,7 +72,7 @@ extension["十周年语音包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.14",
+	"version": "6.15",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -101,7 +101,7 @@ extension["创世纪"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.13",
+	"version": "2.14",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -136,7 +136,7 @@ extension["创世纪"] = {
 		"xiLuFei.png",
 		"yuXueMoShen.png"
 	],
-	"size": "12.16MB"
+	"size": "12.17MB"
 };
 
 extension["十周年-AI优化版"] = {
@@ -458,7 +458,7 @@ extension["宿命挽歌"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.36",
+	"version": "2.37",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -512,7 +512,7 @@ extension["峡谷幻音"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.16",
+	"version": "1.17",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -540,7 +540,7 @@ extension["峡谷幻音"] = {
 		"tiMo.jpg",
 		"yaTuoKeSi.jpg"
 	],
-	"size": "5.25MB"
+	"size": "5.26MB"
 };
 
 extension["永夜残响"] = {
@@ -549,7 +549,7 @@ extension["永夜残响"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.10",
+	"version": "2.11",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -575,7 +575,7 @@ extension["永夜残响"] = {
 		"wHeQingLi.jpg",
 		"yuanYiZheZhi.png"
 	],
-	"size": "11.92MB"
+	"size": "11.93MB"
 };
 
 extension["bigcowcow"] = {
@@ -584,7 +584,7 @@ extension["bigcowcow"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.17",
+	"version": "2.18",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -622,7 +622,7 @@ extension["电啸龙吟"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.12",
+	"version": "1.13",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -652,7 +652,7 @@ extension["轮回遗梦"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.7",
+	"version": "1.8",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -703,7 +703,7 @@ extension["轮回遗梦"] = {
 		"xieLing.png",
 		"xueJian.png"
 	],
-	"size": "34.39MB"
+	"size": "34.40MB"
 };
 
 extension["百年战争·序章"] = {
@@ -712,7 +712,7 @@ extension["百年战争·序章"] = {
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.3-dev",
+	"version": "0.2.4-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -758,5 +758,5 @@ extension["百年战争·序章"] = {
 		"mark_bnzz_zhouFuZhiChui.png",
 		"package.js"
 	],
-	"size": "15.43MB"
+	"size": "15.44MB"
 };
