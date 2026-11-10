@@ -689,6 +689,7 @@ body.wmb-ui-optimized .wmb-xj-hit-fx {
 
 /* 操作按钮与技能栏。 */
 body.wmb-ui-optimized .control,
+body.wmb-ui-optimized .dialog .textbutton,
 body.wmb-ui-optimized #skill-control,
 body.wmb-ui-optimized .skill-control {
     background: var(--wmb-panel-soft) !important;
@@ -700,17 +701,26 @@ body.wmb-ui-optimized .skill-control {
 }
 
 body.wmb-ui-optimized .control > div,
+body.wmb-ui-optimized .dialog .textbutton,
 body.wmb-ui-optimized .skill-control .skillitem,
 body.wmb-ui-optimized #skill-control .skillitem {
     color: var(--wmb-text) !important;
-    border-radius: 3px 9px 3px 9px !important;
     font-family: "STKaiti", "KaiTi", "Microsoft YaHei", serif;
     letter-spacing: 1px;
     text-shadow: 0 1px 3px #000 !important;
     transition: transform 140ms ease, background-color 140ms ease, color 140ms ease;
 }
 
+body.wmb-ui-optimized .control > div,
+body.wmb-ui-optimized .skill-control .skillitem,
+body.wmb-ui-optimized #skill-control .skillitem {
+    border-radius: 3px 9px 3px 9px !important;
+}
+
 body.wmb-ui-optimized .control > div:hover,
+body.wmb-ui-optimized .dialog .textbutton.selectable:hover,
+body.wmb-ui-optimized .dialog .textbutton.selectable:active,
+body.wmb-ui-optimized .dialog .textbutton.selectable.selected,
 body.wmb-ui-optimized .skill-control .skillitem:hover,
 body.wmb-ui-optimized #skill-control .skillitem:hover {
     color: #fff7dd !important;
@@ -782,6 +792,16 @@ body.wmb-ui-optimized #window .dialog {
     box-shadow: var(--wmb-shadow), inset 0 1px rgba(255, 255, 255, 0.06) !important;
     backdrop-filter: blur(var(--wmb-blur));
     -webkit-backdrop-filter: blur(var(--wmb-blur));
+}
+
+/* 长文本仅调整排版，外观与反馈共用上方操作按钮规则。 */
+body.wmb-ui-optimized .dialog .textbutton {
+    box-sizing: border-box;
+    margin: 6px 0 !important;
+    padding: 10px 12px !important;
+    font-size: 18px;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* 人物点击详情：普通简介与完整角色卡采用两套核心节点。 */

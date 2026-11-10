@@ -57,6 +57,157 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         return lib.config[name] === undefined ? fallback : lib.config[name];
     }
 
+    var extensionIdentityAliases = {
+        "十周年AI优化版": "十周年-AI优化版",
+        "十周年噩梦人机": "十周年-噩梦人机"
+    };
+
+    function migrateExtensionIdentityConfigs() {
+        var marker = "extension_" + extensionName + "_extensionIdentityMigrationV1";
+        if (lib.config[marker]) return;
+        Object.keys(extensionIdentityAliases).forEach(function (newName) {
+            var oldName = extensionIdentityAliases[newName];
+            var oldPrefix = "extension_" + oldName + "_";
+            var newPrefix = "extension_" + newName + "_";
+            Object.keys(lib.config).forEach(function (key) {
+                if (!key.startsWith(oldPrefix)) return;
+                var newKey = newPrefix + key.slice(oldPrefix.length);
+                if (lib.config[newKey] === undefined) game.saveConfig(newKey, lib.config[key]);
+            });
+        });
+        game.saveConfig(marker, true);
+    }
+
+    function installExtensionIdentityCompatibility() {
+        if (game.saveConfig && !game.saveConfig._wmbExtensionIdentityAliases) {
+            var saveConfig = game.saveConfig;
+            var aliasesByPrefix = Object.keys(extensionIdentityAliases).map(function (newName) {
+                return {
+                    newPrefix: "extension_" + newName + "_",
+                    oldPrefix: "extension_" + extensionIdentityAliases[newName] + "_"
+                };
+            });
+            var saveConfigWithAliases = function (key) {
+                var result = saveConfig.apply(this, arguments);
+                if (typeof key != "string") return result;
+                for (var i = 0; i < aliasesByPrefix.length; i++) {
+                    var alias = aliasesByPrefix[i];
+                    var aliasKey;
+                    if (key.indexOf(alias.newPrefix) === 0) aliasKey = alias.oldPrefix + key.slice(alias.newPrefix.length);
+                    else if (key.indexOf(alias.oldPrefix) === 0) aliasKey = alias.newPrefix + key.slice(alias.oldPrefix.length);
+                    if (aliasKey) saveConfig.apply(this, [aliasKey].concat(Array.prototype.slice.call(arguments, 1)));
+                }
+                return result;
+            };
+            saveConfigWithAliases._wmbExtensionIdentityAliases = true;
+            game.saveConfig = saveConfigWithAliases;
+        }
+
+        if (game.hasExtension && !game.hasExtension._wmbExtensionIdentityAliases) {
+            var hasExtension = game.hasExtension;
+            var hasExtensionWithAliases = function (name) {
+                var oldName = extensionIdentityAliases[name];
+                if (!oldName) return hasExtension.apply(this, arguments);
+                var installed = Array.isArray(lib.config.extensions) && lib.config.extensions.includes(oldName);
+                if (!installed) return false;
+                var enabled = lib.config["extension_" + name + "_enable"];
+                if (typeof enabled != "boolean") enabled = lib.config["extension_" + oldName + "_enable"];
+                if (typeof enabled != "boolean") {
+                    game.saveConfig("extension_" + name + "_enable", true);
+                    return true;
+                }
+                return enabled;
+            };
+            hasExtensionWithAliases._wmbExtensionIdentityAliases = true;
+            game.hasExtension = hasExtensionWithAliases;
+        }
+
+        if (game.hasExtensionInstalled && !game.hasExtensionInstalled._wmbExtensionIdentityAliases) {
+            var hasExtensionInstalled = game.hasExtensionInstalled;
+            var hasExtensionInstalledWithAliases = function (name) {
+                var oldName = extensionIdentityAliases[name];
+                return oldName ? hasExtensionInstalled.call(this, oldName) : hasExtensionInstalled.apply(this, arguments);
+            };
+            hasExtensionInstalledWithAliases._wmbExtensionIdentityAliases = true;
+            game.hasExtensionInstalled = hasExtensionInstalledWithAliases;
+        }
+
+        if (game.removeExtension && !game.removeExtension._wmbExtensionIdentityAliases) {
+            var removeExtension = game.removeExtension;
+            var removeExtensionWithAliases = function (name, keepFile) {
+                var oldName = extensionIdentityAliases[name];
+                if (!oldName) return removeExtension.apply(this, arguments);
+                var newPrefix = "extension_" + name;
+                Object.keys(lib.config).forEach(function (key) {
+                    if (key.startsWith(newPrefix)) game.saveConfig(key);
+                });
+                if (typeof localStorage != "undefined") localStorage.removeItem(lib.configprefix + newPrefix);
+                if (typeof game.deleteDB == "function") game.deleteDB("data", newPrefix);
+                return removeExtension.call(this, oldName, keepFile);
+            };
+            removeExtensionWithAliases._wmbExtensionIdentityAliases = true;
+            game.removeExtension = removeExtensionWithAliases;
+        }
+    }
+
+    function applyExtensionListSort() {
+        var backupKey = "extension_" + extensionName + "_extensionSortBackup";
+        if (configValue("extensionAutoSort", true) !== true) {
+            if (lib.config[backupKey] !== undefined) {
+                var previousSort = lib.config[backupKey];
+                if (Array.isArray(previousSort)) game.saveConfig("extensionSort", previousSort);
+                else game.saveConfig("extensionSort");
+                game.saveConfig(backupKey);
+            }
+            return;
+        }
+        var names = Object.keys(lib.extensionMenu || {});
+        var collator = new Intl.Collator("zh-CN", { numeric: true, sensitivity: "base" });
+        var preferred = [
+            "bigcowcow",
+            "宿命挽歌",
+            "轮回遗梦",
+            "永夜残响",
+            "峡谷幻音",
+            "电啸龙吟",
+            "创世纪",
+            "百年战争·序章",
+            "百年战争·纷争",
+            "百年战争·变局",
+            "百年战争·终章",
+            "无名杯UI优化包",
+            "十周年语音包",
+            "十周年AI优化版",
+            "十周年噩梦人机"
+        ];
+        var priority = new Map(preferred.map(function (name, index) { return ["extension_" + name, index]; }));
+        names.sort(function (a, b) {
+            var aPriority = priority.has(a) ? priority.get(a) : Infinity;
+            var bPriority = priority.has(b) ? priority.get(b) : Infinity;
+            if (aPriority !== bPriority) return aPriority - bPriority;
+            return collator.compare(a, b);
+        });
+        if (lib.config[backupKey] === undefined) {
+            var previous = Array.isArray(lib.config.extensionSort) ? lib.config.extensionSort.slice() : null;
+            game.saveConfig(backupKey, previous);
+        }
+        var current = lib.config.extensionSort;
+        var unchanged = Array.isArray(current) && current.length === names.length &&
+            current.every(function (name, index) { return name === names[index]; });
+        if (!unchanged) game.saveConfig("extensionSort", names);
+    }
+
+    function installExtensionListSortHook() {
+        if (!ui.create || typeof ui.create.extensionMenu !== "function" || ui.create.extensionMenu._wmbAutoSort) return;
+        var createExtensionMenu = ui.create.extensionMenu;
+        var createSortedExtensionMenu = function () {
+            applyExtensionListSort();
+            return createExtensionMenu.apply(this, arguments);
+        };
+        createSortedExtensionMenu._wmbAutoSort = true;
+        ui.create.extensionMenu = createSortedExtensionMenu;
+    }
+
     function currentTheme() {
         return configValue("uiTheme", "xianjian");
     }
@@ -350,7 +501,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         });
         Object.keys(markArtMap).forEach(function (name) {
             if (!lib.skill[name]) return;
-            lib.skill[name].markimage = "extension/" + extensionName + "/image/card/" + markArtMap[name];
+            lib.skill[name].markimage = "extension/" + extensionName + "/image/mark/" + markArtMap[name];
         });
         Object.keys(resourceMarkArtMap).forEach(function (name) {
             var image = "extension/" + extensionName + "/image/" + resourceMarkArtMap[name];
@@ -750,7 +901,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         document.addEventListener("pointerdown", function (event) {
             if (!isWaterbearTheme()) return;
             var target = event.target.closest(
-                ".control, .menubutton, .button, .card, .wmb-system-button, .connectbutton"
+                ".control, .menubutton, .button, .dialog .textbutton.selectable, .card, .wmb-system-button, .connectbutton"
             );
             if (!target) return;
             var rect = target.getBoundingClientRect();
@@ -870,9 +1021,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "2.3",
+        version: "2.8",
         editable: false,
         precontent: function () {
+            migrateExtensionIdentityConfigs();
+            installExtensionIdentityCompatibility();
+            installExtensionListSortHook();
             loadStyle();
             applyCardDefinitions();
             installSkillFx();
@@ -886,6 +1040,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             decorateArena();
         },
         content: function () {
+            applyExtensionListSort();
+            installExtensionListSortHook();
             applyCardDefinitions();
             if (document.body) decorateArena();
         },
@@ -922,6 +1078,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 name: "启用仙侠风卡面与状态图",
                 init: true,
                 intro: "替换无名杯六系攻击牌、基础效果牌、魔弹、魔刃与异刃的卡面；关闭后保留原卡面。"
+            },
+            extensionAutoSort: {
+                name: "扩展列表自动排序",
+                init: true,
+                intro: "依次排列 bigcowcow、宿命挽歌、轮回遗梦、永夜残响、峡谷幻音、电啸龙吟、创世纪、百年战争四部曲、无名杯UI优化包、十周年语音包、十周年AI优化版、十周年噩梦人机；其他扩展按名称排序。两个十周年扩展使用去掉连字符的新内部 ID，原文件夹名保留以兼容现有安装。须启用本扩展并重启游戏。"
             }
         },
         help: {
@@ -932,11 +1093,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.3"
+            version: "2.8"
         },
         files: {
             character: [],
-            card: [],
+            card: ["image/mark/moDan_xianxia.png", "image/mark/shengDun_xianxia.png", "image/mark/xuRuo_xianxia.png", "image/mark/zhongDu_xianxia.png"],
             skill: []
         }
     };
