@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 8 (verify restored files before trusting cache). Source: tools/audio-pack/runtime.js. */
+/* Resource runtime v2, revision 9 (truncate before Cordova writes and verify the result). */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 8) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 9) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -108,28 +108,67 @@
         var split = path.lastIndexOf('/'), directory = path.slice(0, split);
         await game.promises.createDir(directory);
         var bytes = binary ? buffer(text) : ascii(text);
-        await game.promises.writeFile(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), directory, path.slice(split + 1));
-        await truncateCordova(path, bytes.length);
+        await writeResourceFile(game, path, bytes);
         // Do not record success until the repaired local file also passes verification.
         var verified = await verify(await game.promises[binary ? 'readFile' : 'readFileAsText'](path));
         if (options.onRepaired) options.onRepaired(path);
         return verified;
     }
-    // Cordova's writeFile does not truncate a previously longer file. Truncate only
-    // after writing, then verify the actual bytes with the client's readFile API.
-    async function truncateCordova(path, length) {
-        if (typeof root.resolveLocalFileSystemURL !== 'function') return;
-        var base = root.localStorage.getItem('noname_inited');
-        if (!base || base === 'nodejs') return;
-        await new Promise(function (resolve, reject) {
-            root.resolveLocalFileSystemURL(base + path, function (entry) {
-                entry.createWriter(function (writer) {
-                    writer.onerror = reject;
-                    writer.onwriteend = resolve;
-                    writer.truncate(length);
-                }, reject);
-            }, reject);
-        });
+    // Reset Cordova's FileWriter before writing so an older longer file cannot leave
+    // trailing bytes. Resolve only after both the truncate and write operations finish.
+    async function writeResourceFile(game, path, bytes) {
+        var base = '';
+        try {
+            base = root.localStorage && root.localStorage.getItem('noname_inited') || '';
+        } catch (_) {}
+        if (typeof root.resolveLocalFileSystemURL === 'function' && base && base !== 'nodejs') {
+            var split = path.lastIndexOf('/');
+            var directory = base + path.slice(0, split + 1);
+            var name = path.slice(split + 1);
+            await new Promise(function (resolve, reject) {
+                var phase = 'truncate', settled = false;
+                function fail(error) {
+                    if (settled) return;
+                    settled = true;
+                    reject(error || new Error('扩展资源写入失败: ' + path));
+                }
+                root.resolveLocalFileSystemURL(directory, function (directoryEntry) {
+                    directoryEntry.getFile(name, { create: true }, function (fileEntry) {
+                        fileEntry.createWriter(function (writer) {
+                            writer.onerror = function (event) {
+                                fail(writer.error || (event && event.target && event.target.error));
+                            };
+                            writer.onwriteend = function () {
+                                if (settled) return;
+                                if (writer.error) return fail(writer.error);
+                                if (phase === 'truncate') {
+                                    phase = 'write';
+                                    try {
+                                        writer.seek(0);
+                                        var payload = typeof root.Blob === 'function' ? new root.Blob([bytes]) : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+                                        writer.write(payload);
+                                    } catch (error) {
+                                        fail(error);
+                                    }
+                                    return;
+                                }
+                                settled = true;
+                                resolve();
+                            };
+                            try {
+                                writer.truncate(0);
+                            } catch (error) {
+                                fail(error);
+                            }
+                        }, fail);
+                    }, fail);
+                }, fail);
+            });
+            return;
+        }
+        var split = path.lastIndexOf('/');
+        var data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        await game.promises.writeFile(data, path.slice(0, split), path.slice(split + 1));
     }
     function notice(name) {
         if (!root.document) return { update: function () {}, repair: function () {}, remove: function () {} };
@@ -224,8 +263,7 @@
                         directories.add(directory);
                     }
                 }
-                await game.promises.writeFile(bytes.buffer, target.slice(0, split), target.slice(split + 1));
-                await truncateCordova(target, bytes.length);
+                await writeResourceFile(game, target, bytes);
                 var written = buffer(await game.promises.readFile(target));
                 if (written.length !== file.size || await hash(written) !== file.sha256) throw new Error('写入校验失败: ' + file.path);
                 hashes[file.path] = file.sha256;
@@ -274,7 +312,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 8, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 9, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
