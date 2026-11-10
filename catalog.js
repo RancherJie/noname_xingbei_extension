@@ -16,12 +16,12 @@ extension["织梦者"] = {
 };
 
 extension["无名杯UI优化包"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/10",
 	"intro": "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志的美术语言。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.3",
+	"version": "2.8",
 	"files": [
 		"README.md",
 		"extension.css",
@@ -43,6 +43,10 @@ extension["无名杯UI优化包"] = {
 		"image/cardback_xianxia.png",
 		"image/huangDeng_xianxia.png",
 		"image/lanDeng_xianxia.png",
+		"image/mark/moDan_xianxia.png",
+		"image/mark/shengDun_xianxia.png",
+		"image/mark/xuRuo_xianxia.png",
+		"image/mark/zhongDu_xianxia.png",
 		"image/shuiJing_xianxia.png",
 		"image/waterbear/frame_huan_v2.png",
 		"image/waterbear/frame_ji_v2.png",
@@ -59,7 +63,7 @@ extension["无名杯UI优化包"] = {
 		"package.js",
 		"waterbear.css"
 	],
-	"size": "25.75MB"
+	"size": "25.89MB"
 };
 
 extension["十周年语音包"] = {
@@ -92,27 +96,36 @@ extension["十周年语音包"] = {
 };
 
 extension["创世纪"] = {
-	"date": "2026/11/08",
-	"intro": "添加角色贝亚娜斗神、百花缭乱、露米娅、天启者、狱血魔神。",
+	"date": "2026/11/10",
+	"intro": "添加角色贝亚娜斗神、百花缭乱、露米娅、希露菲、天启者、狱血魔神。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.9",
+	"version": "2.10",
 	"files": [
 		"LICENSE",
 		"README.md",
 		"audio-data/manifest.json",
+		"audio-data/pack-07414fd8d091981ea4086d2f82c7752c38c5771fb8cd1f62f52ecf77fcb90ab6.json",
 		"audio-data/pack-2fe13fb69036b592929995ad35f78b87a184b901452bd1aa877d25b7377d9864.json",
 		"baiHuaLiaoLuan.png",
 		"beiyanadopushen.png",
 		"extension.js",
 		"info.json",
 		"luMiYa.png",
+		"mark_anZhiFuWen.png",
+		"mark_anZhiFuWen_dim.png",
+		"mark_guangZhiFuWen.png",
+		"mark_guangZhiFuWen_dim.png",
 		"mark_huaShi.png",
+		"mark_huoZhiFuWen.png",
+		"mark_huoZhiFuWen_dim.png",
 		"mark_luMiYaYanJiu.png",
 		"mark_nianQi.png",
 		"mark_rongYuZhuFu.png",
 		"mark_shouHuHuiZhang.png",
+		"mark_shuiZhiFuWen.png",
+		"mark_shuiZhiFuWen_dim.png",
 		"mark_tianQiZhiZhu.png",
 		"mark_tianShiZhuFu.png",
 		"mark_wuQiZhuFu.png",
@@ -120,34 +133,35 @@ extension["创世纪"] = {
 		"mark_xueShaXingTai.png",
 		"package.js",
 		"tianQiZhe.png",
+		"xiLuFei.png",
 		"yuXueMoShen.png"
 	],
-	"size": "9.70MB"
+	"size": "12.16MB"
 };
 
 extension["十周年-AI优化版"] = {
-	"date": "2026/09/16",
+	"date": "2026/11/10",
 	"intro": "在不修改原版十周年角色技能与数值的前提下，优化购买、合成、技能发动、目标选择和资源保留等AI决策。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.7",
+	"version": "1.10",
 	"files": [
 		"README.md",
 		"extension.js",
 		"info.json",
 		"package.js"
 	],
-	"size": "0.45MB"
+	"size": "0.46MB"
 };
 
 extension["十周年-噩梦人机"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/10",
 	"intro": "内置十周年-AI优化版，为70名电脑角色提供140项噩梦强化技能；新增最多三名玩家的联机合作 PvE 模式。真人操控角色保持原版技能。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.9",
+	"version": "1.10",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -435,16 +449,16 @@ extension["十周年-噩梦人机"] = {
 		"info.json",
 		"package.js"
 	],
-	"size": "185.50MB"
+	"size": "185.51MB"
 };
 
 extension["宿命挽歌"] = {
-	"date": "2026/11/08",
+	"date": "2026/11/10",
 	"intro": "添加角色赵灵儿、李逍遥、林月如、阿奴、拜月教主、鬼将军、蛇妖男、狐妖女及不可选的水魔兽、僵尸转化形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.33",
+	"version": "2.34",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -493,12 +507,12 @@ extension["宿命挽歌"] = {
 };
 
 extension["峡谷幻音"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/10",
 	"intro": "添加角色提莫、娑娜、亚托克斯、巴德。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.13",
+	"version": "1.14",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -526,16 +540,16 @@ extension["峡谷幻音"] = {
 		"tiMo.jpg",
 		"yaTuoKeSi.jpg"
 	],
-	"size": "5.26MB"
+	"size": "5.25MB"
 };
 
 extension["永夜残响"] = {
-	"date": "2026/11/08",
+	"date": "2026/11/10",
 	"intro": "添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三、鸢一折纸；含隐藏反转形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.7",
+	"version": "2.8",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -565,12 +579,12 @@ extension["永夜残响"] = {
 };
 
 extension["bigcowcow"] = {
-	"date": "2026/11/08",
+	"date": "2026/11/10",
 	"intro": "添加角色优菈、赫克托、史蒂夫、桐谷和人、一姬、萧炎。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.14",
+	"version": "2.15",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -603,12 +617,12 @@ extension["bigcowcow"] = {
 };
 
 extension["电啸龙吟"] = {
-	"date": "2026/11/08",
+	"date": "2026/11/10",
 	"intro": "添加角色奶龙、电棍Otto、永雏塔菲。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.9",
+	"version": "1.10",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -633,12 +647,12 @@ extension["电啸龙吟"] = {
 
 
 extension["轮回遗梦"] = {
-	"date": "2026/09/18",
+	"date": "2026/11/10",
 	"intro": "仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.4",
+	"version": "1.5",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -689,17 +703,18 @@ extension["轮回遗梦"] = {
 		"xieLing.png",
 		"xueJian.png"
 	],
-	"size": "34.38MB"
+	"size": "34.39MB"
 };
 
-extension['百年战争·序章'] = {
-	"date": "2026/11/08",
+extension["百年战争·序章"] = {
+	"date": "2026/11/10",
 	"intro": "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.0-dev",
+	"version": "0.2.1-dev",
 	"files": [
+		"README.md",
 		"audio-data/manifest.json",
 		"audio-data/pack-1100fad92b76de51ee0452a3352c0b373ef1175f64b79c3387c8f54380360f4f.json",
 		"audio-data/pack-8793cdec7fd4842f25a19ee441cea6192f077e7020561576477b2d839853ddfd.json",
@@ -710,8 +725,8 @@ extension['百年战争·序章'] = {
 		"bnzz_gongNengJiShi.png",
 		"bnzz_haiShenJiSi.png",
 		"bnzz_huiXiangYueShi.png",
-		"bnzz_jingLingChiHou.png",
 		"bnzz_jinWeiQiangShou.png",
+		"bnzz_jingLingChiHou.png",
 		"bnzz_juJiShou.png",
 		"bnzz_lingYuQiShi.png",
 		"bnzz_qiuDaoZhe.png",
@@ -730,9 +745,9 @@ extension['百年战争·序章'] = {
 		"mark_bnzz_shuFu.png",
 		"mark_bnzz_siWangLangYong_blocked.png",
 		"mark_bnzz_wanQiQiMing_effect.png",
-		"mark_bnzz_xueShang.png",
 		"mark_bnzz_xuLi.png",
 		"mark_bnzz_xuNengChi.png",
+		"mark_bnzz_xueShang.png",
 		"mark_bnzz_xunMiZhanJi_block.png",
 		"mark_bnzz_youHuo.png",
 		"mark_bnzz_yuanLi.png",
@@ -741,8 +756,7 @@ extension['百年战争·序章'] = {
 		"mark_bnzz_zhenYanXingTai.png",
 		"mark_bnzz_zhiGanXingTai.png",
 		"mark_bnzz_zhouFuZhiChui.png",
-		"package.js",
-		"README.md"
+		"package.js"
 	],
-	"size": "15.42MB"
+	"size": "15.43MB"
 };
