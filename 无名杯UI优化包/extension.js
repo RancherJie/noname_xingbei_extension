@@ -430,12 +430,21 @@
         viewportFrame = null;
         if (!isXianJianTheme() || !document.body) return;
         var size = visibleLayoutSize();
-        var mobile = lib.device === "android" || lib.device === "ios" ||
+        var mobilePlatform = lib.device === "android" || lib.device === "ios" ||
             /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        var screenWidth = window.screen && window.screen.width || window.innerWidth;
-        var screenHeight = window.screen && window.screen.height || window.innerHeight;
-        var small = mobile && Math.min(screenWidth, screenHeight) <= 700;
-        toggleClass(document.body, "wmb-ui-mobile-client", mobile);
+        var viewport = window.visualViewport;
+        var viewportWidth = viewport && viewport.width || window.innerWidth;
+        var viewportHeight = viewport && viewport.height || window.innerHeight;
+        var screenWidth = window.screen && window.screen.width || viewportWidth;
+        var screenHeight = window.screen && window.screen.height || viewportHeight;
+        var shortSide = Math.min(viewportWidth, viewportHeight, screenWidth, screenHeight);
+        var coarsePointer = typeof window.matchMedia === "function" &&
+            window.matchMedia("(pointer: coarse)").matches;
+        var arenaMobile = !!(ui.arena && (ui.arena.classList.contains("mobile") ||
+            ui.arena.classList.contains("long")));
+        var touchClient = mobilePlatform || arenaMobile || navigator.maxTouchPoints > 0 || coarsePointer;
+        var small = mobilePlatform || arenaMobile || (touchClient && shortSide <= 1100);
+        toggleClass(document.body, "wmb-ui-mobile-client", touchClient);
         toggleClass(document.body, "wmb-ui-small-screen", small);
         document.body.style.setProperty("--wmb-layout-width", size.width + "px");
         document.body.style.setProperty("--wmb-layout-height", size.height + "px");
@@ -742,6 +751,17 @@
         toggleClass(body, "wmb-ui-compact", configValue("compactLayout", false));
         toggleClass(body, "wmb-ui-strong-glass", configValue("glass", "standard") === "strong");
         return true;
+    }
+
+    function decorateActionResponsePrompts() {
+        document.querySelectorAll("#window > .dialog.popped").forEach(function (dialog) {
+            var text = (dialog.textContent || "").replace(/\s+/g, "");
+            var actionPrompt = text.indexOf("[攻击行动]或者[法术行动]") !== -1;
+            var event = _status.event;
+            var responsePrompt = !!(event && event.name === "chooseToUse" &&
+                (text.indexOf("响应") !== -1 || event.responded === true));
+            toggleClass(dialog, "wmb-action-response-prompt", actionPrompt || responsePrompt);
+        });
     }
 
     function decorateGlobalUi() {
@@ -1087,6 +1107,7 @@
         installViewportLayout();
         applyCardDefinitions();
         decorateGlobalUi();
+        decorateActionResponsePrompts();
         decorateScoreboard();
         ensureMusicPanel();
         decorateCards();
@@ -1131,7 +1152,7 @@
 
     return {
         name: extensionName,
-        version: "2.14",
+        version: "2.15",
         editable: false,
         precontent: function () {
             migrateExtensionIdentityConfigs();
@@ -1203,7 +1224,7 @@
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.14"
+            version: "2.15"
         },
         files: {
             character: [],

@@ -411,10 +411,10 @@ body.wmb-ui-optimized .wmb-xj-turn-label {
     text-align: center;
     white-space: nowrap;
     pointer-events: none;
-    border: 1px solid rgba(255, 230, 149, 0.94);
+    border: 1px solid rgba(255, 230, 149, 0.48);
     border-radius: 3px 9px 3px 9px;
-    background: linear-gradient(180deg, rgba(111, 77, 25, 0.98), rgba(43, 29, 13, 0.98));
-    box-shadow: inset 0 0 8px rgba(255, 224, 137, 0.28), 0 0 10px rgba(239, 190, 81, 0.72), 0 3px 8px rgba(0, 0, 0, 0.62);
+    background: linear-gradient(180deg, rgba(111, 77, 25, 0.12), rgba(43, 29, 13, 0.14)) !important;
+    box-shadow: inset 0 0 4px rgba(255, 224, 137, 0.08), 0 0 5px rgba(239, 190, 81, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
     text-shadow: 0 1px 2px #241406, 0 0 5px rgba(255, 222, 126, 0.72);
     opacity: 0;
     visibility: hidden;
@@ -576,11 +576,9 @@ body.wmb-ui-optimized .wmb-xj-skill-banner {
     pointer-events: none;
     border: 1px solid currentColor;
     border-radius: 3px 14px 3px 14px;
-    background:
-        linear-gradient(90deg, transparent 0, rgba(12, 27, 25, .5) 15% 85%, transparent 100%),
-        repeating-linear-gradient(100deg, rgba(255,255,255,.025) 0 2px, transparent 2px 7px);
+    background: linear-gradient(90deg, rgba(12, 27, 25, .16), rgba(12, 27, 25, .22), rgba(12, 27, 25, .16)) !important;
     box-shadow: inset 0 1px rgba(255,255,255,.12), inset 0 -1px rgba(3,10,9,.8),
-        0 5px 17px rgba(1,8,7,.36), 0 0 14px rgba(111,169,154,.3);
+        0 3px 9px rgba(1,8,7,.16), 0 0 8px rgba(111,169,154,.16);
     text-shadow: 0 2px 3px #06100e, 0 0 7px currentColor;
     transform: translateX(-50%);
     transition: top 180ms ease-out;
@@ -596,7 +594,7 @@ body.wmb-ui-optimized .wmb-xj-skill-banner::after {
     color: currentColor;
     font: 18px/34px "STKaiti", serif;
     border: 1px solid currentColor;
-    background: radial-gradient(circle, rgba(168,210,189,.54), rgba(16,36,32,.58) 58%, rgba(5,15,13,.58));
+    background: radial-gradient(circle, rgba(168,210,189,.54), rgba(16,36,32,.28) 58%, rgba(5,15,13,.3));
     box-shadow: inset 0 0 0 3px rgba(184,148,88,.2), 0 0 9px currentColor;
     transform: translateY(-50%) rotate(45deg);
 }
@@ -1119,7 +1117,7 @@ body.wmb-ui-optimized.wmb-ui-small-screen .dialog .textbutton {
     font-size: 16px;
 }
 body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner {
-    top: calc(42% + var(--wmb-skill-offset, 0px));
+    top: calc(50% + var(--wmb-skill-offset, 0px));
 }
 body.wmb-ui-optimized.wmb-ui-small-screen .wmb-xj-skill-banner {
     min-width: 0;
@@ -1139,3 +1137,70 @@ body.wmb-ui-optimized.wmb-ui-small-screen .wmb-target-counter {
 }
 body.wmb-ui-optimized.wmb-ui-small-screen .wmb-bgm-controls button,
 body.wmb-ui-optimized.wmb-ui-small-screen .wmb-bgm-restore { height: 32px !important; }
+
+/* 窄屏设备优先显示角色的手牌数量标记。 */
+body.wmb-ui-optimized.wmb-ui-small-screen #arena .player > .count {
+    z-index: 130 !important;
+}
+
+/* 核心行动/响应提示是 chooseToUse 创建的弹窗，与扩展技能提示条是不同节点。 */
+body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt {
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    box-sizing: border-box !important;
+    width: min(88vw, 520px) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 120px !important;
+    transform: translate(-50%, -50%) !important;
+    background: rgba(16, 26, 25, .14) !important;
+    border: 1px solid rgba(184, 148, 88, .38) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt > .content-container {
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: transparent !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #window > .dialog.popped.wmb-action-response-prompt .content {
+    background: transparent !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-scoreboard,
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table {
+    position: absolute !important;
+    top: auto !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    left: auto !important;
+    box-sizing: border-box !important;
+    width: min(220px, calc(var(--wmb-layout-width) - 16px)) !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: 76px !important;
+    padding: 2px 4px !important;
+    overflow: hidden !important;
+    transform: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table table,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table table {
+    width: 100% !important;
+    height: auto !important;
+    table-layout: fixed !important;
+    border-spacing: 1px !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table tr:first-child,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table tr:first-child { display: none !important; }
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table tr:not(:first-child) td,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table tr:not(:first-child) td {
+    height: 20px !important;
+    padding: 0 1px !important;
+    font-size: 12px !important;
+}
