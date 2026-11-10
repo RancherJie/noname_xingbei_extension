@@ -13,9 +13,10 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.18";
+    var extensionVersion = "2.19";
     var observer = null;
     var decorateTimer = null;
+    var cardDefinitionsApplied = false;
     var combatLines = [];
     var combatLineHookInstalled = false;
     var combatLineSequence = 0;
@@ -279,34 +280,8 @@
                 }
                 image.classList.add("wmb-starstone");
             });
-            [rows[1], rows[2]].forEach(function (row) {
-                if (!row || !row.cells[1]) return;
-                var cell = row.cells[1];
-                var images = cell.querySelectorAll(":scope > img");
-                var gems = Array.prototype.filter.call(images, function (image) {
-                    return image.getAttribute("src").indexOf("baoShi") !== -1;
-                }).length;
-                var crystals = images.length - gems;
-                var summary = cell.querySelector(".wmb-stone-summary");
-                if (!summary) {
-                    summary = document.createElement("span");
-                    summary.className = "wmb-stone-summary";
-                    ["baoShi", "shuiJing"].forEach(function (name) {
-                        var item = document.createElement("span");
-                        var icon = document.createElement("img");
-                        icon.src = imageRoot + name + "_xianxia.png";
-                        icon.alt = name === "baoShi" ? "宝石" : "水晶";
-                        item.appendChild(icon);
-                        item.appendChild(document.createElement("span"));
-                        summary.appendChild(item);
-                    });
-                    cell.appendChild(summary);
-                }
-                [gems, crystals].forEach(function (count, index) {
-                    var label = summary.children[index].lastChild;
-                    var value = "×" + count;
-                    if (label.textContent !== value) label.textContent = value;
-                });
+            board.querySelectorAll(".wmb-stone-summary").forEach(function (summary) {
+                summary.remove();
             });
         }
     }
@@ -532,7 +507,9 @@
         if (!isXianJianTheme()) return;
         var board = scoreboardNode();
         if (!board || !board.isConnected) return;
+        var created = false;
         if (!musicPanel) {
+            created = true;
             musicPanel = document.createElement("section");
             musicPanel.className = "wmb-bgm-panel wmb-bgm-collapsed";
             musicPanel.setAttribute("aria-label", "战局背景音乐控制");
@@ -595,7 +572,7 @@
             musicObservedBoard = board;
         }
         scheduleMusicPosition();
-        syncMusicPanel();
+        if (created) syncMusicPanel();
         if (!musicTimer) {
             musicTimer = setInterval(syncMusicPanel, 700);
             window.addEventListener("resize", scheduleMusicPosition);
@@ -614,6 +591,7 @@
     function applyCardDefinitions() {
         if (!isXianJianTheme()) return;
         if (!configValue("cardArt", true)) return;
+        if (cardDefinitionsApplied) return;
         Object.keys(cardArtMap).forEach(function (name) {
             if (!lib.card[name]) return;
             lib.card[name].image = "ext:" + extensionName + "/image/card/" + cardArtMap[name];
@@ -635,11 +613,12 @@
             if (!skill || !lightMarkArtMap[skill.markimage]) return;
             skill.markimage = "extension/" + extensionName + "/image/" + lightMarkArtMap[skill.markimage];
         });
+        cardDefinitionsApplied = true;
     }
 
     function decorateLightMarks() {
-        if (!isXianJianTheme()) return;
-        document.querySelectorAll(".player .card.mark").forEach(function (mark) {
+        if (!isXianJianTheme() || !ui.arena) return;
+        ui.arena.querySelectorAll(".player .card.mark").forEach(function (mark) {
             var skill = mark.name && lib.skill[mark.name];
             if (!skill || typeof skill.markimage != "string" ||
                 skill.markimage.indexOf("extension/" + extensionName + "/image/") !== 0) return;
@@ -650,10 +629,10 @@
     }
 
     function decorateCards() {
-        if (!isXianJianTheme()) return;
+        if (!isXianJianTheme() || !ui.arena) return;
         if (!configValue("cardArt", true)) return;
         var imageRoot = "extension/" + extensionName + "/image/card/";
-        document.querySelectorAll(".card").forEach(function (card) {
+        ui.arena.querySelectorAll(".card").forEach(function (card) {
             var name = card.name;
             if (!name || !cardArtMap[name] || card.dataset.wmbCardArt === name) return;
             if (card.node && card.node.image && card.node.image.setBackgroundImage) {
@@ -664,8 +643,8 @@
     }
 
     function decorateTeamIdentities() {
-        if (!isCustomTheme()) return;
-        document.querySelectorAll(".player .identity").forEach(function (identity) {
+        if (!isCustomTheme() || !ui.arena) return;
+        ui.arena.querySelectorAll(".player .identity").forEach(function (identity) {
             var text = (identity.textContent || "").replace(/\s/g, "");
             var isRed = text.indexOf("红") !== -1;
             var isBlue = text.indexOf("蓝") !== -1;
@@ -684,10 +663,10 @@
         var selecting = ui.arena.classList.contains("selecting");
         var selected = ui.selected && Array.isArray(ui.selected.targets) ?
             ui.selected.targets : Array.prototype.slice.call(
-                document.querySelectorAll("#arena .player.selected")
+                ui.arena.querySelectorAll(".player.selected")
             );
         var numerals = ["壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"];
-        document.querySelectorAll("#arena .player").forEach(function (player) {
+        ui.arena.querySelectorAll(".player").forEach(function (player) {
             var index = selected.indexOf(player);
             var badge = player.querySelector(":scope > .wmb-target-order");
             if (selecting && index !== -1) {
@@ -725,8 +704,8 @@
     }
 
     function decorateTurnIndicators() {
-        if (!isXianJianTheme()) return;
-        document.querySelectorAll("#arena .player:not(.minskin)").forEach(function (player) {
+        if (!isXianJianTheme() || !ui.arena) return;
+        ui.arena.querySelectorAll(".player:not(.minskin)").forEach(function (player) {
             if (!player.querySelector(":scope > .wmb-xj-turn-shade")) {
                 var shade = document.createElement("div");
                 shade.className = "wmb-xj-turn-shade";
@@ -747,7 +726,17 @@
         if (!isCustomTheme()) return false;
         toggleClass(body, "wmb-ui-waterbear", isWaterbearTheme());
         toggleClass(body, "wmb-ui-no-motion", !configValue("motion", true));
-        if (isWaterbearTheme()) return true;
+        if (isWaterbearTheme()) {
+            var devicePlatform = navigator.platform || "";
+            if (navigator.userAgentData && navigator.userAgentData.platform) {
+                devicePlatform += " " + navigator.userAgentData.platform;
+            }
+            var mobilePlatform = /Android|iPhone|iPad|iPod/i.test(devicePlatform + " " + navigator.userAgent);
+            var coarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+            toggleClass(body, "wmb-ui-mobile-client",
+                mobilePlatform || navigator.maxTouchPoints > 0 || coarsePointer);
+            return true;
+        }
         body.classList.add("wmb-ui-optimized");
         toggleClass(body, "wmb-ui-compact", configValue("compactLayout", false));
         toggleClass(body, "wmb-ui-strong-glass", configValue("glass", "standard") === "strong");
@@ -802,13 +791,13 @@
     }
 
     function decorateFactionFrames() {
-        if (!isWaterbearTheme()) return;
+        if (!isWaterbearTheme() || !ui.arena) return;
         var factionClasses = [
             "wmb-wb-faction-xue", "wmb-wb-faction-sheng",
             "wmb-wb-faction-ji", "wmb-wb-faction-huan",
             "wmb-wb-faction-yong", "wmb-wb-faction-other"
         ];
-        document.querySelectorAll(".player").forEach(function (player) {
+        ui.arena.querySelectorAll(".player").forEach(function (player) {
             factionClasses.forEach(function (name) {
                 player.classList.remove(name);
             });
@@ -1002,14 +991,18 @@
 
     function showHitFx(trigger) {
         var target = trigger.target;
-        if (!target || !document.body) return;
-        var rect = target.getBoundingClientRect();
+        var arena = ui.arena;
+        if (!target || !arena || !arena.isConnected) return;
+        var targetRect = target.getBoundingClientRect();
+        var arenaRect = arena.getBoundingClientRect();
+        var scaleX = arenaRect.width / arena.offsetWidth || 1;
+        var scaleY = arenaRect.height / arena.offsetHeight || 1;
         var fx = document.createElement("div");
         var prefix = combatFxPrefix();
         fx.className = prefix + "-hit-fx " + prefix + "-hit-" + attackColor(trigger.card);
-        fx.style.left = (rect.left + rect.width / 2) + "px";
-        fx.style.top = (rect.top + rect.height / 2) + "px";
-        document.body.appendChild(fx);
+        fx.style.left = ((targetRect.left + targetRect.width / 2 - arenaRect.left) / scaleX - arena.clientLeft) + "px";
+        fx.style.top = ((targetRect.top + targetRect.height / 2 - arenaRect.top) / scaleY - arena.clientTop) + "px";
+        arena.appendChild(fx);
         setTimeout(function () { fx.remove(); }, 850);
     }
 
@@ -1084,7 +1077,7 @@
         decorateTimer = setTimeout(function () {
             decorateTimer = null;
             decorateArena();
-        }, 0);
+        }, document.body && document.body.classList.contains("wmb-ui-mobile-client") ? 120 : 0);
     }
 
     function isTransientWaterbearFx(node) {
@@ -1102,24 +1095,40 @@
     }
 
     function observeUiChanges(records) {
+        var decoratedNodeSelector = ".player, .card, .dialog, .identity, .zhanJi, .touchinfo, " +
+            ".connectbutton, .connectevents, .menubg.charactercard, .wmb-scoreboard";
+
+        function containsDecoratedNode(node) {
+            if (!node || node.nodeType !== 1 || !node.classList || isTransientWaterbearFx(node)) return false;
+            return node.matches(decoratedNodeSelector) || !!node.querySelector(decoratedNodeSelector);
+        }
+
         var needsDecoration = records.some(function (record) {
-            if (record.type === "attributes" && record.target &&
-                record.target.classList &&
-                (record.target === ui.arena || record.target.classList.contains("player"))) {
-                return true;
+            if (record.type === "attributes" && record.target && record.target.classList) {
+                if (record.target === ui.arena || record.target.matches(".dialog, .identity")) return true;
+                if (record.target.matches(".player")) {
+                    var previousClasses = (record.oldValue || "").split(/\s+/);
+                    return ["selectable", "selected", "current_action", "glow_phase", "linked", "minskin"]
+                        .some(function (name) {
+                            return record.target.classList.contains(name) || previousClasses.includes(name);
+                        });
+                }
+                return false;
+            }
+            if (record.target && record.target.nodeType === 1) {
+                if (record.target.matches("#system1, #system2, .dialog, .identity")) return true;
+                if (record.target.closest(".wmb-scoreboard, .zhanJi, .touchinfo")) return true;
             }
             var changed = Array.prototype.slice.call(record.addedNodes || [])
                 .concat(Array.prototype.slice.call(record.removedNodes || []));
-            return changed.some(function (node) {
-                return node.nodeType === 1 && !isTransientWaterbearFx(node);
-            });
+            return changed.some(containsDecoratedNode);
         });
         if (needsDecoration) queueDecoration();
     }
 
     function decorateArena() {
         if (!applyRootClasses()) return;
-        installViewportLayout();
+        if (!viewportListening) installViewportLayout();
         applyCardDefinitions();
         decorateGlobalUi();
         decorateActionResponsePrompts();
@@ -1141,7 +1150,8 @@
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ["class"]
+                attributeFilter: ["class"],
+                attributeOldValue: true
             });
         }
     }
