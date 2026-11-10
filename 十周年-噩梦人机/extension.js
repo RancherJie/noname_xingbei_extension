@@ -2,6 +2,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     "use strict";
 
     var extensionName = "十周年-噩梦人机";
+    var extensionFolder = "十周年-噩梦人机";
+    function migrateExtensionConfig() {
+        var oldPrefix = "extension_" + extensionFolder + "_";
+        var newPrefix = "extension_" + extensionName + "_";
+        Object.keys(lib.config || {}).forEach(function (key) {
+            if (!key.startsWith(oldPrefix)) return;
+            var newKey = newPrefix + key.slice(oldPrefix.length);
+            if (lib.config[newKey] === undefined) game.saveConfig(newKey, lib.config[key]);
+        });
+    }
+    migrateExtensionConfig();
     // 启用扩展时替换模式选择页插画；不修改本体图片或持久化界面配置。
     function installNightmareSplashImages() {
         var portraits = {
@@ -25,8 +36,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             var original = splash.handle;
             if(typeof original != 'function') return;
             splash.handle = function(mode) {
-                if(mode == 'boss') return 'extension/' + extensionName + '/image/splash/xieLing.png';
-                if(portraits[mode]) return 'extension/' + extensionName + '/image/character/chibi/default/' + portraits[mode] + '.png';
+                if(mode == 'boss') return 'extension/' + extensionFolder + '/image/splash/xieLing.png';
+                if(portraits[mode]) return 'extension/' + extensionFolder + '/image/character/chibi/default/' + portraits[mode] + '.png';
                 return original.apply(this, arguments);
             };
             splash._nightmarePortraits = true;
@@ -117,46 +128,46 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     // 否则 addSkill 只同步技能ID后，非主机无法生成噩梦词条。
     var nightmareDisplayMetadata = {
         "nightmare_yuFengErXing": ["【御风而行】", "回合开始时，你+1【水晶】。"],
-        "nightmare_kuangFengZhouYu": ["【狂风骤雨】", "本回合攻击每命中一次，后续主动攻击伤害+1。"],
+        "nightmare_kuangFengZhouYu": ["【狂风骤雨】", "本回合攻击每命中1次，后续主动攻击伤害+1。"],
         "nightmare_xueZhiKeWang": ["【血之渴望】", "你的主动攻击同时附带【血影狂刀】与【血腥咆哮】的效果。"],
-        "nightmare_shiXueKuangHua": ["【嗜血狂化】", "主动攻击命中后，若我方战绩区有【宝石】，可以消耗1【宝石】，发动【狂化】。"],
+        "nightmare_shiXueKuangHua": ["【嗜血狂化】", "主动攻击命中后，若我方战绩区有<span style=\"color:#E02B17\">【宝石】</span>，可以消耗1<span style=\"color:#E02B17\">【宝石】</span>，发动【狂化】。"],
         "nightmare_yingYan": ["【鹰眼】", "【贯穿射击】造成的伤害+1。"],
         "nightmare_zhiMingJuJi": ["【致命狙击】", "【狙击】改为令目标将手牌补至7张。"],
         "nightmare_wanXiangFengYin": ["【万象封印】", "你可以将法术牌当作对应系别的【X之封印】使用。"],
-        "nightmare_wuXingJinJue": ["【五行禁绝】", "你的五种【X之封印】造成的法术伤害均改为4点。"],
+        "nightmare_wuXingJinJue": ["【五行禁绝】", "你的5种【X之封印】造成的法术伤害均改为4点。"],
         "nightmare_anYingChuBei": ["【暗影储备】", "【潜行】计算攻击伤害加成时，你的能量数至少视为2。"],
         "nightmare_shuiYingWuHen": ["【水影无痕】", "发动【水影】时，可以额外将1张非水系手牌视为水系牌弃置。"],
-        "nightmare_shenEn": ["【神恩】", "回合开始时，选择一名我方角色+1【治疗】。"],
+        "nightmare_shenEn": ["【神恩】", "回合开始时，选择1名我方角色+1【治疗】。"],
         "nightmare_shenShengLingYu": ["【神圣领域】", "我方角色的【治疗】被消耗后，令另一名【治疗】未满的我方角色+1【治疗】。"],
         "nightmare_shouHuZhiYi": ["【守护之翼】", "有己方角色受到伤害时，若其没有【圣盾】，使其获得【圣盾】。"],
-        "nightmare_tianShiJiangLin": ["【天使降临】", "我方角色触发【圣盾】时，其+1【治疗】；若其治疗已满，改为你+1【治疗】。"],
+        "nightmare_tianShiJiangLin": ["【天使降临】", "我方角色触发【圣盾】时，其+1【治疗】；若其【治疗】已满，改为你+1【治疗】。"],
         "nightmare_moLiXunHuan": ["【魔力循环】", "回合结束时，若你的手牌数大于4，弃置2张手牌。"],
-        "nightmare_wuXianMoLi": ["【无限魔力】", "造成法术伤害后，你+1【宝石】。"],
+        "nightmare_wuXianMoLi": ["【无限魔力】", "造成法术伤害后，你+1<span style=\"color:#E02B17\">【宝石】</span>。"],
         "nightmare_anYingTunShi": ["【暗影吞噬】", "发动【暗影凝聚】时不再对自己造成法术伤害。"],
         "nightmare_xiuLuoBuMie": ["【修罗不灭】", "【修罗连斩】使用的攻击牌不再有系别要求，且伤害+2。"],
-        "nightmare_shengQiangLueDuo": ["【圣枪掠夺】", "回合开始时，可以将其他一名有【治疗】的角色的1【治疗】转移给你。"],
+        "nightmare_shengQiangLueDuo": ["【圣枪掠夺】", "回合开始时，可以将其他1名有【治疗】的角色的1【治疗】转移给你。"],
         "nightmare_shenShengWuZhuang": ["【神圣武装】", "发动【天枪】或【地枪】时，移除的【治疗】数-1。"],
         "nightmare_yuanSuGongMing": ["【元素共鸣】", "【陨石】【冰冻】【火球】【风刃】【雷击】造成的伤害+1。"],
         "nightmare_yuanSuLunZhuan": ["【元素轮转】", "回合开始时，+1【元素】。"],
         "nightmare_touLiangHuanZhu": ["【飞龙探云】", "【偷天换日】会同时转移1【水晶】。"],
-        "nightmare_qiangYunJiaShen": ["【强运加身】", "发动【强运】时，选择一名队友+1【宝石】。"],
+        "nightmare_qiangYunJiaShen": ["【强运加身】", "发动【强运】时，选择1名队友+1<span style=\"color:#E02B17\">【宝石】</span>。"],
         "nightmare_yiBingZiSheng": ["【疫病滋生】", "回合结束时，+1【治疗】。"],
         "nightmare_bingYuanChongZu": ["【病原重组】", "【瘟疫】与【剧毒新星】不再以我方角色为目标。"],
         "nightmare_zuiNieJiaShen": ["【罪孽加深】", "因承受伤害获得【审判】时，额外+1【审判】。"],
         "nightmare_zuiZhongCaiJue": ["【最终裁决】", "回合开始时，你受到1点法术伤害；发动【末日审判】时，弃置2张牌。"],
         "nightmare_shenShengDiaoDu": ["【神圣调度】", "回合开始时，你+1【治疗】，然后将自己的1【治疗】转移给1名己方角色。"],
         "nightmare_shenShengDaiChang": ["【神圣代偿】", "其他我方角色将承受伤害时，移除你的1【治疗】，令该伤害-1。"],
-        "nightmare_shenQi": ["【神启】", "游戏开始时，+1【宝石】。"],
+        "nightmare_shenQi": ["【神启】", "游戏开始时，+1<span style=\"color:#E02B17\">【宝石】</span>。"],
         "nightmare_qianChengXinYang": ["【虔诚信仰】", "进入【祈祷形态】时，立即获得3个【祈祷符文】；回合开始时，你+1【祈祷符文】。"],
         "nightmare_wanJuanGuiYi": ["【万卷归一】", "【魔道法典】造成的法术伤害额外+1。"],
-        "nightmare_jinJiFaDian": ["【禁忌法典】", "你造成大于3点的伤害后，+1【宝石】。"],
+        "nightmare_jinJiFaDian": ["【禁忌法典】", "你造成大于3点的伤害后，+1<span style=\"color:#E02B17\">【宝石】</span>。"],
         "nightmare_wanFuGuiZong": ["【万符归宗】", "【雷鸣】造成的伤害+1。"],
         "nightmare_fuZhenLunZhuan": ["【符阵轮转】", "发动【念咒】时，+1【水晶】。"],
         "nightmare_jianYiBuJue": ["【剑意不绝】", "回合开始时，+1【水晶】；攻击命中时，+1【剑气】。"],
         "nightmare_wanJianChenFu": ["【万剑臣服】", "发动【剑气斩】时，可以弃置与本次伤害数相同数量的手牌。"],
         "nightmare_douQiFeiTeng": ["【斗气沸腾】", "攻击命中后，+1【斗气】。"],
         "nightmare_wuJi": ["【武极】", "【百式幻龙拳】不再消耗【斗气】。"],
-        "nightmare_yingXiongBenNeng": ["【英雄本能】", "游戏开始时，你+1【宝石】；回合开始时，你随机+1【怒气】或【知性】。"],
+        "nightmare_yingXiongBenNeng": ["【英雄本能】", "游戏开始时，你+1<span style=\"color:#E02B17\">【宝石】</span>；回合开始时，你随机+1【怒气】或【知性】。"],
         "nightmare_buMieYongZhe": ["【不灭勇者】", "处于【精疲力尽】状态时，手牌上限提高至5。"],
         "nightmare_hunSeDiaoLv": ["【魂色调律】", "回合开始时，可以将最多2点已有【灵魂】转换颜色。"],
         "nightmare_wangHunHuiXiang": ["【亡魂回响】", "发动【灵魂吞噬】时，额外获得1点【蓝色灵魂】。"],
@@ -166,7 +177,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         "nightmare_diaoLingZhiMeng": ["【凋零之梦】", "发动【凋零】时，你受到的伤害-1。"],
         "nightmare_kaiXuanZhiGe": ["【凯旋之歌】", "你的【治疗】上限+2。"],
         "nightmare_shengLiZhuiJi": ["【胜利追击】", "通过【神圣追击】获得的额外攻击命中后，+1【治疗】。"],
-        "nightmare_guoZaiDanCang": ["【过载弹仓】", "你的手牌上限+2；游戏开始时，你+3【宝石】。"],
+        "nightmare_guoZaiDanCang": ["【过载弹仓】", "你的手牌上限+2；游戏开始时，你+3<span style=\"color:#E02B17\">【宝石】</span>。"],
         "nightmare_ziDongZhuangTian": ["【自动装填】", "回合开始时，将牌堆顶3张牌面朝下放置为【充能】。"],
         "nightmare_xianXueYongRan": ["【鲜血永燃】", "因【热血沸腾】避免己方士气下降后，获得1【治疗】或1【血印】。"],
         "nightmare_xianXueHuiXiang": ["【鲜血回响】", "退出【热血沸腾】状态时，我方士气+1。"],
@@ -179,14 +190,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         "nightmare_yongHengXuanLv": ["【永恒旋律】", "【激昂狂想曲】与【胜利交响诗】的效果不再选择，而是依次发动。"],
         "nightmare_jueDuiYinGan": ["【绝对音感】", "【禁忌诗篇】对自己造成的伤害减少为1点。"],
         "nightmare_wuSeShenJian": ["【五色神箭】", "【元素射击】造成的伤害+1。"],
-        "nightmare_senZhiZhuFu": ["【森之祝福】", "队友提炼时，你+1【宝石】。"],
+        "nightmare_senZhiZhuFu": ["【森之祝福】", "队友提炼时，你+1<span style=\"color:#E02B17\">【宝石】</span>。"],
         "nightmare_shuangHunGongMing": ["【双魂共鸣】", "【鬼火】上限+2；发动【黑暗祭礼】后，保留2【鬼火】。"],
-        "nightmare_shiShenHuZhu": ["【式神护主】", "【式神咒束】不再移除【宝石】和【水晶】。"],
+        "nightmare_shiShenHuZhu": ["【式神护主】", "【式神咒束】不再移除<span style=\"color:#E02B17\">【宝石】</span>和【水晶】。"],
         "nightmare_xueSeKeWang": ["【血色渴望】", "你的【鲜血】大于1时，造成的伤害+1。"],
         "nightmare_xianXueHuiLiu": ["【鲜血回流】", "回合开始时，+2【鲜血】。"],
         "nightmare_yueShiSheMian": ["【月蚀赦免】", "进入【暗月形态】后首次移除【暗月】时，不触发本次【暗月诅咒】造成的己方士气下降；若【暗月】因此清零，仍【重置】并脱离【暗月形态】。"],
         "nightmare_yueZhiLunZhuan": ["【月之轮转】", "我方士气下降时，目标角色+1【治疗】。"],
-        "nightmare_ziDongQiDao": ["【自动祈祷】", "回合开始时，你+1【宝石】。"],
+        "nightmare_ziDongQiDao": ["【自动祈祷】", "回合开始时，你+1<span style=\"color:#E02B17\">【宝石】</span>。"],
         "nightmare_shengHuangShenYu": ["【圣煌神谕】", "取消【圣煌辉光炮】的基础【信仰】消耗。"],
         "nightmare_shouLieBenNeng": ["【狩猎本能】", "回合开始时，若处于【普通形态】，进入【御魂流居合形态】；然后+2【兽魂】。"],
         "nightmare_jueJingShouLie": ["【绝境狩猎】", "【逆反居合斩】强制命中，并移除命中目标1颗星石。"]
@@ -203,7 +214,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         nightmare_xingHenCanXiang: ["【星痕残响】", "你受到的伤害-X，X为你的【律法】数。"],
         nightmare_mingDingXingTu: ["【命定星图】", "你的【卢恩】上限+6；【卢恩】增加后，将牌堆顶1张牌作为【卢恩】。"],
         nightmare_shangZhiShiKong: ["【熵值失控】", "游戏开始时+3【水晶】；发动【魔力熵增】后+1【水晶】。"],
-        nightmare_zhanFaYanSuan: ["【战法演算】", "攻击行动结束后+1法术行动；法术行动结束后+1攻击行动。"],
+        nightmare_zhanFaYanSuan: ["【战法演算】", "【攻击行动】结束后+1【法术行动】；【法术行动】结束后+1【攻击行动】。"],
         nightmare_lieWuShenXun: ["【猎巫审讯】", "【狩魔刺】对应的攻击强制命中；造成伤害后，目标将手牌补至上限。"],
         nightmare_lieWuChuXing: ["【猎巫处刑】", "发动【灌银毒刃】后，额外转移目标1颗星石。"],
         nightmare_wuJianFengXue: ["【无间风穴】", "【影之穴】与【影缝】额外移除目标1颗星石。"],
@@ -219,49 +230,49 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     });
 
     Object.assign(nightmareDisplayMetadata, {
-        nightmare_miShuHuiXiang: ["【秘术回响】", "发动【言灵术】后，+1法术行动。"],
+        nightmare_miShuHuiXiang: ["【秘术回响】", "发动【言灵术】后，+1【法术行动】。"],
         nightmare_wanYanTongXiao: ["【万言通晓】", "发动【真言术】后，+1【水晶】。"],
-        nightmare_shuangMianZhiZheng: ["【双面执政】", "【银制子弹】和【圣遗物】上限+2；回合开始时，选择其中一种+1。"],
+        nightmare_shuangMianZhiZheng: ["【双面执政】", "【银制子弹】和【圣遗物】上限+2；回合开始时，选择其中1种+1。"],
         nightmare_shengLvTeShe: ["【圣律特赦】", "发动【罪断豁免】后，目标对手受到1点法术伤害。"],
-        nightmare_shiLiaoXuBian: ["【史料续编】", "回合开始时，若手牌中没有【史书】，弃1张牌并将【史书】加入手牌。"],
+        nightmare_shiLiaoXuBian: ["【史料续编】", "回合开始时，若手牌中没有【史书】，弃置1张牌并将【史书】加入手牌。"],
         nightmare_liShiChongYan: ["【历史重演】", "发动【秘境万象】后，+1【法术行动】。"],
         nightmare_shenYiYinLu: ["【神意引路】", "将【路标】转移给对手后，对其造成2点法术伤害。"],
-        nightmare_shiJieBuDao: ["【世界布道】", "将【路标】转移给队友后，令其+1【宝石】。"],
+        nightmare_shiJieBuDao: ["【世界布道】", "将【路标】转移给队友后，令其+1<span style=\"color:#E02B17\">【宝石】</span>。"],
         nightmare_moRiQiShi: ["【末日启示】", "手牌上限+2；发动【放逐】后+1【水晶】。"],
         nightmare_yuYanBianZuan: ["【预言编纂】", "【天雷劫火】与【地裂波涛】最终摸4张牌并造成4点法术伤害。"],
-        nightmare_wuDiWeiDai: ["【无底胃袋】", "回合开始时弃1张手牌，将【魔弹】加入手牌。"],
+        nightmare_wuDiWeiDai: ["【无底胃袋】", "回合开始时弃置1张手牌，将【魔弹】加入手牌。"],
         nightmare_heiDongXiaoHua: ["【黑洞消化】", "发动【食欲的黑洞】后弃置2张手牌。"],
-        nightmare_wanNengDanCang: ["【万能弹仓】", "发动【元素射击】时，额外弃1张手牌，触发该牌系别对应的效果。"],
+        nightmare_wanNengDanCang: ["【万能弹仓】", "发动【元素射击】时，额外弃置1张手牌，触发该牌系别对应的效果。"],
         nightmare_zhanShuHuanDan: ["【战术换弹】", "攻击命中后，将1张手牌面朝下放置为【子弹】。"],
-        nightmare_yiXiangLianZhan: ["【臆想连斩】", "【臆想剑】令目标弃攻击牌时伤害+2；弃法术牌时+1攻击行动。"],
-        nightmare_moNvJianYu: ["【魔女剑域】", "你的回合内每发动一次主动攻击，后续主动攻击伤害+1。"],
-        nightmare_jieRiLiZhuang: ["【节日礼装】", "回合开始时弃1张手牌，随机将【圣光】【圣盾】【魔弹】【虚弱】【中毒】之一加入手牌。"],
-        nightmare_shengDanJiaBan: ["【圣诞加班】", "【魔爆冲击】造成实际伤害后，+1法术行动。"],
+        nightmare_yiXiangLianZhan: ["【臆想连斩】", "【臆想剑】令目标弃置攻击牌时伤害+2；弃置法术牌时+1【攻击行动】。"],
+        nightmare_moNvJianYu: ["【魔女剑域】", "你的回合内每发动1次主动攻击，后续主动攻击伤害+1。"],
+        nightmare_jieRiLiZhuang: ["【节日礼装】", "回合开始时弃置1张手牌，随机将【圣光】【圣盾】【魔弹】【虚弱】【中毒】之一加入手牌。"],
+        nightmare_shengDanJiaBan: ["【圣诞加班】", "【魔爆冲击】造成实际伤害后，+1【法术行动】。"],
         nightmare_maDaMaDa: ["【马达马达】", "【喧哗上等】第一次遭到阻止时，忽略该阻止。"],
-        nightmare_moYiQiDuo: ["【莫一启多】", "【喧哗上等】移除3张牌后，+1攻击行动。"]
+        nightmare_moYiQiDuo: ["【莫一启多】", "【喧哗上等】移除3张牌后，+1【攻击行动】。"]
     });
 
     Object.assign(nightmareDisplayMetadata, {
-        nightmare_yiBenWanLi: ["【一本万利】", "发动【殓金魔法】后，所有队友各+1【宝石】。"],
-        nightmare_wangGuoYiChan: ["【亡国遗产】", "【亡女金库】额外移除所有我方角色的【宝石】，每移除1颗伤害+1。"],
+        nightmare_yiBenWanLi: ["【一本万利】", "发动【殓金魔法】后，所有队友各+1<span style=\"color:#E02B17\">【宝石】</span>。"],
+        nightmare_wangGuoYiChan: ["【亡国遗产】", "【亡女金库】额外移除所有我方角色的<span style=\"color:#E02B17\">【宝石】</span>，每移除1颗伤害+1。"],
         nightmare_chaoManSanFen: ["【潮满三分】", "你的【灵涌】上限-2。"],
-        nightmare_haiShenDaiXing: ["【海神代行】", "发动【邪灵退散】后，+1法术行动并+1【水晶】。"],
+        nightmare_haiShenDaiXing: ["【海神代行】", "发动【邪灵退散】后，+1【法术行动】并+1【水晶】。"],
         nightmare_woYaoYanPai: ["【我要验牌】", "回合开始时，若手牌中没有元素师独有牌，弃置全部手牌并摸等量牌。"],
-        nightmare_yuanZiHuanCun: ["【元子缓存】", "获得【元子】时，+1【宝石】。"],
-        nightmare_fuBiHuiShou: ["【伏笔回收】", "【神秘伏笔】的效果额外结算一次。"],
+        nightmare_yuanZiHuanCun: ["【元子缓存】", "获得【元子】时，+1<span style=\"color:#E02B17\">【宝石】</span>。"],
+        nightmare_fuBiHuiShou: ["【伏笔回收】", "【神秘伏笔】的效果额外结算1次。"],
         nightmare_trickAndTreat: ["【Trick AND Treat】", "发动【Trick or Treat】时，所有对手受到2点伤害。"],
         nightmare_jueDuiYinGan2: ["【绝对音感】", "【新乐章】第二个音符的效果改为三倍。"],
         nightmare_jiXingGaiPu: ["【即兴改谱】", "发动【新乐章】期间，队友受到伤害后，我方士气+X。"],
-        nightmare_huShenJiangLin: ["【狐神降临】", "攻击命中后执行一次【念咒】，其放置牌改为地系。"],
-        nightmare_huShenDaiChang: ["【狐神代偿】", "发动【念咒】时，目标队友弃1张牌，然后+1【治疗】。"],
+        nightmare_huShenJiangLin: ["【狐神降临】", "攻击命中后执行1次【念咒】，其放置牌改为地系。"],
+        nightmare_huShenDaiChang: ["【狐神代偿】", "发动【念咒】时，目标队友弃置1张牌，然后+1【治疗】。"],
         nightmare_eShanBiJi: ["【恶善必计】", "队友造成伤害后，将1张手牌放置到【天平】左侧或右侧。"],
         nightmare_wuZhengZhongShen: ["【五证终审】", "你的【罪】溢出时，对方士气-1。"],
-        nightmare_rangBieRenGan: ["【让别人干】", "队友主动攻击命中后，你+1【宝石】。"],
-        nightmare_gaoZhiLiangShuiMian: ["【高质量睡眠】", "队友受到伤害后，你弃1张手牌。"],
-        nightmare_zongYouRenZhiDeJiDu: ["【总有人值得忌妒】", "回合开始时，若对方持有【暗灭】或【圣光】，弃1张牌并转移其中一张。"],
+        nightmare_rangBieRenGan: ["【让别人干】", "队友主动攻击命中后，你+1<span style=\"color:#E02B17\">【宝石】</span>。"],
+        nightmare_gaoZhiLiangShuiMian: ["【高质量睡眠】", "队友受到伤害后，你弃置1张手牌。"],
+        nightmare_zongYouRenZhiDeJiDu: ["【总有人值得忌妒】", "回合开始时，若对方持有【暗灭】或【圣光】，弃置1张牌并转移其中1张。"],
         nightmare_suanYiShangTou: ["【酸意上头】", "【暗灭】伤害+2；使用【圣光】后我方士气+1。"],
         nightmare_jianShengJiCheng: ["【剑圣继承】", "发动【风之剑】后，+1【水晶】。"],
-        nightmare_shiYanBiDa: ["【誓言必达】", "由【剑残影】增加的攻击行动强制命中且伤害+1。"],
+        nightmare_shiYanBiDa: ["【誓言必达】", "由【剑残影】增加的【攻击行动】强制命中且伤害+1。"],
         nightmare_shenFengJiaoZhun: ["【神风校准】", "你的主动攻击均视为风系。"],
         nightmare_wuShiYiDao: ["【午时已到】", "发动【狙击】后，所有对手将手牌补至上限。"]
     });
@@ -356,11 +367,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             }
             // 每次载入先移除本扩展旧模式留下的头像标签，原版模式不再注入图片。
             for (var i = tags.length - 1; i >= 0; i--) {
-                if (typeof tags[i] == "string" && tags[i].indexOf("ext:" + extensionName + "/image/character/") == 0) tags.splice(i, 1);
+                if (typeof tags[i] == "string" && tags[i].indexOf("ext:" + extensionFolder + "/image/character/") == 0) tags.splice(i, 1);
             }
             if (mode == "original") return;
             var folder = mode == "chibi" ? "chibi/default" : "default";
-            tags.unshift("ext:" + extensionName + "/image/character/" + folder + "/" + imageId + ".png");
+            tags.unshift("ext:" + extensionFolder + "/image/character/" + folder + "/" + imageId + ".png");
         };
         // 角色包预载后、正式合并前只存在于 lib.imported.character；先改这份源数据，
         // 才能让后续生成的选将候选从一开始就使用当前客户端选择的头像。
@@ -410,7 +421,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (!imageId || typeof node.setBackgroundImage != "function") return;
             var folder = mode == "chibi" ? "chibi/default" : "default";
             node.setBackgroundImage(
-                "extension/" + extensionName + "/image/character/" +
+                "extension/" + extensionFolder + "/image/character/" +
                 folder + "/" + imageId + ".png"
             );
         };
@@ -472,7 +483,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         var imageAlreadyApplied = slots.every(function (entry) {
             var node = player.node[entry[0]];
             if (!node) return false;
-            if (localMode == "original") return !String(node.style.backgroundImage || "").includes("extension/" + extensionName + "/image/character/");
+            if (localMode == "original") return !String(node.style.backgroundImage || "").includes("extension/" + extensionFolder + "/image/character/");
             return String(node.style.backgroundImage || "").includes("/" + folder + "/" + entry[2] + ".png");
         });
         if (player.storage && player.storage.xingBeiNightmareCharacterImage == signature && imageAlreadyApplied) return;
@@ -497,9 +508,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 ui.fakeme.style.backgroundImage = target.node.avatar.style.backgroundImage;
             }
         };
-        apply(player, slots, nightmare, extensionName);
+        apply(player, slots, nightmare, extensionFolder);
         if (!localOnly && typeof game.broadcastAll == "function") {
-            game.broadcastAll(apply, player, slots, nightmare, extensionName);
+            game.broadcastAll(apply, player, slots, nightmare, extensionFolder);
         }
     }
 
@@ -805,7 +816,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                     content: async function (event, trigger, player) { player.storage.nightmareJiFengCount = 0; }
                 }
             }
-        }, "【狂风骤雨】", "本回合攻击每命中一次，后续主动攻击伤害+1。");
+        }, "【狂风骤雨】", "本回合攻击每命中1次，后续主动攻击伤害+1。");
         register("fengZhiJianSheng", ["nightmare_yuFengErXing", "nightmare_kuangFengZhouYu"]);
 
         // 2. 狂战士
@@ -840,7 +851,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 trigger.changeDamageNum(1);
                 if (player.countCards("h") > 3) trigger.changeDamageNum(1);
             }
-        }, "【嗜血狂化】", "主动攻击命中后，若我方战绩区有【宝石】，可以消耗1【宝石】，发动【狂化】。");
+        }, "【嗜血狂化】", "主动攻击命中后，若我方战绩区有<span style=\"color:#E02B17\">【宝石】</span>，可以消耗1<span style=\"color:#E02B17\">【宝石】</span>，发动【狂化】。");
         register("kuangZhanShi", ["nightmare_xueZhiKeWang", "nightmare_shiXueKuangHua"]);
 
         // 3. 神箭手
@@ -905,7 +916,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 return false;
             },
             content: function () { trigger.changeDamageNum(4 - trigger.num); }
-        }, "【五行禁绝】", "你的五种【X之封印】造成的法术伤害均改为4点。");
+        }, "【五行禁绝】", "你的5种【X之封印】造成的法术伤害均改为4点。");
         register("fengYinShi", ["nightmare_wanXiangFengYin", "nightmare_wuXingJinJue"]);
 
         // 5. 暗杀者
@@ -953,7 +964,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 });
                 if (target) await target.changeZhiLiao(1, player);
             }
-        }, "【神恩】", "回合开始时，选择一名我方角色+1【治疗】。");
+        }, "【神恩】", "回合开始时，选择1名我方角色+1【治疗】。");
         addSkill("nightmare_shenShengLingYu", {
             trigger: { global: "changeZhiLiaoAfter" },
             forced: true,
@@ -1026,7 +1037,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 if (target.zhiLiao < target.getZhiLiaoLimit()) target.changeZhiLiao(1, player);
                 else player.changeZhiLiao(1, player);
             }
-        }, "【天使降临】", "我方角色触发【圣盾】时，其+1【治疗】；若其治疗已满，改为你+1【治疗】。");
+        }, "【天使降临】", "我方角色触发【圣盾】时，其+1【治疗】；若其【治疗】已满，改为你+1【治疗】。");
         register("tianShi", ["nightmare_shouHuZhiYi", "nightmare_tianShiJiangLin"]);
 
         // 8. 魔法少女
@@ -1041,7 +1052,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             forced: true,
             filter: function (event) { return event.faShu && event.num > 0; },
             content: function () { player.addNengLiang("baoShi"); }
-        }, "【无限魔力】", "造成法术伤害后，你+1【宝石】。");
+        }, "【无限魔力】", "造成法术伤害后，你+1<span style=\"color:#E02B17\">【宝石】</span>。");
         register("moFaShaoNv", ["nightmare_moLiXunHuan", "nightmare_wuXianMoLi"]);
 
         // 9. 魔剑士
@@ -1116,7 +1127,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 await target.changeZhiLiao(-1, player);
                 await player.changeZhiLiao(1, player);
             }
-        }, "【圣枪掠夺】", "回合开始时，可以将其他一名有【治疗】的角色的1【治疗】转移给你。");
+        }, "【圣枪掠夺】", "回合开始时，可以将其他1名有【治疗】的角色的1【治疗】转移给你。");
         addSkill("nightmare_shenShengWuZhuang", {
             trigger: { player: "changeZhiLiaoBefore" },
             forced: true,
@@ -1185,7 +1196,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 }).forResultTargets() || []);
                 if (targets && targets[0]) await targets[0].addNengLiang("baoShi");
             }
-        }, "【强运加身】", "发动【强运】时，选择一名队友+1【宝石】。");
+        }, "【强运加身】", "发动【强运】时，选择1名队友+1<span style=\"color:#E02B17\">【宝石】</span>。");
         register("maoXianJia", ["nightmare_touLiangHuanZhu", "nightmare_qiangYunJiaShen"]);
         register("trick_maoXianJia", ["nightmare_touLiangHuanZhu", "nightmare_qiangYunJiaShen"]);
 
@@ -1270,7 +1281,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             forced: true,
             filter: function (event, player) { return !player.storage.nightmareShenQiGranted; },
             content: function () { lib.xingBeiNightmare.grantOpeningResource(player, "nightmareShenQiGranted", "baoShi"); }
-        }, "【神启】", "游戏开始时，+1【宝石】。");
+        }, "【神启】", "游戏开始时，+1<span style=\"color:#E02B17\">【宝石】</span>。");
         addSkill("nightmare_qianChengXinYang", {
             trigger: { player: ["qiDaoAfter", "phaseBegin"] },
             forced: true,
@@ -1302,7 +1313,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             forced: true,
             filter: function (event) { return event.num > 3; },
             content: function () { player.addNengLiang("baoShi"); }
-        }, "【禁忌法典】", "你造成大于3点的伤害后，+1【宝石】。");
+        }, "【禁忌法典】", "你造成大于3点的伤害后，+1<span style=\"color:#E02B17\">【宝石】</span>。");
         register("xianZhe", ["nightmare_wanJuanGuiYi", "nightmare_jinJiFaDian"]);
 
         // 18. 灵符师
@@ -1390,7 +1401,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             content: function () {
                 lib.xingBeiNightmare.grantOpeningResource(player, "nightmareYingXiongBenNengGranted", "baoShi");
             }
-        }, "【英雄本能】", "游戏开始时，你+1【宝石】；回合开始时，你随机+1【怒气】或【知性】。");
+        }, "【英雄本能】", "游戏开始时，你+1<span style=\"color:#E02B17\">【宝石】</span>；回合开始时，你随机+1【怒气】或【知性】。");
         addSkill("nightmare_buMieYongZhe", {
             mod: {
                 maxHandcardFinal: function (player, num) {
@@ -1508,7 +1519,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 lib.xingBeiNightmare.grantOpeningResource(player, "nightmareGuoZaiDanCangGranted", "baoShi", 3);
             },
             mod: { maxHandcardFinal: function (player, num) { if (lib.xingBeiNightmare.isNightmareAi(player)) return num + 2; } }
-        }, "【过载弹仓】", "你的手牌上限+2；游戏开始时，你+3【宝石】。");
+        }, "【过载弹仓】", "你的手牌上限+2；游戏开始时，你+3<span style=\"color:#E02B17\">【宝石】</span>。");
         addSkill("nightmare_ziDongZhuangTian", {
             charlotte: true
         }, "【自动装填】", "回合开始时，将牌堆顶3张牌面朝下放置为【充能】。");
@@ -1707,7 +1718,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             async content(event, trigger, player) {
                 await player.addNengLiang("baoShi", 1);
             }
-        }, "【森之祝福】", "队友提炼时，你+1【宝石】。");
+        }, "【森之祝福】", "队友提炼时，你+1<span style=\"color:#E02B17\">【宝石】</span>。");
         register("jingLingSheShou", ["nightmare_wuSeShenJian", "nightmare_senZhiZhuFu"]);
 
         // 33. 阴阳师
@@ -1716,7 +1727,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             forced: true,
             content: function () { player.addZhiShiWu("guiHuo", 2); }
         }, "【双魂共鸣】", "【鬼火】上限+2；发动【黑暗祭礼】后，保留2【鬼火】。");
-        addSkill("nightmare_shiShenHuZhu", { charlotte: true }, "【式神护主】", "【式神咒束】不再移除【宝石】和【水晶】。");
+        addSkill("nightmare_shiShenHuZhu", { charlotte: true }, "【式神护主】", "【式神咒束】不再移除<span style=\"color:#E02B17\">【宝石】</span>和【水晶】。");
         register("yinYangShi", ["nightmare_shuangHunGongMing", "nightmare_shiShenHuZhu"]);
         if (lib.skill.guiHuo && !lib.skill.guiHuo._nightmareMaxPatched) {
             lib.skill.guiHuo._nightmareMaxPatched = true;
@@ -1830,7 +1841,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             trigger: { player: "phaseBegin" },
             forced: true,
             content: function () { player.addNengLiang("baoShi"); }
-        }, "【自动祈祷】", "回合开始时，你+1【宝石】。");
+        }, "【自动祈祷】", "回合开始时，你+1<span style=\"color:#E02B17\">【宝石】</span>。");
         addSkill("nightmare_shengHuangShenYu", {
             trigger: { player: "changeZhiShiWuBefore" },
             forced: true,
@@ -7226,7 +7237,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
         function hasLegalMatchingResponse(event, player, incomingCard, excludedCard) {
             if (!event || !player || !incomingCard) return false;
-            var suit = get.xiBie(incomingCard, player);
+            // 来袭牌沿用应战 filterCard 的系别读取方式，不套用防守方的手牌转换。
+            var suit = get.xiBie(incomingCard);
             return player.getCards("h").some(function (card) {
                 if (card == excludedCard || get.type(card, player) != "gongJi" || get.name(card, player) == "anMie") return false;
                 if (get.xiBie(card, player) != suit) return false;
@@ -11145,7 +11157,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "1.9",
+        version: "1.10",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();

@@ -103,6 +103,7 @@ body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard::after {
 body.wmb-ui-waterbear .control,
 body.wmb-ui-waterbear .menubutton,
 body.wmb-ui-waterbear .button,
+body.wmb-ui-waterbear .dialog .textbutton,
 body.wmb-ui-waterbear .wmb-system-button,
 body.wmb-ui-waterbear .connectbutton,
 body.wmb-ui-waterbear .connectevents {
@@ -123,6 +124,8 @@ body.wmb-ui-waterbear .connectevents {
 body.wmb-ui-waterbear .control:hover,
 body.wmb-ui-waterbear .menubutton:hover,
 body.wmb-ui-waterbear .button:hover,
+body.wmb-ui-waterbear .dialog .textbutton.selectable:hover,
+body.wmb-ui-waterbear .dialog .textbutton.selectable.selected,
 body.wmb-ui-waterbear .wmb-system-button:hover,
 body.wmb-ui-waterbear .connectbutton:hover {
     filter: brightness(1.16) saturate(1.08);
@@ -132,11 +135,27 @@ body.wmb-ui-waterbear .connectbutton:hover {
 body.wmb-ui-waterbear .control:active,
 body.wmb-ui-waterbear .menubutton:active,
 body.wmb-ui-waterbear .button:active,
+body.wmb-ui-waterbear .dialog .textbutton.selectable:active,
 body.wmb-ui-waterbear .wmb-system-button:active,
 body.wmb-ui-waterbear .connectbutton:active {
     transform: translateY(2px) scale(.975);
     box-shadow: 0 2px 4px rgba(31, 13, 5, .55), inset 0 3px 7px rgba(28, 12, 4, .42) !important;
 }
+
+body.wmb-ui-waterbear .dialog .textbutton {
+    box-sizing: border-box;
+    margin: 8px 0 !important;
+    padding: 10px 12px !important;
+    font-size: 18px;
+    border-radius: 4px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* 与本体操作按钮一样跟随圆角设置。 */
+body.wmb-ui-waterbear #window[data-radius_size="reduce"] .dialog .textbutton { border-radius: 4px; }
+body.wmb-ui-waterbear #window[data-radius_size="off"] .dialog .textbutton { border-radius: 0; }
+body.wmb-ui-waterbear #window[data-radius_size="increase"] .dialog .textbutton { border-radius: 16px; }
 
 .wmb-wb-click-ripple {
     position: absolute;

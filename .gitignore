@@ -1,4 +1,6 @@
 /tools/
+/client-fixes/
+/.idea/
 /百年战争·序章/tests/
 /百年战争·序章/脚本测试/
 **/tests/

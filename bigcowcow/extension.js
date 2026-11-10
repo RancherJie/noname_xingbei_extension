@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Audio JSON runtime v2, revision 3 (incremental). Source: tools/audio-pack/runtime.js. */
+/* Audio JSON runtime v2, revision 5 (verified download repair and startup progress). Source: tools/audio-pack/runtime.js. */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 3) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 5) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -62,6 +62,55 @@
     function buffer(value) {
         return ArrayBuffer.isView(value) ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength) : new Uint8Array(value);
     }
+    async function readVerified(game, path, expected, options) {
+        if (options.onActivity) options.onActivity();
+        async function verify(text) {
+            if (typeof text !== 'string' || (expected.size !== undefined && text.length !== expected.size) || await hash(ascii(text)) !== expected.sha256) {
+                throw new Error('音频资源 SHA-256 不匹配: ' + path.split('/').pop());
+            }
+            return text;
+        }
+        var localError;
+        try { return await verify(await game.promises.readFileAsText(path)); }
+        catch (error) { localError = error; }
+        var sources = (options.sources || []).filter(function (source, index, all) {
+            return typeof source === 'string' && /^https?:\/\//i.test(source) && all.indexOf(source) === index;
+        }).slice(0, 3);
+        if (!sources.length || typeof root.fetch !== 'function') throw localError;
+        if (options.onRepair) options.onRepair(path.split('/').pop());
+        var text, downloadError;
+        for (var source of sources) {
+            if (options.onActivity) options.onActivity();
+            var controller = typeof root.AbortController === 'function' ? new root.AbortController() : null;
+            var timer;
+            try {
+                // The hash-pinned filename/manifest is authoritative, never an HTTP error page.
+                var url = source.replace(/\/?$/, '/') + path.slice('extension/'.length).split('/').map(encodeURIComponent).join('/');
+                text = await Promise.race([
+                    (async function () {
+                        var response = await root.fetch(url, { cache: 'no-store', signal: controller ? controller.signal : undefined });
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        return verify(await response.text());
+                    })(),
+                    new Promise(function (_, reject) {
+                        timer = root.setTimeout(function () {
+                            if (controller) controller.abort();
+                            reject(new Error('下载超时'));
+                        }, 15000);
+                    }),
+                ]);
+                break;
+            } catch (error) { downloadError = error; }
+            finally { root.clearTimeout(timer); }
+        }
+        if (text === undefined) throw new Error('音频资源缺失或损坏，自动补下载失败: ' + path.split('/').pop() + '（' + (downloadError.message || downloadError) + '）');
+        var split = path.lastIndexOf('/'), directory = path.slice(0, split);
+        await game.promises.createDir(directory);
+        await game.promises.writeFile(ascii(text).buffer, directory, path.slice(split + 1));
+        await truncateCordova(path, text.length);
+        // Do not record success until the repaired local file also passes verification.
+        return verify(await game.promises.readFileAsText(path));
+    }
     // Cordova's writeFile does not truncate a previously longer file. Truncate only
     // after writing, then verify the actual bytes with the client's readFile API.
     async function truncateCordova(path, length) {
@@ -86,17 +135,19 @@
         (root.document.body || root.document.documentElement).appendChild(node);
         return {
             update: function (done, total) { node.textContent = name + '：正在还原音频 ' + done + '/' + total + '\n所有扩展完成后自动重启，请勿关闭游戏。'; },
+            repair: function () { node.textContent = name + '：正在补下载缺失或损坏的音频数据包…\n校验通过后继续还原，请勿关闭游戏。'; },
             remove: function () { node.remove(); },
         };
     }
     var queue = Promise.resolve(), pending = new Map();
     var changed = false, failed = false, restartScheduled = false;
+    var preparing = 0, lastActivity = 0;
+    function activity() { lastActivity = Date.now(); }
     async function install(meta, game, options) {
         options = options || {};
         var base = 'extension/' + safe(meta.name);
         var storage = options.storage || root.localStorage;
-        var text = await game.promises.readFileAsText(base + '/audio-data/manifest.json');
-        if (await hash(ascii(text)) !== meta.sha256) throw new Error('音频清单 SHA-256 不匹配，请完整更新扩展');
+        var text = await readVerified(game, base + '/audio-data/manifest.json', meta, options);
         var manifest = JSON.parse(text);
         if (manifest.format !== 2 || !Array.isArray(manifest.files) || !Array.isArray(manifest.bundles)) throw new Error('无效音频清单');
         var key = 'noname-audio-pack-v2:' + meta.name;
@@ -125,8 +176,7 @@
         for (var bundle of manifest.bundles) {
             if (!needed.size || (!legacy && !selected.has(bundle.name))) continue;
             safe(bundle.name);
-            text = await game.promises.readFileAsText(base + '/audio-data/' + bundle.name);
-            if (text.length !== bundle.size || await hash(ascii(text)) !== bundle.sha256) throw new Error('音频数据包 SHA-256 不匹配: ' + bundle.name);
+            text = await readVerified(game, base + '/audio-data/' + bundle.name, bundle, options);
             var body = JSON.parse(text);
             if (body.format !== 2 || !Array.isArray(body.records)) throw new Error('无效音频数据包');
             for (var record of body.records) {
@@ -180,14 +230,21 @@
         }
         var task = queue.then(async function () {
             var progress = notice(meta.name);
+            preparing++; activity();
             try {
-                if (await install(meta, game, { onProgress: progress.update })) changed = true;
+                var config = lib.config || {}, sources = config.extension_sources || {};
+                var urls = [sources[config.extension_source]].concat(Object.values(sources));
+                if (await install(meta, game, {
+                    onActivity: activity,
+                    onProgress: function (done, total) { activity(); progress.update(done, total); },
+                    onRepair: progress.repair, sources: urls,
+                })) changed = true;
             } catch (error) {
                 failed = true;
                 console.error('[音频还原失败] ' + meta.name, error);
                 if (root.alert) root.alert(meta.name + ' 音频还原失败，下次启动会重试：' + (error.message || error));
                 throw error;
-            } finally { progress.remove(); }
+            } finally { preparing--; progress.remove(); }
         });
         queue = task.catch(function () {});
         pending.set(meta.name, task);
@@ -195,7 +252,8 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 3, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 5, sha256: sha256, install: install, prepare: prepare,
+        isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
                 var object = factory.apply(this, arguments);
@@ -453,7 +511,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                 },
                 "translate": {
                     "xiaoYanQingLianDiXinHuoKa": "专属【青莲地心火】",
-                    "xiaoYanQingLianDiXinHuoKa_info": "明亮面拥有<span class='greentext'>响应【地火焚身】</span><br><span class='tiaoJian'>（对目标造成正数实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
+                    "xiaoYanQingLianDiXinHuoKa_info": "明亮面拥有<span class='greentext'>响应【地火焚身】</span><br><span class='tiaoJian'>（对目标造成实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
                     "xiaoYanAnDanQingLianDiXinHuoKa": "专属【黯淡的青莲地心火】",
                     "xiaoYanAnDanQingLianDiXinHuoKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
                     "xiaoYanYunLuoXinYanKa": "专属【陨落心炎】",
@@ -461,7 +519,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "xiaoYanAnDanYunLuoXinYanKa": "专属【黯淡的陨落心炎】",
                     "xiaoYanAnDanYunLuoXinYanKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
                     "xiaoYanGuLingLengHuoKa": "专属【骨灵冷火】",
-                    "xiaoYanGuLingLengHuoKa_info": "明亮面拥有<span class='greentext'>响应【冷火灼魂】</span><br><span class='tiaoJian'>（对其他角色造成正数实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；此追加伤害不再触发【冷火灼魂】。",
+                    "xiaoYanGuLingLengHuoKa_info": "明亮面拥有<span class='greentext'>响应【冷火灼魂】</span><br><span class='tiaoJian'>（对其他角色造成实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；此追加伤害不再触发【冷火灼魂】。",
                     "xiaoYanAnDanGuLingLengHuoKa": "专属【黯淡的骨灵冷火】",
                     "xiaoYanAnDanGuLingLengHuoKa_info": "黯淡面。萧炎回合开始时可通过【焚决】将此卡翻至明亮面。",
                 },
@@ -1518,45 +1576,36 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     }
                     if(counts.feng > 0) {
                         await playBranchVoice('feng');
-                        var windCandidates = game.players.filter(function(current) {
-                            return current.isIn() && current.countCards('h') > 0;
-                        });
-                        if(windCandidates.length > 0) {
-                            var windTargets = (await player.chooseTarget(
-                                1,
-                                true,
-                                '击退：选择1名角色弃置至多' + counts.feng + '张手牌',
-                                function(card, player, target) {
-                                    return target.isIn() && target.countCards('h') > 0;
-                                }
-                            ).set('ai', function(target) {
-                                var player = _status.event.player;
-                                var discardNum = Math.min(
-                                    _status.event.discardNum,
-                                    target.countCards('h')
-                                );
-                                if(target.side != player.side) {
-                                    return 8 + discardNum * 2;
-                                }
-                                var overflow = Math.max(
-                                    0,
-                                    target.countCards('h') - target.getHandcardLimit()
-                                );
-                                return overflow > 0 ? overflow : -8;
-                            }).set('discardNum', counts.feng).forResultTargets() || []);
-                            var windTarget = windTargets[0];
-                            if(windTarget && windTarget.isIn()) {
-                                var discardNum = Math.min(
-                                    counts.feng,
-                                    windTarget.countCards('h')
-                                );
-                                if(discardNum > 0) await windTarget.chooseToDiscard(
-                                'h',
-                                discardNum,
-                                true,
-                                '击退：弃置' + discardNum + '张手牌'
-                            );
+                        var windTargets = (await player.chooseTarget(
+                            1,
+                            true,
+                            '击退：选择1名角色弃置' + counts.feng + '张手牌',
+                            function(card, player, target) {
+                                return target.isIn();
                             }
+                        ).set('ai', function(target) {
+                            var player = _status.event.player;
+                            var discardNum = target.countCards('h') >=
+                                _status.event.discardNum ? _status.event.discardNum : 0;
+                            if(!discardNum) return 0;
+                            if(target.side != player.side) {
+                                return 8 + discardNum * 2;
+                            }
+                            var overflow = Math.max(
+                                0,
+                                target.countCards('h') - target.getHandcardLimit()
+                            );
+                            return overflow > 0 ? overflow : -8;
+                        }).set('discardNum', counts.feng).forResultTargets() || []);
+                        var windTarget = windTargets[0];
+                        if(windTarget && windTarget.isIn() &&
+                            windTarget.countCards('h') >= counts.feng) {
+                            await windTarget.chooseToDiscard(
+                                'h',
+                                counts.feng,
+                                true,
+                                '击退：弃置' + counts.feng + '张手牌'
+                            );
                         }
                     }
                     if(counts.guang > 0 &&
@@ -4782,20 +4831,20 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "guangJiangZhiJian_info": "<span class='tiaoJian'>（主动攻击命中时②，移除2</span><span class='hong'>【复仇】</span><span class='tiaoJian'>并弃置1张牌【展示】）</span>按弃牌系别结算：<br>火：本次攻击伤害+1。<br>地：对其他对手各造成X-1点法术伤害③，X为本次攻击伤害。<br>风：再弃置1张牌，本次攻击伤害-1；行动结束后对该目标进行1次暗系主动攻击。",
                     "guangJiangZhiJian_feng": "响应【光降之剑-风】",
                     "guangJiangZhiJian_di": "响应【光降之剑-地】",
-                    "chaoJuanBingXiao": "响应【潮卷冰削】",
-                    "chaoJuanBingXiao_info": "【回合限定】<span class='tiaoJian'>（本回合已主动攻击过1名角色，移除1</span><span class='hong'>【复仇】</span><span class='tiaoJian'>）</span>对其再执行1次【攻击行动】，伤害+1；不能与【凝浪之光剑】同时发动。",
+                    "chaoJuanBingXiao": "响应【潮卷冰削】【回合限定】",
+                    "chaoJuanBingXiao_info": "<span class='tiaoJian'>（本回合已主动攻击过1名角色，移除1</span><span class='hong'>【复仇】</span><span class='tiaoJian'>）</span>对其再执行1次【攻击行动】，伤害+1；不能与【凝浪之光剑】同时发动。",
                     "bingChaoDeWoXuan": "响应【冰潮的涡旋】",
                     "bingChaoDeWoXuan_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（主动攻击时①）</span>将手牌补至上限【强制】，+1<span class='hong'>【复仇】</span>；本次攻击无法应战。",
                     "fuChou": "复仇",
                     "fuChou_info": "<span class='hong'>【复仇】</span>为优菈专属指示物，上限为4。",
                     "jieShi": "被动【借势】",
                     "jieShi_info": "你的攻击无视【圣盾】；<br><span class='tiaoJian'>（主动攻击未命中②或应战攻击命中时②）</span>+1<span class='hong'>【枪势】</span>；<br>你的攻击每有一次未命中，后续攻击伤害累计+1，<span class='tiaoJian'>（你的回合结束时）</span>将累计值置为0。",
-                    "lianHuanTuCi": "响应【连环突刺】",
-                    "lianHuanTuCi_info": "【回合限定】<span class='tiaoJian'>（主动攻击未命中时②，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>+1【攻击行动】。",
-                    "hengQiangJiaShi": "响应【横枪架势】",
-                    "hengQiangJiaShi_info": "【回合限定】<span class='tiaoJian'>（应战攻击时①，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>将任意系攻击牌视为与当前攻击同系使用，应战伤害-1。",
-                    "poZhenHuiQiang": "响应【破阵回枪】",
-                    "poZhenHuiQiang_info": "【回合限定】<span class='lan'>【水晶】</span><span class='tiaoJian'>（主动攻击时①，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>本次攻击伤害+1，<span class='tiaoJian'>（若本次攻击未命中）</span>+1【攻击行动】。",
+                    "lianHuanTuCi": "响应【连环突刺】【回合限定】",
+                    "lianHuanTuCi_info": "<span class='tiaoJian'>（主动攻击未命中时②，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>+1【攻击行动】。",
+                    "hengQiangJiaShi": "响应【横枪架势】【回合限定】",
+                    "hengQiangJiaShi_info": "<span class='tiaoJian'>（应战攻击时①，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>将任意系攻击牌视为与当前攻击同系使用，应战伤害-1。",
+                    "poZhenHuiQiang": "响应【破阵回枪】【回合限定】",
+                    "poZhenHuiQiang_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（主动攻击时①，移除1</span><span class='hong'>【枪势】</span><span class='tiaoJian'>）</span>本次攻击伤害+1，<span class='tiaoJian'>（若本次攻击未命中）</span>+1【攻击行动】。",
                     "qiangShi": "枪势",
                     "qiangShi_info": "<span class='hong'>【枪势】</span>为赫克托专属指示物，上限为2。",
                     "shengCunQiDian": "被动【生存起点】",
@@ -4805,7 +4854,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "gongZuoTai": "启动【工作台】",
                     "gongZuoTai_info": "<span class='tiaoJian'>（展示并弃置配方所需</span><span style=\"color:#8B5E3C\">【素材】</span><span class='tiaoJian'>）</span>制作1把可锻造的剑；将当前剑置于场外，新剑以满【耐久】置于面前。",
                     "zhanDouFuMo": "响应【战斗附魔】",
-                    "zhanDouFuMo_info": "<span class='tiaoJian'>（持剑攻击命中后②，弃1张</span><span style=\"color:#8B5E3C\">【素材】</span><span class='tiaoJian'>；持有【金剑】或【下界合金剑】时可改为弃2张）</span>按各系<span style=\"color:#8B5E3C\">【素材】</span>的数量Y分别结算：<br>雷：伤害+Y。<br>火：对目标造成Y点法术伤害③。<br>地：对另外Y名角色各造成等额法术伤害③。<br>水：发动Y+1次【采集】。<br>风：令1名角色弃Y张手牌。<br>光：当前剑+（Y+1）【耐久】。<br>暗：你+（Y+1）<span class='lan'>【水晶】</span>。",
+                    "zhanDouFuMo_info": "<span class='tiaoJian'>（持剑攻击命中后②，弃1张</span><span style=\"color:#8B5E3C\">【素材】</span><span class='tiaoJian'>；持有【金剑】或【下界合金剑】时可改为弃2张）</span>按各系<span style=\"color:#8B5E3C\">【素材】</span>的数量Y分别结算：<br>雷：伤害+Y。<br>火：对目标造成Y点法术伤害③。<br>地：对另外Y名角色各造成等同于本次攻击伤害的法术伤害。<br>水：发动Y+1次【采集】。<br>风：令1名角色弃Y张手牌。<br>光：当前剑+（Y+1）【耐久】。<br>暗：你+（Y+1）<span class='lan'>【水晶】</span>。",
                     "jingYanXiuBu": "响应【经验修补】",
                     "jingYanXiuBu_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（攻击命中后②，弃置2张手牌）</span>当前剑+2【耐久】。",
                     "shiDiFuSuCai": "素材",
@@ -4826,8 +4875,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "xiaJieHeJinJian_info": "【耐久5｜配方：持有【钻石剑】，1火系+1暗系<span style=\"color:#8B5E3C\">【素材】</span>】<br><span class='greentext'>响应【不毁之锋】</span><br><span class='tiaoJian'>（攻击时①，移除1【耐久】）</span>本次攻击伤害+1且无法应战。<br><span class='greentext'>被动【下界锻造】</span><br><span class='tiaoJian'>（攻击结算结束时，若【耐久】为0）</span>展示并弃置全部<span style=\"color:#8B5E3C\">【素材】</span>；每张火系或暗系<span style=\"color:#8B5E3C\">【素材】</span>令当前剑+1【耐久】。",
                     "jianYiGongJu": "响应【简易工具】",
                     "jianYiGongJu_info": "<span class='tiaoJian'>（当前剑为【木剑】，攻击时移除1【耐久】）</span>若本次攻击未命中，结算结束后将本次使用的攻击牌作为<span style=\"color:#8B5E3C\">【素材】</span>盖放于角色旁。",
-                    "jiSuHuiKan": "响应【急速挥砍】",
-                    "jiSuHuiKan_info": "【回合限定】<span class='tiaoJian'>（当前剑为【金剑】，【攻击行动】结束时移除1【耐久】）</span>+1【攻击行动】或【法术行动】。",
+                    "jiSuHuiKan": "响应【急速挥砍】【回合限定】",
+                    "jiSuHuiKan_info": "<span class='tiaoJian'>（当前剑为【金剑】，【攻击行动】结束时移除1【耐久】）</span>+1【攻击行动】或【法术行动】。",
                     "kuangWuKanTan": "被动【矿物勘探】",
                     "kuangWuKanTan_info": "<span class='tiaoJian'>（当前剑为【金剑】，发动【采集】时）</span>改为查看牌库顶4张牌，选择1张作为<span style=\"color:#8B5E3C\">【素材】</span>，弃置其余牌。",
                     "chenZhongGeDang": "响应【沉重格挡】",
@@ -4849,13 +4898,13 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "lianJi": "连击",
                     "lianJi_info": "<span style=\"color:#8E44AD\">【连击】</span>为桐谷和人专属指示物，上限为3。",
                     "fengBiZhe": "被动【封弊者】",
-                    "fengBiZhe_info": "<span class='tiaoJian'>（【普通形态】下，主动【攻击行动】结束时）</span>+1<span style=\"color:#8E44AD\">【连击】</span>；本回合第4次及之后的主动攻击无法应战。",
+                    "fengBiZhe_info": "<span class='tiaoJian'>（【普通形态】下，【攻击行动】结束时）</span>+1<span style=\"color:#8E44AD\">【连击】</span>；本回合第4次及之后的主动攻击无法应战。",
                     "erDaoLiu": "被动【二刀流】",
-                    "erDaoLiu_info": "<span class='tiaoJian'>（【普通形态】下，主动【攻击行动】结束后，</span><span style=\"color:#8E44AD\">【连击】</span><span class='tiaoJian'>已满）</span>【横置】进入【二刀流形态】，+1【攻击行动】，入形后的第一次主动攻击若与入形攻击异系，伤害+1；<br><span class='tiaoJian'>（回合结束时）</span>清空<span style=\"color:#8E44AD\">【连击】</span>并【重置】。",
+                    "erDaoLiu_info": "<span class='tiaoJian'>（【普通形态】下，【攻击行动】结束时，</span><span style=\"color:#8E44AD\">【连击】</span><span class='tiaoJian'>已满）</span>【横置】进入【二刀流形态】，+1【攻击行动】，入形后的第一次主动攻击若与入形攻击异系，伤害+1；<br><span class='tiaoJian'>（回合结束时）</span>清空<span style=\"color:#8E44AD\">【连击】</span>并【重置】。",
                     "erDaoLiuZhuangTai": "二刀流形态",
                     "erDaoLiuZhuangTai_info": "<span class='tiaoJian'>（【二刀流形态】下）</span>入形后的第一次主动攻击若与入形攻击异系，伤害+1；<span class='tiaoJian'>（回合结束时）</span>清空<span style=\"color:#8E44AD\">【连击】</span>并【重置】。",
-                    "yinSuChongJi": "响应【音速冲击】",
-                    "yinSuChongJi_info": "【回合限定】<span class='tiaoJian'>（【普通形态】下，主动攻击前①）</span>摸1张牌【强制】；本次攻击伤害+1，<span class='tiaoJian'>（此次攻击未命中②）</span>+1【攻击行动】。",
+                    "yinSuChongJi": "响应【音速冲击】【回合限定】",
+                    "yinSuChongJi_info": "<span class='tiaoJian'>（【普通形态】下，主动攻击前①）</span>摸1张牌【强制】；本次攻击伤害+1，<span class='tiaoJian'>（此次攻击未命中②）</span>+1【攻击行动】。",
                     "siFangZhan": "响应【四方斩】",
                     "siFangZhan_info": "<span class='tiaoJian'>（【二刀流形态】下，主动攻击前①，移除1</span><span style=\"color:#8E44AD\">【连击】</span><span class='tiaoJian'>）</span>选择一项发动：<br>·本次攻击伤害+1；<br>·本次攻击伤害-1，攻击结束后，+1【攻击行动】。",
                     "xingBaoQiLiuZhan": "响应【星爆气流斩】",
@@ -4872,8 +4921,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "duanYaoJiuZhuangTai_info": "手牌数不少于3，且没有【圣光】【暗灭】【圣盾】【虚弱】【中毒】。",
                     "duanYaoJiuMiao": "响应【断幺九喵】",
                     "duanYaoJiuMiao_info": "<span class='tiaoJian'>（你的手牌数＞2，且手牌中没有【圣光】【暗灭】或基础效果牌时）</span>你处于<span style=\"color:#537D28\">【断幺九】</span>状态；<br><span class='tiaoJian'>（【特殊行动】结束后，若你处于</span><span style=\"color:#537D28\">【断幺九】</span><span class='tiaoJian'>状态）</span>展示并弃置全部手牌。令Y为弃置手牌数，X为其中与当前任意<span class='hong'>【宝牌】</span>同系的牌数：+（X+1）<span style=\"color:#B33D75\">【喵运】</span>；摸Y-X张牌【强制】；<br>移除全部<span class='hong'>【宝牌】</span>，展示牌库顶等量的牌作为新的<span class='hong'>【宝牌】</span>。",
-                    "liZhiMiao": "响应【立直喵】",
-                    "liZhiMiao_info": "【回合限定】<span class='tiaoJian'>（主动攻击前①，攻击牌与某张</span><span class='hong'>【宝牌】</span><span class='tiaoJian'>同系）</span>本次攻击伤害+1，<span class='tiaoJian'>（若命中）</span>+1【法术行动】。",
+                    "liZhiMiao": "响应【立直喵】【回合限定】",
+                    "liZhiMiao_info": "<span class='tiaoJian'>（主动攻击前①，攻击牌与某张</span><span class='hong'>【宝牌】</span><span class='tiaoJian'>同系）</span>本次攻击伤害+1，<span class='tiaoJian'>（若命中）</span>+1【法术行动】。",
                     "duiDuiHuMiao": "法术【对对胡喵】",
                     "duiDuiHuMiao_info": "<span class='tiaoJian'>（弃置1张法术牌）</span>+1<span style=\"color:#B33D75\">【喵运】</span>，指定1名对手并展示牌库顶1张牌：<br>·与某张<span class='hong'>【宝牌】</span>同系：对目标造成2点法术伤害③；<br>·与所有<span class='hong'>【宝牌】</span>不同系：你与目标各受1点法术伤害③。<br>结算后，选择移除1张<span class='hong'>【宝牌】</span>，将展示牌作为新的<span class='hong'>【宝牌】</span>。",
                     "haiDiLaoYueMiao": "响应【海底捞月喵】",
@@ -4894,8 +4943,8 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "lianQiHuaDan_info": "<span class='tiaoJian'>（弃置X张法术牌）</span>+X<span style=\"color:#A13F32\">【斗气】</span>；<br><span class='tiaoJian'>（若你额外支付1</span><span class='lan'>【水晶】</span><span class='tiaoJian'>）</span>+1<span style=\"color:#A13F32\">【斗气】</span>，+1【攻击行动】。",
                     "fenJueLianHua": "启动【焚诀·炼化】",
                     "fenJueLianHua_info": "依次炼化<span class='hong'>【青莲地心火】</span>→<span class='hong'>【陨落心炎】</span>→<span class='hong'>【骨灵冷火】</span>：<br><span class='hong'>【青莲地心火】</span>：<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除2</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>对自己造成2点法术伤害。<br><span class='hong'>【陨落心炎】</span>：<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除3</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>对自己造成3点法术伤害。<br><span class='hong'>【骨灵冷火】</span>：<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（移除3</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>）</span>对自己造成4点法术伤害。<br><span class='tiaoJian'>（若炼化导致己方士气下降）</span>炼化失败并返还1<span style=\"color:#A13F32\">【斗气】</span>；否则放置对应<span class='hong'>【异火】</span>，<span class='tiaoJian'>（全部炼化成功后）</span>失去此技能。",
-                    "tianHuoSanXuanBian": "启动【天火三玄变】",
-                    "tianHuoSanXuanBian_info": "【回合限定】<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除X</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>，选择X张明亮</span><span class='hong'>【异火】</span><span class='tiaoJian'>）</span>本回合不能发动【佛怒火莲】。本回合的下一次主动攻击伤害+1，并获得以下累计效果：<br>X≥2：无视【圣盾】且不能以【治疗】抵伤；<br>X=3：无法应战。<br><span class='tiaoJian'>（命中时）</span>可以将1名我方角色能量区的1<span class='lan'>【水晶】</span>翻为1<span style=\"color:#E02B17\">【宝石】</span>；<span class='tiaoJian'>（【攻击行动】结束后）</span>将所选异火翻为黯淡状态。",
+                    "tianHuoSanXuanBian": "启动【天火三玄变】【回合限定】",
+                    "tianHuoSanXuanBian_info": "<span class='lan'>【水晶】</span><span class='tiaoJian'>（移除X</span><span style=\"color:#A13F32\">【斗气】</span><span class='tiaoJian'>，选择X张明亮</span><span class='hong'>【异火】</span><span class='tiaoJian'>）</span>本回合不能发动【佛怒火莲】。本回合的下一次主动攻击伤害+1，并获得以下累计效果：<br>X≥2：无视【圣盾】且不能以【治疗】抵伤；<br>X=3：无法应战。<br><span class='tiaoJian'>（命中时）</span>可以将1名我方角色能量区的1<span class='lan'>【水晶】</span>翻为1<span style=\"color:#E02B17\">【宝石】</span>；<span class='tiaoJian'>（【攻击行动】结束后）</span>将所选异火翻为黯淡状态。",
                     "foNuHuoLian": "法术【佛怒火莲】",
                     "foNuHuoLian_info": "<span style=\"color:#E02B17\">【宝石】</span><span class='tiaoJian'>（选择2或3张明亮【异火】）</span>结算后翻暗：<br>2张：对1名对手造成2点法术伤害③，再对自己造成1点法术伤害③。<br>3张：对1名对手造成3点法术伤害③，对其他对手各造成1点法术伤害③。",
                     "xiaoYanDouQi": "斗气",
@@ -4916,11 +4965,11 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
                     "anDanGuLingLengHuo": "专属【黯淡的骨灵冷火】",
                     "anDanGuLingLengHuo_info": "黯淡的【骨灵冷火】，通过【焚决】可重新翻至明亮面。",
                     "diHuoFenShen": "响应【地火焚身】",
-                    "diHuoFenShen_info": "<span class='tiaoJian'>（对目标造成正数实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
+                    "diHuoFenShen_info": "<span class='tiaoJian'>（对目标造成实际攻击伤害后⑤）</span>对其额外造成1点法术伤害③。",
                     "xinHuoChongRan": "响应【心火重燃】",
                     "xinHuoChongRan_info": "<span class='tiaoJian'>（【特殊行动】结束后）</span>必须选择一项：<br>·+1<span style=\"color:#A13F32\">【斗气】</span>；<br>·将另一张黯淡<span class='hong'>【异火】</span>翻至明亮面。",
                     "lengHuoZhuoHun": "响应【冷火灼魂】",
-                    "lengHuoZhuoHun_info": "<span class='tiaoJian'>（对其他角色造成正数实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；此追加伤害不再触发【冷火灼魂】。",
+                    "lengHuoZhuoHun_info": "<span class='tiaoJian'>（对其他角色造成实际法术伤害后⑤）</span>对其额外造成1点法术伤害③；此追加伤害不再触发【冷火灼魂】。",
                     "tianHuoSanXuanBianState": "天火三玄变",
                     "tianHuoSanXuanBianJinZhiFoNu": "天火三玄变",
                 },
@@ -4929,7 +4978,7 @@ game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"bigcowcow","s
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.10",
+            "version": "2.17",
         },
         "files": {
             "character": [

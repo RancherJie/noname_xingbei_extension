@@ -2,13 +2,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     "use strict";
 
     var extensionName = "十周年-AI优化版";
+    function migrateExtensionConfig() {
+        var oldPrefix = "extension_十周年-AI优化版_";
+        var newPrefix = "extension_" + extensionName + "_";
+        Object.keys(lib.config || {}).forEach(function (key) {
+            if (!key.startsWith(oldPrefix)) return;
+            var newKey = newPrefix + key.slice(oldPrefix.length);
+            if (lib.config[newKey] === undefined) game.saveConfig(newKey, lib.config[key]);
+        });
+    }
+    migrateExtensionConfig();
+
     function isNightmareAiProviderActive() {
         // 配置在precontent之前已就绪，不依赖哪个扩展先执行。
         // 本体对已安装但尚无enable值的扩展默认启用；不在此写用户配置。
         var config = lib.config || {};
         var installed = Array.isArray(config.extensions) && config.extensions.includes("十周年-噩梦人机");
+        var nightmareEnabled = config["extension_十周年-噩梦人机_enable"];
+        if (nightmareEnabled === undefined) nightmareEnabled = config["extension_十周年-噩梦人机_enable"];
         return lib.xingBeiNightmareAiProviderActive === true ||
-            (installed && config["extension_十周年-噩梦人机_enable"] !== false);
+            (installed && nightmareEnabled !== false);
     }
     var startupSkills = [
         "lianMin", "qianXing", "yiShiZhongDuan", "zhongCaiYiShi",
@@ -5244,7 +5257,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
         function hasLegalMatchingResponse(event, player, incomingCard, excludedCard) {
             if (!event || !player || !incomingCard) return false;
-            var suit = get.xiBie(incomingCard, player);
+            // 来袭牌沿用应战 filterCard 的系别读取方式，不套用防守方的手牌转换。
+            var suit = get.xiBie(incomingCard);
             return player.getCards("h").some(function (card) {
                 if (card == excludedCard || get.type(card, player) != "gongJi" || get.name(card, player) == "anMie") return false;
                 if (get.xiBie(card, player) != suit) return false;
@@ -7482,7 +7496,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "1.8",
+        version: "1.10",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();
