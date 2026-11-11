@@ -49,8 +49,10 @@ body.wmb-ui-optimized #arena::before {
 }
 
 /* 无名杯战况：核心会反复刷新 innerHTML，因此只依赖稳定的表格结构。 */
-body.wmb-ui-optimized .zhanJi.table.wmb-scoreboard {
+body.wmb-ui-optimized .wmb-scoreboard {
     width: 264px !important;
+    height: auto !important;
+    transition: none !important;
     min-height: 106px;
     padding: 27px 8px 7px !important;
     color: var(--wmb-text) !important;
@@ -68,7 +70,7 @@ body.wmb-ui-optimized .zhanJi.table.wmb-scoreboard {
     text-shadow: none !important;
 }
 
-body.wmb-ui-optimized .zhanJi.table.wmb-scoreboard::before {
+body.wmb-ui-optimized .wmb-scoreboard::before {
     content: attr(data-wmb-title);
     position: absolute;
     top: 5px;
@@ -227,7 +229,7 @@ body.wmb-ui-optimized .wmb-bgm-panel.wmb-bgm-collapsed .wmb-bgm-restore {
     display: block !important;
 }
 
-body.wmb-ui-optimized .zhanJi.table.wmb-scoreboard::after {
+body.wmb-ui-optimized .wmb-scoreboard::after {
     content: "";
     position: absolute;
     top: 24px;
@@ -240,6 +242,8 @@ body.wmb-ui-optimized .zhanJi.table.wmb-scoreboard::after {
 
 body.wmb-ui-optimized .wmb-scoreboard table {
     width: 100%;
+    height: auto;
+    font-size: inherit;
     border-spacing: 2px 2px;
     border-collapse: separate;
     table-layout: fixed;
@@ -407,10 +411,10 @@ body.wmb-ui-optimized .wmb-xj-turn-label {
     text-align: center;
     white-space: nowrap;
     pointer-events: none;
-    border: 1px solid rgba(255, 230, 149, 0.94);
+    border: 1px solid rgba(255, 230, 149, 0.48);
     border-radius: 3px 9px 3px 9px;
-    background: linear-gradient(180deg, rgba(111, 77, 25, 0.98), rgba(43, 29, 13, 0.98));
-    box-shadow: inset 0 0 8px rgba(255, 224, 137, 0.28), 0 0 10px rgba(239, 190, 81, 0.72), 0 3px 8px rgba(0, 0, 0, 0.62);
+    background: linear-gradient(180deg, rgba(111, 77, 25, 0.12), rgba(43, 29, 13, 0.14)) !important;
+    box-shadow: inset 0 0 4px rgba(255, 224, 137, 0.08), 0 0 5px rgba(239, 190, 81, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
     text-shadow: 0 1px 2px #241406, 0 0 5px rgba(255, 222, 126, 0.72);
     opacity: 0;
     visibility: hidden;
@@ -572,11 +576,9 @@ body.wmb-ui-optimized .wmb-xj-skill-banner {
     pointer-events: none;
     border: 1px solid currentColor;
     border-radius: 3px 14px 3px 14px;
-    background:
-        linear-gradient(90deg, transparent 0, rgba(12, 27, 25, .96) 15% 85%, transparent 100%),
-        repeating-linear-gradient(100deg, rgba(255,255,255,.025) 0 2px, transparent 2px 7px);
+    background: linear-gradient(90deg, rgba(12, 27, 25, .16), rgba(12, 27, 25, .22), rgba(12, 27, 25, .16)) !important;
     box-shadow: inset 0 1px rgba(255,255,255,.12), inset 0 -1px rgba(3,10,9,.8),
-        0 5px 17px rgba(1,8,7,.66), 0 0 14px rgba(111,169,154,.45);
+        0 3px 9px rgba(1,8,7,.16), 0 0 8px rgba(111,169,154,.16);
     text-shadow: 0 2px 3px #06100e, 0 0 7px currentColor;
     transform: translateX(-50%);
     transition: top 180ms ease-out;
@@ -592,7 +594,7 @@ body.wmb-ui-optimized .wmb-xj-skill-banner::after {
     color: currentColor;
     font: 18px/34px "STKaiti", serif;
     border: 1px solid currentColor;
-    background: radial-gradient(circle, rgba(168,210,189,.54), rgba(16,36,32,.95) 58%, rgba(5,15,13,.96));
+    background: radial-gradient(circle, rgba(168,210,189,.54), rgba(16,36,32,.28) 58%, rgba(5,15,13,.3));
     box-shadow: inset 0 0 0 3px rgba(184,148,88,.2), 0 0 9px currentColor;
     transform: translateY(-50%) rotate(45deg);
 }
@@ -671,7 +673,7 @@ body.wmb-ui-optimized .wmb-xj-line-default,
 body.wmb-ui-optimized .wmb-xj-hit-default { --wmb-xj-line-color:#9cc7b7; --wmb-xj-line-border:#365c51; }
 
 body.wmb-ui-optimized .wmb-xj-hit-fx {
-    position: fixed;
+    position: absolute;
     z-index: 110;
     box-sizing: border-box;
     width: 48px;
@@ -732,6 +734,13 @@ body.wmb-ui-optimized .control > div.disabled,
 body.wmb-ui-optimized .skillitem.disabled {
     color: #717b87 !important;
     filter: saturate(0.45);
+}
+
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena #control > .control,
+body.wmb-ui-optimized.wmb-ui-mobile-client .dialog .textbutton {
+    background: rgba(38, 53, 47, .48) !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
 }
 
 /* 左上角系统按钮不是操作区的 .control，单独覆盖其真实容器。 */
@@ -989,7 +998,7 @@ body.wmb-ui-no-motion .wmb-target-order {
         padding: 6px 7px 7px;
     }
 
-    body.wmb-ui-optimized .zhanJi.table.wmb-scoreboard {
+    body.wmb-ui-optimized .wmb-scoreboard {
         width: 238px !important;
         transform: scale(0.92);
         transform-origin: right bottom;
@@ -998,4 +1007,237 @@ body.wmb-ui-no-motion .wmb-target-order {
     body.wmb-ui-optimized .wmb-scoreboard td:nth-child(2) {
         width: 112px !important;
     }
+}
+
+/* The core scales body on phones. Use its visible logical size, not vw/vh. */
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard {
+    box-sizing: border-box;
+    width: min(300px, calc(var(--wmb-layout-width) - 16px)) !important;
+    max-height: 90px;
+    overflow: hidden !important;
+    min-height: 0;
+    padding: 4px 6px !important;
+    font-size: 15px;
+    line-height: 1.2;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    transform: none;
+}
+
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard::before,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard::after,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:first-child { display: none; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard.bottom-center { transform: translateX(-50%); }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard table {
+    table-layout: fixed;
+    border-spacing: 1px;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:not(:first-child) td {
+    height: 24px;
+    padding: 1px 2px;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td:nth-child(2) { width: 124px !important; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td:first-child::before { content: "士气 "; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td:last-child::before { content: "星杯 "; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard td::before { font-size: 12px; color: var(--wmb-muted); }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:not(:first-child) td:first-child span,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard tr:not(:first-child) td:last-child span { font-size: 18px; }
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-scoreboard .wmb-starstone { width: 18px !important; height: 18px !important; }
+
+/* Replace the core's single absolute-positioned control row only on small screens. */
+body.wmb-ui-optimized.wmb-ui-small-screen #arena #control {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 6px;
+    box-sizing: border-box;
+    left: 8px;
+    width: calc(100% - 16px);
+    top: auto !important;
+    bottom: 150px;
+    height: auto;
+    max-height: calc(var(--wmb-layout-height) * .28);
+    overflow-y: auto;
+    pointer-events: auto;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #arena #control > .control {
+    position: relative !important;
+    left: auto !important;
+    transform: none !important;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    box-sizing: border-box;
+    max-width: 100%;
+    white-space: normal;
+    flex-shrink: 0;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen.wmb-ui-has-scoreboard #arena #control {
+    width: calc(100% - 304px);
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #control > .control > div {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 32px;
+    padding: 5px 7px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.choose-character #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.choose-to-move #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.discard-player-card #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.gain-player-card #control,
+body.wmb-ui-optimized.wmb-ui-small-screen #arena.choose-player-card #control { bottom: calc(18px + var(--wmb-arena-overflow, 0px)); }
+
+body.wmb-ui-optimized.wmb-ui-small-screen #window > .dialog.popped:not(.static),
+body.wmb-ui-optimized.wmb-ui-small-screen .menubg.charactercard {
+    box-sizing: border-box;
+    max-width: calc(var(--wmb-layout-width) - 24px);
+    max-height: calc(var(--wmb-layout-height) - 24px);
+    overflow-y: auto;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .dialog .textbutton {
+    max-width: 100%;
+    margin: 4px 0 !important;
+    padding: 7px 9px !important;
+    font-size: 16px;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-xj-skill-banner {
+    min-width: 0;
+    max-width: calc(var(--wmb-layout-width) - 48px);
+    padding: 12px 24px;
+    font-size: 23px;
+    letter-spacing: 3px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-target-counter {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: calc(var(--wmb-layout-width) - 24px);
+    padding: 5px 10px;
+    font-size: 15px;
+}
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-bgm-controls button,
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-bgm-restore { height: 32px !important; }
+
+/* 窄屏设备优先显示角色的手牌数量标记。 */
+body.wmb-ui-optimized.wmb-ui-small-screen #arena .player > .count {
+    z-index: 130 !important;
+}
+
+/* chooseToUse 提示由核心放在 arena 下，节点没有 popped 类。 */
+body.wmb-ui-optimized.wmb-ui-mobile-client #window .dialog.wmb-action-response-prompt {
+    background: rgba(16, 26, 25, .025) !important;
+    background-image: none !important;
+    border: 1px solid rgba(184, 148, 88, .14) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 移动端减轻大面积阴影、模糊和循环动画的绘制负担。 */
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena::before {
+    display: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-scoreboard,
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-bgm-panel,
+body.wmb-ui-optimized.wmb-ui-mobile-client #window .dialog,
+body.wmb-ui-optimized.wmb-ui-mobile-client .control,
+body.wmb-ui-optimized.wmb-ui-mobile-client #skill-control,
+body.wmb-ui-optimized.wmb-ui-mobile-client .skill-control {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena.selecting .player.selectable:not(.selected),
+body.wmb-ui-optimized.wmb-ui-mobile-client .player.current_action > .wmb-xj-turn-label,
+body.wmb-ui-optimized.wmb-ui-mobile-client .player.glow_phase > .wmb-xj-turn-label {
+    animation: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-hit-fx {
+    border-width: 4px;
+    box-shadow: 0 0 10px 2px var(--wmb-xj-line-color) !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-scoreboard .wmb-starstone {
+    filter: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena .player::after {
+    box-shadow: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena > .player,
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena .player:not(.minskin) {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .38) !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena .card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .36) !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena .card.selectable {
+    box-shadow: 0 0 0 2px rgba(113, 201, 196, .76) !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #arena .card.selected {
+    box-shadow: 0 0 0 2px var(--wmb-gold-light) !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #window .dialog.wmb-action-response-prompt > .content-container {
+    background: transparent !important;
+    background-image: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client #window .dialog.wmb-action-response-prompt .content {
+    background: transparent !important;
+    background-image: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner::before,
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-xj-skill-banner::after {
+    display: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .wmb-scoreboard,
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table {
+    position: absolute !important;
+    top: auto !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    left: auto !important;
+    box-sizing: border-box !important;
+    width: min(280px, calc(var(--wmb-layout-width) - 16px)) !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: 90px !important;
+    padding: 4px 6px !important;
+    overflow: hidden !important;
+    transform: none !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table table,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table table {
+    width: 100% !important;
+    height: auto !important;
+    table-layout: fixed !important;
+    border-spacing: 1px !important;
+}
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table tr:first-child,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table tr:first-child { display: none !important; }
+body.wmb-ui-optimized.wmb-ui-mobile-client .touchinfo.zhanJi.table tr:not(:first-child) td,
+body.wmb-ui-optimized.wmb-ui-mobile-client .zhanJi.table tr:not(:first-child) td {
+    height: 23px !important;
+    padding: 1px 2px !important;
+    font-size: 13px !important;
+}
+
+/* 手机/模拟器仅在普通对局阶段居中行动控制组，选人等流程沿用核心位置。 */
+body.wmb-ui-optimized.wmb-ui-mobile-client.wmb-ui-small-screen
+#arena:not(.choose-character):not(.choose-to-move):not(.discard-player-card):not(.gain-player-card):not(.choose-player-card) #control {
+    left: 50% !important;
+    width: calc(100% - 16px) !important;
+    bottom: calc(160px + var(--wmb-arena-overflow, 0px)) !important;
+    transform: translateX(-50%) !important;
+}
+
+/* 行动与受击提示保留文字和原位，去掉遮挡视野的实色底。 */
+body.wmb-ui-optimized.wmb-ui-small-screen .wmb-xj-skill-banner {
+    background: rgba(12, 27, 25, .025) !important;
+    border-color: rgba(224, 197, 141, .14) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }

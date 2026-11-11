@@ -3,7 +3,7 @@ extension["创世纪"] = {
     "author": "蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "2.13",
+    "version": "2.19",
     "files": [
         "LICENSE",
         "README.md",
@@ -38,5 +38,5 @@ extension["创世纪"] = {
         "xiLuFei.png",
         "yuXueMoShen.png"
     ],
-    "size": "12.16MB"
+    "size": "12.17MB"
 };

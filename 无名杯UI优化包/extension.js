@@ -1,9 +1,28 @@
-game.import("extension", function (lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", function (lib, game, ui, get, ai, _status) {
     "use strict";
 
     var extensionName = "无名杯UI优化包";
+    var extensionVersion = "2.20";
     var observer = null;
     var decorateTimer = null;
+    var cardDecorationFrame = null;
+    var pendingCardNodes = [];
+    var pendingPromptNodes = [];
+    var pendingGlobalUiNodes = [];
+    var pendingIdentityNodes = [];
+    var pendingSelectionDecoration = false;
+    var cardDefinitionsApplied = false;
     var combatLines = [];
     var combatLineHookInstalled = false;
     var combatLineSequence = 0;
@@ -22,6 +41,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     var musicTracks = [];
     var musicUserPaused = false;
     var musicCollapsed = true;
+    var viewportObserver = null;
+    var viewportFrame = null;
+    var viewportListening = false;
     var cardArtMap = {
         anMie: "anMie_xianxia.png",
         shuiLianZhan: "shuiLianZhan_xianxia.png",
@@ -229,29 +251,45 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         node.classList.toggle(name, !!enabled);
     }
 
+    function scoreboardNode() {
+        var board = ui.shiQiInfo;
+        if (!board || !board.isConnected) {
+            board = document.querySelector(".wmb-scoreboard, .touchinfo.zhanJi, .zhanJi.table");
+        }
+        // Some mobile cores put the score table inside .touchinfo; keep a usable host if that wrapper is absent.
+        if (board && board.tagName === "TABLE") board = board.closest(".touchinfo") || board.parentElement;
+        return board;
+    }
+
     function decorateScoreboard() {
         if (!isCustomTheme()) return;
-        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        var board = scoreboardNode();
+        toggleClass(document.body, "wmb-ui-has-scoreboard", board && board.isConnected);
         if (!board) return;
         board.classList.add("wmb-scoreboard");
-        board.setAttribute(
-            "data-wmb-title",
-            isWaterbearTheme() ? "战局纪要" : "仙缘 · 战局"
-        );
+        var title = isWaterbearTheme() ? "战局纪要" : "仙缘 · 战局";
+        if (board.getAttribute("data-wmb-title") !== title) {
+            board.setAttribute("data-wmb-title", title);
+        }
 
         var rows = board.querySelectorAll("tr");
         if (rows[1]) rows[1].classList.add("wmb-team-red");
         if (rows[2]) rows[2].classList.add("wmb-team-blue");
         if (isXianJianTheme()) {
             var imageRoot = lib.assetURL + "extension/" + extensionName + "/image/";
-            board.querySelectorAll("td:nth-child(2) img").forEach(function (image) {
+            board.querySelectorAll("td:nth-child(2) > img").forEach(function (image) {
                 var source = image.getAttribute("src") || "";
                 if (source.indexOf("baoShi") !== -1) {
-                    image.src = imageRoot + "baoShi_xianxia.png";
+                    var gemImage = imageRoot + "baoShi_xianxia.png";
+                    if (image.getAttribute("src") !== gemImage && image.src !== gemImage) image.src = gemImage;
                 } else if (source.indexOf("shuiJing") !== -1) {
-                    image.src = imageRoot + "shuiJing_xianxia.png";
+                    var crystalImage = imageRoot + "shuiJing_xianxia.png";
+                    if (image.getAttribute("src") !== crystalImage && image.src !== crystalImage) image.src = crystalImage;
                 }
                 image.classList.add("wmb-starstone");
+            });
+            board.querySelectorAll(".wmb-stone-summary").forEach(function (summary) {
+                summary.remove();
             });
         }
     }
@@ -327,7 +365,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     function positionMusicPanel() {
         if (!musicPanel) return;
-        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        var board = scoreboardNode();
         if (!isXianJianTheme() || _status.over || !board || !board.isConnected ||
             !ui.window || !ui.window.isConnected) {
             musicPanel.hidden = true;
@@ -336,15 +374,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         }
         var rect = board.getBoundingClientRect();
         var windowRect = ui.window.getBoundingClientRect();
-        var width = musicCollapsed ? 38 : Math.min(264, rect.width);
+        // DOM rectangles include the core's body scale; CSS offsets do not.
+        var scaleX = windowRect.width / ui.window.offsetWidth || 1;
+        var scaleY = windowRect.height / ui.window.offsetHeight || 1;
+        var availableWidth = Math.min(ui.window.clientWidth, visibleLayoutSize().width);
+        var width = musicCollapsed ? 38 : Math.min(264, rect.width / scaleX, availableWidth - 16);
         if (musicPanel.style.width !== width + "px") musicPanel.style.width = width + "px";
         musicPanel.hidden = false;
-        if (rect.top - windowRect.top < musicPanel.offsetHeight + 18) {
+        if ((rect.top - windowRect.top) / scaleY < musicPanel.offsetHeight + 18) {
             musicPanel.hidden = true;
             return;
         }
-        var right = Math.max(8, windowRect.right - rect.right) + "px";
-        var bottom = windowRect.bottom - rect.top + 10 + "px";
+        var right = Math.min(availableWidth - width - 8, Math.max(8, (windowRect.right - rect.right) / scaleX)) + "px";
+        var bottom = (windowRect.bottom - rect.top) / scaleY + 10 + "px";
         if (musicPanel.style.right !== right) musicPanel.style.right = right;
         if (musicPanel.style.bottom !== bottom) musicPanel.style.bottom = bottom;
     }
@@ -355,6 +397,66 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             musicPositionFrame = null;
             positionMusicPanel();
         });
+    }
+
+    function visibleLayoutSize() {
+        var rect = document.body.getBoundingClientRect();
+        var scaleX = rect.width / document.body.offsetWidth || 1;
+        var scaleY = rect.height / document.body.offsetHeight || 1;
+        var viewport = window.visualViewport;
+        return {
+            width: Math.min(document.body.offsetWidth, (viewport ? viewport.width : window.innerWidth) / scaleX),
+            height: Math.min(document.body.offsetHeight, (viewport ? viewport.height : window.innerHeight) / scaleY)
+        };
+    }
+
+    function updateViewportLayout() {
+        viewportFrame = null;
+        if (!isXianJianTheme() || !document.body) return;
+        var size = visibleLayoutSize();
+        var mobilePlatform = lib.device === "android" || lib.device === "ios" ||
+            /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        var viewport = window.visualViewport;
+        var viewportWidth = viewport && viewport.width || window.innerWidth;
+        var viewportHeight = viewport && viewport.height || window.innerHeight;
+        var screenWidth = window.screen && window.screen.width || viewportWidth;
+        var screenHeight = window.screen && window.screen.height || viewportHeight;
+        var shortSide = Math.min(viewportWidth, viewportHeight, screenWidth, screenHeight);
+        var coarsePointer = typeof window.matchMedia === "function" &&
+            window.matchMedia("(pointer: coarse)").matches;
+        var arenaMobile = !!(ui.arena && (ui.arena.classList.contains("mobile") ||
+            ui.arena.classList.contains("long")));
+        var touchClient = mobilePlatform || arenaMobile || navigator.maxTouchPoints > 0 || coarsePointer;
+        var small = mobilePlatform || arenaMobile || (touchClient && shortSide <= 1100);
+        toggleClass(document.body, "wmb-ui-mobile-client", touchClient);
+        toggleClass(document.body, "wmb-ui-small-screen", small);
+        document.body.style.setProperty("--wmb-layout-width", size.width + "px");
+        document.body.style.setProperty("--wmb-layout-height", size.height + "px");
+        var arenaBottom = ui.arena ? ui.arena.getBoundingClientRect().bottom : 0;
+        var bodyRect = document.body.getBoundingClientRect();
+        var scale = bodyRect.height / document.body.offsetHeight || 1;
+        document.body.style.setProperty("--wmb-arena-overflow", Math.max(0, arenaBottom - bodyRect.bottom) / scale + "px");
+        scheduleMusicPosition();
+    }
+
+    function scheduleViewportLayout() {
+        if (viewportFrame !== null) return;
+        viewportFrame = requestAnimationFrame(updateViewportLayout);
+    }
+
+    function installViewportLayout() {
+        if (!isXianJianTheme()) return;
+        if (!viewportListening) {
+            viewportListening = true;
+            window.addEventListener("resize", scheduleViewportLayout);
+            window.addEventListener("orientationchange", scheduleViewportLayout);
+            if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleViewportLayout);
+            if (typeof ResizeObserver !== "undefined") {
+                viewportObserver = new ResizeObserver(scheduleViewportLayout);
+                viewportObserver.observe(document.body);
+            }
+        }
+        scheduleViewportLayout();
     }
 
     function syncMusicPanel() {
@@ -411,9 +513,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     function ensureMusicPanel() {
         if (!isXianJianTheme()) return;
-        var board = ui.shiQiInfo || document.querySelector(".zhanJi.table");
+        var board = scoreboardNode();
         if (!board || !board.isConnected) return;
+        var created = false;
         if (!musicPanel) {
+            created = true;
             musicPanel = document.createElement("section");
             musicPanel.className = "wmb-bgm-panel wmb-bgm-collapsed";
             musicPanel.setAttribute("aria-label", "战局背景音乐控制");
@@ -476,7 +580,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             musicObservedBoard = board;
         }
         scheduleMusicPosition();
-        syncMusicPanel();
+        if (created) syncMusicPanel();
         if (!musicTimer) {
             musicTimer = setInterval(syncMusicPanel, 700);
             window.addEventListener("resize", scheduleMusicPosition);
@@ -495,6 +599,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     function applyCardDefinitions() {
         if (!isXianJianTheme()) return;
         if (!configValue("cardArt", true)) return;
+        if (cardDefinitionsApplied) return;
         Object.keys(cardArtMap).forEach(function (name) {
             if (!lib.card[name]) return;
             lib.card[name].image = "ext:" + extensionName + "/image/card/" + cardArtMap[name];
@@ -516,37 +621,61 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             if (!skill || !lightMarkArtMap[skill.markimage]) return;
             skill.markimage = "extension/" + extensionName + "/image/" + lightMarkArtMap[skill.markimage];
         });
+        cardDefinitionsApplied = true;
     }
 
-    function decorateLightMarks() {
+    function matchingNodes(root, selector) {
+        if (!root) return [];
+        var nodes = [];
+        if (root.nodeType === 1 && root.matches(selector)) nodes.push(root);
+        if (root.querySelectorAll) {
+            Array.prototype.push.apply(nodes, root.querySelectorAll(selector));
+        }
+        return nodes;
+    }
+
+    function decorateLightMarks(rootNode) {
         if (!isXianJianTheme()) return;
-        document.querySelectorAll(".player .card.mark").forEach(function (mark) {
+        var root = rootNode || ui.arena;
+        if (!root) return;
+        matchingNodes(root, ".player .card.mark").forEach(function (mark) {
             var skill = mark.name && lib.skill[mark.name];
             if (!skill || typeof skill.markimage != "string" ||
                 skill.markimage.indexOf("extension/" + extensionName + "/image/") !== 0) return;
             if (skill.markimage.indexOf("huangDeng_xianxia.png") === -1 &&
                 skill.markimage.indexOf("lanDeng_xianxia.png") === -1) return;
-            if (mark.setBackgroundImage) mark.setBackgroundImage(skill.markimage);
+            if (mark.dataset.wmbMarkImage === skill.markimage) return;
+            if (mark.setBackgroundImage) {
+                mark.setBackgroundImage(skill.markimage);
+                mark.dataset.wmbMarkImage = skill.markimage;
+            }
         });
     }
 
-    function decorateCards() {
+    function decorateCards(rootNode) {
         if (!isXianJianTheme()) return;
         if (!configValue("cardArt", true)) return;
+        var root = rootNode || ui.arena;
+        if (!root) return;
         var imageRoot = "extension/" + extensionName + "/image/card/";
-        document.querySelectorAll(".card").forEach(function (card) {
+        matchingNodes(root, ".card").forEach(function (card) {
             var name = card.name;
             if (!name || !cardArtMap[name] || card.dataset.wmbCardArt === name) return;
             if (card.node && card.node.image && card.node.image.setBackgroundImage) {
-                card.node.image.setBackgroundImage(imageRoot + cardArtMap[name]);
+                var currentImage = card.node.image.style && card.node.image.style.backgroundImage || "";
+                if (currentImage.indexOf(cardArtMap[name]) === -1) {
+                    card.node.image.setBackgroundImage(imageRoot + cardArtMap[name]);
+                }
                 card.dataset.wmbCardArt = name;
             }
         });
     }
 
-    function decorateTeamIdentities() {
+    function decorateTeamIdentities(rootNode) {
         if (!isCustomTheme()) return;
-        document.querySelectorAll(".player .identity").forEach(function (identity) {
+        var root = rootNode || ui.arena;
+        if (!root) return;
+        matchingNodes(root, ".player .identity").forEach(function (identity) {
             var text = (identity.textContent || "").replace(/\s/g, "");
             var isRed = text.indexOf("红") !== -1;
             var isBlue = text.indexOf("蓝") !== -1;
@@ -565,10 +694,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         var selecting = ui.arena.classList.contains("selecting");
         var selected = ui.selected && Array.isArray(ui.selected.targets) ?
             ui.selected.targets : Array.prototype.slice.call(
-                document.querySelectorAll("#arena .player.selected")
+                ui.arena.querySelectorAll(".player.selected")
             );
         var numerals = ["壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"];
-        document.querySelectorAll("#arena .player").forEach(function (player) {
+        ui.arena.querySelectorAll(".player").forEach(function (player) {
             var index = selected.indexOf(player);
             var badge = player.querySelector(":scope > .wmb-target-order");
             if (selecting && index !== -1) {
@@ -606,8 +735,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     }
 
     function decorateTurnIndicators() {
-        if (!isXianJianTheme()) return;
-        document.querySelectorAll("#arena .player:not(.minskin)").forEach(function (player) {
+        if (!isXianJianTheme() || !ui.arena) return;
+        ui.arena.querySelectorAll(".player:not(.minskin)").forEach(function (player) {
             if (!player.querySelector(":scope > .wmb-xj-turn-shade")) {
                 var shade = document.createElement("div");
                 shade.className = "wmb-xj-turn-shade";
@@ -628,43 +757,81 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         if (!isCustomTheme()) return false;
         toggleClass(body, "wmb-ui-waterbear", isWaterbearTheme());
         toggleClass(body, "wmb-ui-no-motion", !configValue("motion", true));
-        if (isWaterbearTheme()) return true;
+        if (isWaterbearTheme()) {
+            var devicePlatform = navigator.platform || "";
+            if (navigator.userAgentData && navigator.userAgentData.platform) {
+                devicePlatform += " " + navigator.userAgentData.platform;
+            }
+            var mobilePlatform = /Android|iPhone|iPad|iPod/i.test(devicePlatform + " " + navigator.userAgent);
+            var coarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+            toggleClass(body, "wmb-ui-mobile-client",
+                mobilePlatform || navigator.maxTouchPoints > 0 || coarsePointer);
+            return true;
+        }
         body.classList.add("wmb-ui-optimized");
         toggleClass(body, "wmb-ui-compact", configValue("compactLayout", false));
         toggleClass(body, "wmb-ui-strong-glass", configValue("glass", "standard") === "strong");
         return true;
     }
 
-    function decorateGlobalUi() {
+    function decorateActionResponsePrompts(rootNode) {
+        var dialogs = rootNode ? matchingNodes(rootNode, ".dialog") :
+            document.querySelectorAll("#arena > .dialog, #window > .dialog.popped");
+        dialogs.forEach(function (dialog) {
+            var text = (dialog.textContent || "").replace(/\s+/g, "");
+            var actionPrompt = text.indexOf("[攻击行动]或者[法术行动]") !== -1;
+            var event = _status.event;
+            var chooseUseOrResponse = false;
+            for (var depth = 0; event && depth < 6; depth++) {
+                if (event.name === "chooseToUse" || event.name === "chooseToRespond") {
+                    chooseUseOrResponse = true;
+                    break;
+                }
+                if (typeof event.getParent !== "function") break;
+                try {
+                    var parent = event.getParent();
+                    if (!parent || parent === event) break;
+                    event = parent;
+                } catch (error) {
+                    break;
+                }
+            }
+            var responsePrompt = chooseUseOrResponse || /^(受到|受击|响应)/.test(text);
+            toggleClass(dialog, "wmb-action-response-prompt", actionPrompt || responsePrompt);
+        });
+    }
+
+    function decorateGlobalUi(rootNode) {
         if (!isCustomTheme()) return;
-        document.querySelectorAll("#system1 > div, #system2 > div").forEach(function (button) {
+        var root = rootNode || document;
+        matchingNodes(root, "#system1 > div, #system2 > div").forEach(function (button) {
             button.classList.add("wmb-system-button");
         });
-        document.querySelectorAll(".dialog.popped, .menubg.charactercard").forEach(function (detail) {
+        matchingNodes(root, ".dialog.popped, .menubg.charactercard").forEach(function (detail) {
             detail.classList.add("wmb-detail-panel");
         });
-        document.querySelectorAll(".player.connect").forEach(function (player) {
+        matchingNodes(root, ".player.connect").forEach(function (player) {
             player.classList.add("wmb-connect-player");
         });
-        document.querySelectorAll(".connectbutton").forEach(function (button) {
+        matchingNodes(root, ".connectbutton").forEach(function (button) {
             button.classList.add("wmb-connect-button");
         });
-        document.querySelectorAll(".dialog.fullwidth.fullheight.fixed").forEach(function (rooms) {
+        matchingNodes(root, ".dialog.fullwidth.fullheight.fixed").forEach(function (rooms) {
             rooms.classList.add("wmb-room-list");
         });
-        document.querySelectorAll(".connectevents").forEach(function (button) {
+        matchingNodes(root, ".connectevents").forEach(function (button) {
             button.classList.add("wmb-connect-hall-button");
         });
     }
 
     function decorateFactionFrames() {
-        if (!isWaterbearTheme()) return;
+        if (!isWaterbearTheme() || !ui.arena) return;
         var factionClasses = [
             "wmb-wb-faction-xue", "wmb-wb-faction-sheng",
             "wmb-wb-faction-ji", "wmb-wb-faction-huan",
             "wmb-wb-faction-yong", "wmb-wb-faction-other"
         ];
-        document.querySelectorAll(".player").forEach(function (player) {
+        ui.arena.querySelectorAll(".player").forEach(function (player) {
             factionClasses.forEach(function (name) {
                 player.classList.remove(name);
             });
@@ -858,14 +1025,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     function showHitFx(trigger) {
         var target = trigger.target;
-        if (!target || !document.body) return;
-        var rect = target.getBoundingClientRect();
+        var arena = ui.arena;
+        if (!target || !arena || !arena.isConnected) return;
+        var targetRect = target.getBoundingClientRect();
+        var arenaRect = arena.getBoundingClientRect();
+        var scaleX = arenaRect.width / arena.offsetWidth || 1;
+        var scaleY = arenaRect.height / arena.offsetHeight || 1;
         var fx = document.createElement("div");
         var prefix = combatFxPrefix();
         fx.className = prefix + "-hit-fx " + prefix + "-hit-" + attackColor(trigger.card);
-        fx.style.left = (rect.left + rect.width / 2) + "px";
-        fx.style.top = (rect.top + rect.height / 2) + "px";
-        document.body.appendChild(fx);
+        fx.style.left = ((targetRect.left + targetRect.width / 2 - arenaRect.left) / scaleX - arena.clientLeft) + "px";
+        fx.style.top = ((targetRect.top + targetRect.height / 2 - arenaRect.top) / scaleY - arena.clientTop) + "px";
+        arena.appendChild(fx);
         setTimeout(function () { fx.remove(); }, 850);
     }
 
@@ -904,6 +1075,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
                 ".control, .menubutton, .button, .dialog .textbutton.selectable, .card, .wmb-system-button, .connectbutton"
             );
             if (!target) return;
+            if (document.body.classList.contains("wmb-ui-mobile-client") && target.matches(".card")) return;
             var rect = target.getBoundingClientRect();
             var ripple = document.createElement("span");
             ripple.className = "wmb-wb-click-ripple";
@@ -940,7 +1112,53 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         decorateTimer = setTimeout(function () {
             decorateTimer = null;
             decorateArena();
-        }, 0);
+        }, document.body && document.body.classList.contains("wmb-ui-mobile-client") ? 120 : 0);
+    }
+
+    function addPendingNode(list, node) {
+        if (list.indexOf(node) === -1) list.push(node);
+    }
+
+    function queueIncrementalDecoration() {
+        if (cardDecorationFrame !== null) return;
+        cardDecorationFrame = requestAnimationFrame(function () {
+            cardDecorationFrame = null;
+            var cards = pendingCardNodes;
+            var prompts = pendingPromptNodes;
+            var globalUi = pendingGlobalUiNodes;
+            var identities = pendingIdentityNodes;
+            var selectionChanged = pendingSelectionDecoration;
+            pendingCardNodes = [];
+            pendingPromptNodes = [];
+            pendingGlobalUiNodes = [];
+            pendingIdentityNodes = [];
+            pendingSelectionDecoration = false;
+            cards.forEach(function (node) {
+                decorateCards(node);
+                decorateLightMarks(node);
+            });
+            prompts.forEach(function (node) { decorateActionResponsePrompts(node); });
+            globalUi.forEach(function (node) {
+                decorateGlobalUi(node);
+                observeDialogClassChanges(node);
+            });
+            identities.forEach(function (node) { decorateTeamIdentities(node); });
+            if (selectionChanged) decorateTargetSelection();
+        });
+    }
+
+    function observeClassChanges(node) {
+        if (!observer || !node || node.nodeType !== 1 || node._wmbUiClassObserved) return;
+        node._wmbUiClassObserved = true;
+        observer.observe(node, {
+            attributes: true,
+            attributeFilter: ["class"],
+            attributeOldValue: true
+        });
+    }
+
+    function observeDialogClassChanges(root) {
+        matchingNodes(root, ".dialog").forEach(observeClassChanges);
     }
 
     function isTransientWaterbearFx(node) {
@@ -958,25 +1176,123 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
     }
 
     function observeUiChanges(records) {
-        var needsDecoration = records.some(function (record) {
-            if (record.type === "attributes" && record.target &&
-                record.target.classList &&
-                (record.target === ui.arena || record.target.classList.contains("player"))) {
-                return true;
+        var needsFullDecoration = false;
+        var incrementalWork = false;
+        var scoreboardChanged = false;
+        var scoreboardAdded = false;
+        var majorUiSelector = ".player, .connectbutton, .connectevents, .menubg.charactercard";
+        var scoreboardSelector = ".zhanJi, .touchinfo, .wmb-scoreboard";
+
+        records.forEach(function (record) {
+            if (needsFullDecoration) return;
+            if (record.type === "attributes" && record.target && record.target.classList) {
+                if (record.target === ui.arena) {
+                    pendingSelectionDecoration = true;
+                    incrementalWork = true;
+                    return;
+                }
+                if (record.target.matches(".dialog")) {
+                    addPendingNode(pendingPromptNodes, record.target);
+                    addPendingNode(pendingGlobalUiNodes, record.target);
+                    incrementalWork = true;
+                    return;
+                }
+                if (record.target.matches(".player")) {
+                    var previousClasses = (record.oldValue || "").split(/\s+/);
+                    var selectionChanged = ["selectable", "selected"]
+                        .some(function (name) {
+                            return record.target.classList.contains(name) || previousClasses.includes(name);
+                        });
+                    if (selectionChanged) {
+                        pendingSelectionDecoration = true;
+                        incrementalWork = true;
+                    }
+                    return;
+                }
+                if (record.target.matches(".identity")) {
+                    addPendingNode(pendingIdentityNodes, record.target);
+                    incrementalWork = true;
+                }
+                return;
             }
-            var changed = Array.prototype.slice.call(record.addedNodes || [])
-                .concat(Array.prototype.slice.call(record.removedNodes || []));
-            return changed.some(function (node) {
-                return node.nodeType === 1 && !isTransientWaterbearFx(node);
+            if (record.target && record.target.nodeType === 1) {
+                var scoreboard = record.target.closest(".wmb-scoreboard, .zhanJi, .touchinfo");
+                if (scoreboard) {
+                    scoreboardChanged = true;
+                    return;
+                }
+                if (record.target.matches("#system1, #system2")) {
+                    needsFullDecoration = true;
+                    return;
+                }
+                if (record.target.matches(".dialog")) {
+                    addPendingNode(pendingPromptNodes, record.target);
+                    addPendingNode(pendingGlobalUiNodes, record.target);
+                    incrementalWork = true;
+                    return;
+                }
+                if (record.target.matches(".identity")) {
+                    addPendingNode(pendingIdentityNodes, record.target);
+                    incrementalWork = true;
+                }
+            }
+            Array.prototype.forEach.call(record.removedNodes || [], function (node) {
+                if (node.nodeType === 1 &&
+                    (node.matches(majorUiSelector) || node.querySelector(majorUiSelector))) {
+                    needsFullDecoration = true;
+                }
+            });
+            Array.prototype.forEach.call(record.addedNodes || [], function (node) {
+                if (!node || node.nodeType !== 1 || !node.classList || isTransientWaterbearFx(node)) return;
+                if (node.matches(majorUiSelector) || node.querySelector(majorUiSelector)) {
+                    needsFullDecoration = true;
+                    return;
+                }
+                if (node.matches(scoreboardSelector) || node.querySelector(scoreboardSelector)) {
+                    scoreboardChanged = true;
+                    scoreboardAdded = true;
+                }
+                if (node.matches(".dialog") || node.querySelector(".dialog")) {
+                    addPendingNode(pendingPromptNodes, node);
+                    addPendingNode(pendingGlobalUiNodes, node);
+                    incrementalWork = true;
+                }
+                if (node.matches(".identity") || node.querySelector(".identity")) {
+                    addPendingNode(pendingIdentityNodes, node);
+                    incrementalWork = true;
+                }
+                if (node.matches(".card") || node.querySelector(".card")) {
+                    addPendingNode(pendingCardNodes, node);
+                    incrementalWork = true;
+                }
             });
         });
-        if (needsDecoration) queueDecoration();
+        if (scoreboardChanged || needsFullDecoration) {
+            decorateScoreboard();
+        }
+        if (scoreboardAdded) ensureMusicPanel();
+        if (needsFullDecoration) {
+            pendingCardNodes = [];
+            pendingPromptNodes = [];
+            pendingGlobalUiNodes = [];
+            pendingIdentityNodes = [];
+            pendingSelectionDecoration = false;
+            if (cardDecorationFrame !== null) {
+                cancelAnimationFrame(cardDecorationFrame);
+                cardDecorationFrame = null;
+            }
+            queueDecoration();
+        } else if (incrementalWork) {
+            queueIncrementalDecoration();
+        }
     }
 
     function decorateArena() {
         if (!applyRootClasses()) return;
+        if (!viewportListening) installViewportLayout();
         applyCardDefinitions();
         decorateGlobalUi();
+        decorateActionResponsePrompts();
         decorateScoreboard();
         ensureMusicPanel();
         decorateCards();
@@ -993,10 +1309,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             // 联机大厅和对局会重建大块界面，监听根节点才能跨场景持续生效。
             observer.observe(document.documentElement, {
                 childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ["class"]
+                subtree: true
             });
+        }
+        if (observer) {
+            observeClassChanges(ui.arena);
+            document.querySelectorAll("#arena .player, #arena > .dialog, #window > .dialog")
+                .forEach(observeClassChanges);
         }
     }
 
@@ -1011,17 +1330,27 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     function loadStyle() {
         if (!isCustomTheme()) return;
-        if (document.querySelector("link[data-wmb-ui-style]")) return;
-        var style = lib.init.css(
-            lib.assetURL + "extension/" + extensionName,
-            isWaterbearTheme() ? "waterbear" : "extension"
+        var styleTheme = isWaterbearTheme() ? "waterbear" : "extension";
+        var currentStyles = document.querySelectorAll(
+            "link[data-wmb-ui-style], link[href*='extension/" + extensionName + "/']"
         );
-        if (style) style.setAttribute("data-wmb-ui-style", "true");
+        for (var index = 0; index < currentStyles.length; index++) {
+            currentStyles[index].remove();
+        }
+        var styleUrl = lib.assetURL + "extension/" + extensionName + "/" +
+            styleTheme + ".css?v=" + encodeURIComponent(extensionVersion) +
+            "&t=" + Date.now();
+        var style = lib.init.css(styleUrl);
+        if (style) {
+            style.setAttribute("data-wmb-ui-style", "true");
+            style.setAttribute("data-wmb-ui-version", extensionVersion);
+            style.setAttribute("data-wmb-ui-theme", styleTheme);
+        }
     }
 
     return {
         name: extensionName,
-        version: "2.8",
+        version: extensionVersion,
         editable: false,
         precontent: function () {
             migrateExtensionIdentityConfigs();
@@ -1093,7 +1422,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "2.8"
+            version: extensionVersion
         },
         files: {
             character: [],
@@ -1101,4 +1430,5 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
             skill: []
         }
     };
+});
 });

@@ -3,7 +3,7 @@ extension["百年战争·序章"] = {
     "author": "北风/蒙牛",
     "netdisk": "",
     "forum": "",
-    "version": "0.2.3-dev",
+    "version": "0.2.11-dev",
     "files": [
         "README.md",
         "audio-data/manifest.json",
@@ -49,5 +49,5 @@ extension["百年战争·序章"] = {
         "mark_bnzz_zhouFuZhiChui.png",
         "package.js"
     ],
-    "size": "15.43MB"
+    "size": "15.44MB"
 };

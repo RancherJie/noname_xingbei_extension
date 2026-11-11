@@ -61,7 +61,7 @@ body.wmb-ui-waterbear .menu,
 body.wmb-ui-waterbear .popup-container > div,
 body.wmb-ui-waterbear .wmb-detail-panel,
 body.wmb-ui-waterbear .wmb-room-list,
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard {
+body.wmb-ui-waterbear .wmb-scoreboard {
     color: #3b2413 !important;
     background:
         linear-gradient(135deg, rgba(255, 229, 167, .42), transparent 31%),
@@ -73,13 +73,14 @@ body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard {
     text-shadow: 0 1px rgba(255, 228, 166, .5) !important;
 }
 
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard {
+body.wmb-ui-waterbear .wmb-scoreboard {
     min-width: 254px;
+    height: auto !important;
     padding: 28px 9px 8px !important;
     border-radius: 4px 12px 4px 12px !important;
 }
 
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard::before {
+body.wmb-ui-waterbear .wmb-scoreboard::before {
     content: attr(data-wmb-title);
     position: absolute;
     top: 5px;
@@ -89,7 +90,7 @@ body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard::before {
     letter-spacing: 4px;
 }
 
-body.wmb-ui-waterbear .zhanJi.table.wmb-scoreboard::after {
+body.wmb-ui-waterbear .wmb-scoreboard::after {
     content: "";
     position: absolute;
     left: 9px;
@@ -306,7 +307,7 @@ body.wmb-ui-waterbear .player > .count {
 .wmb-wb-line-default,.wmb-wb-hit-default{--wmb-line-color:#d8bd83;--wmb-line-border:#53351a}
 
 .wmb-wb-hit-fx {
-    position: fixed;
+    position: absolute;
     z-index: 110;
     width: 30px;
     height: 30px;
@@ -326,6 +327,39 @@ body.wmb-ui-waterbear.wmb-ui-no-motion .wmb-wb-attack-fallback,
 body.wmb-ui-waterbear.wmb-ui-no-motion .wmb-wb-hit-fx {
     animation: none !important;
     transition: none !important;
+}
+
+/* 移动端保留桌布纹理，移除大面积阴影与边框滤镜，减轻低端设备绘制负担。 */
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena {
+    box-shadow: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena::before {
+    box-shadow: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena::after {
+    filter: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .player {
+    box-shadow: 0 2px 6px rgba(22, 10, 4, .4) !important;
+    filter: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .player > .wmb-wb-frame-left {
+    filter: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card,
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card:hover {
+    filter: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card.selectable,
+body.wmb-ui-waterbear.wmb-ui-mobile-client #arena .card.selected {
+    box-shadow: none !important;
+    outline: 2px solid #d0a55c;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client .wmb-wb-click-ripple {
+    display: none !important;
+}
+body.wmb-ui-waterbear.wmb-ui-mobile-client .wmb-wb-hit-fx {
+    box-shadow: 0 0 8px var(--wmb-line-color) !important;
 }
 
 @keyframes wmb-wb-ripple { to { transform:scale(9); opacity:0; } }

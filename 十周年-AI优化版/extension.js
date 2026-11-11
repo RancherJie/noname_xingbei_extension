@@ -1,4 +1,15 @@
-game.import("extension", function (lib, game, ui, get, ai, _status) {
+(function (registerExtension) {
+    if (typeof game !== "undefined" && game && typeof game.import === "function") {
+        registerExtension(game);
+    } else {
+        import("../../noname.js").then(function (module) {
+            registerExtension(module.game);
+        }).catch(function (error) {
+            console.error("扩展无法获取游戏实例", error);
+        });
+    }
+})(function (game) {
+    game.import("extension", function (lib, game, ui, get, ai, _status) {
     "use strict";
 
     var extensionName = "十周年-AI优化版";
@@ -7496,7 +7507,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
     return {
         name: extensionName,
-        version: "1.10",
+        version: "1.12",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();
@@ -7518,4 +7529,5 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
         },
         files: { character: [], card: [], skill: [], audio: [] }
     };
+});
 });

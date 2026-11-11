@@ -3,7 +3,7 @@ extension["十周年语音包"] = {
     author: "蒙牛 / Codex",
     netdisk: "",
     forum: "",
-    version: "6.14",
+    version: "6.20",
     files: [
     "README.md",
     "audio-data/manifest.json",

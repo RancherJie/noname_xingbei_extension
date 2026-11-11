@@ -16,12 +16,12 @@ extension["织梦者"] = {
 };
 
 extension["无名杯UI优化包"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/11",
 	"intro": "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志的美术语言。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.8",
+	"version": "2.20",
 	"files": [
 		"README.md",
 		"extension.css",
@@ -63,7 +63,7 @@ extension["无名杯UI优化包"] = {
 		"package.js",
 		"waterbear.css"
 	],
-	"size": "25.89MB"
+	"size": "25.90MB"
 };
 
 extension["十周年语音包"] = {
@@ -72,7 +72,7 @@ extension["十周年语音包"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.14",
+	"version": "6.20",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -101,7 +101,7 @@ extension["创世纪"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.13",
+	"version": "2.19",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -136,7 +136,7 @@ extension["创世纪"] = {
 		"xiLuFei.png",
 		"yuXueMoShen.png"
 	],
-	"size": "12.16MB"
+	"size": "12.17MB"
 };
 
 extension["十周年-AI优化版"] = {
@@ -145,7 +145,7 @@ extension["十周年-AI优化版"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.10",
+	"version": "1.12",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -161,7 +161,7 @@ extension["十周年-噩梦人机"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.10",
+	"version": "1.12",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -305,151 +305,11 @@ extension["十周年-噩梦人机"] = {
 		"image/character/chibi/nightmare/zhongCaiZhe.png",
 		"image/character/chibi/nightmare/zhouFuShi.png",
 		"image/character/chibi/nightmare/zhuLvZhe.png",
-		"image/character/default/anShaZhe.png",
-		"image/character/default/cangYanMoNv.png",
-		"image/character/default/chuanJiaoShi.png",
-		"image/character/default/daiDuoShaoNv.png",
-		"image/character/default/daoDanLuoLi.png",
-		"image/character/default/dieWuZhe.png",
-		"image/character/default/fengYinShi.png",
-		"image/character/default/fengZhiJianSheng.png",
-		"image/character/default/geDouJia.png",
-		"image/character/default/hongLianQiShi.png",
-		"image/character/default/hongYiZhuJiao.png",
-		"image/character/default/jiDuShaoNv.png",
-		"image/character/default/jiLuZhe.png",
-		"image/character/default/jianDi.png",
-		"image/character/default/jianXiZhiPian.png",
-		"image/character/default/jianZhiMoNv.png",
-		"image/character/default/jianZhiZi.png",
-		"image/character/default/jieJieShi.png",
-		"image/character/default/jieRiMoDao.png",
-		"image/character/default/jinGuiZhiNv.png",
-		"image/character/default/jingLingSheShou.png",
-		"image/character/default/kuangZhanShi.png",
-		"image/character/default/lieWuRen.png",
-		"image/character/default/lingFuShi.png",
-		"image/character/default/lingHunShuShi.png",
-		"image/character/default/lingXiZhiChao.png",
-		"image/character/default/luoLiFanZhang.png",
-		"image/character/default/maoXianJia.png",
-		"image/character/default/moFaShaoNv.png",
-		"image/character/default/moGong.png",
-		"image/character/default/moGongEX.png",
-		"image/character/default/moJianShi.png",
-		"image/character/default/moQiang.png",
-		"image/character/default/nong_baoShiShaoNv.png",
-		"image/character/default/nvPuZhang.png",
-		"image/character/default/nvWuShen.png",
-		"image/character/default/qiDaoShi.png",
-		"image/character/default/ranWuZhe.png",
-		"image/character/default/shenGuan.png",
-		"image/character/default/shenJianShou.png",
-		"image/character/default/shenMiXueZhe.png",
-		"image/character/default/shengDianQiShi.png",
-		"image/character/default/shengGong.png",
-		"image/character/default/shengNv.png",
-		"image/character/default/shengQiangQiShi.png",
-		"image/character/default/shengTingJianChaShi.png",
-		"image/character/default/sheng_zhongCaiZhe.png",
-		"image/character/default/shiShenZhe.png",
-		"image/character/default/shouLingWuShi.png",
-		"image/character/default/tanLanShaoNv.png",
-		"image/character/default/tianShi.png",
-		"image/character/default/wenYiFaShi.png",
-		"image/character/default/xianZhe.png",
-		"image/character/default/xingZhuiNvWu.png",
-		"image/character/default/xueSeJianLing.png",
-		"image/character/default/xueZhiWuNv.png",
-		"image/character/default/yiJiaoTu.png",
-		"image/character/default/yinYangShi.png",
-		"image/character/default/yinYouShiRen.png",
-		"image/character/default/yingLingRenXing.png",
-		"image/character/default/yongZhe.png",
-		"image/character/default/youJiShi.png",
-		"image/character/default/yuanChuZhiGong.png",
-		"image/character/default/yuanSuShi.png",
-		"image/character/default/yueTuanShouXi.png",
-		"image/character/default/yueZhiNvShen.png",
-		"image/character/default/zhanDouFaShi.png",
-		"image/character/default/zhongCaiZhe.png",
-		"image/character/default/zhouFuShi.png",
-		"image/character/default/zhuLvZhe.png",
-		"image/character/nightmare/anShaZhe.png",
-		"image/character/nightmare/cangYanMoNv.png",
-		"image/character/nightmare/chuanJiaoShi.png",
-		"image/character/nightmare/daiDuoShaoNv.png",
-		"image/character/nightmare/daoDanLuoLi.png",
-		"image/character/nightmare/dieWuZhe.png",
-		"image/character/nightmare/fengYinShi.png",
-		"image/character/nightmare/fengZhiJianSheng.png",
-		"image/character/nightmare/geDouJia.png",
-		"image/character/nightmare/hongLianQiShi.png",
-		"image/character/nightmare/hongYiZhuJiao.png",
-		"image/character/nightmare/jiDuShaoNv.png",
-		"image/character/nightmare/jiLuZhe.png",
-		"image/character/nightmare/jianDi.png",
-		"image/character/nightmare/jianXiZhiPian.png",
-		"image/character/nightmare/jianZhiMoNv.png",
-		"image/character/nightmare/jianZhiZi.png",
-		"image/character/nightmare/jieJieShi.png",
-		"image/character/nightmare/jieRiMoDao.png",
-		"image/character/nightmare/jinGuiZhiNv.png",
-		"image/character/nightmare/jingLingSheShou.png",
-		"image/character/nightmare/kuangZhanShi.png",
-		"image/character/nightmare/lieWuRen.png",
-		"image/character/nightmare/lingFuShi.png",
-		"image/character/nightmare/lingHunShuShi.png",
-		"image/character/nightmare/lingXiZhiChao.png",
-		"image/character/nightmare/luoLiFanZhang.png",
-		"image/character/nightmare/maoXianJia.png",
-		"image/character/nightmare/moFaShaoNv.png",
-		"image/character/nightmare/moGong.png",
-		"image/character/nightmare/moGongEX.png",
-		"image/character/nightmare/moJianShi.png",
-		"image/character/nightmare/moQiang.png",
-		"image/character/nightmare/nong_baoShiShaoNv.png",
-		"image/character/nightmare/nvPuZhang.png",
-		"image/character/nightmare/nvWuShen.png",
-		"image/character/nightmare/qiDaoShi.png",
-		"image/character/nightmare/ranWuZhe.png",
-		"image/character/nightmare/shenGuan.png",
-		"image/character/nightmare/shenJianShou.png",
-		"image/character/nightmare/shenMiXueZhe.png",
-		"image/character/nightmare/shengDianQiShi.png",
-		"image/character/nightmare/shengGong.png",
-		"image/character/nightmare/shengNv.png",
-		"image/character/nightmare/shengQiangQiShi.png",
-		"image/character/nightmare/shengTingJianChaShi.png",
-		"image/character/nightmare/sheng_zhongCaiZhe.png",
-		"image/character/nightmare/shiShenZhe.png",
-		"image/character/nightmare/shouLingWuShi.png",
-		"image/character/nightmare/tanLanShaoNv.png",
-		"image/character/nightmare/tianShi.png",
-		"image/character/nightmare/wenYiFaShi.png",
-		"image/character/nightmare/xianZhe.png",
-		"image/character/nightmare/xingZhuiNvWu.png",
-		"image/character/nightmare/xueSeJianLing.png",
-		"image/character/nightmare/xueZhiWuNv.png",
-		"image/character/nightmare/yiJiaoTu.png",
-		"image/character/nightmare/yinYangShi.png",
-		"image/character/nightmare/yinYouShiRen.png",
-		"image/character/nightmare/yingLingRenXing.png",
-		"image/character/nightmare/yongZhe.png",
-		"image/character/nightmare/youJiShi.png",
-		"image/character/nightmare/yuanChuZhiGong.png",
-		"image/character/nightmare/yuanSuShi.png",
-		"image/character/nightmare/yueTuanShouXi.png",
-		"image/character/nightmare/yueZhiNvShen.png",
-		"image/character/nightmare/zhanDouFaShi.png",
-		"image/character/nightmare/zhongCaiZhe.png",
-		"image/character/nightmare/zhouFuShi.png",
-		"image/character/nightmare/zhuLvZhe.png",
 		"image/splash/xieLing.png",
 		"info.json",
 		"package.js"
 	],
-	"size": "185.51MB"
+	"size": "68.33MB"
 };
 
 extension["宿命挽歌"] = {
@@ -458,7 +318,7 @@ extension["宿命挽歌"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.36",
+	"version": "2.43",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -512,7 +372,7 @@ extension["峡谷幻音"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.16",
+	"version": "1.23",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -540,7 +400,7 @@ extension["峡谷幻音"] = {
 		"tiMo.jpg",
 		"yaTuoKeSi.jpg"
 	],
-	"size": "5.25MB"
+	"size": "5.26MB"
 };
 
 extension["永夜残响"] = {
@@ -549,7 +409,7 @@ extension["永夜残响"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.10",
+	"version": "2.17",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -575,7 +435,7 @@ extension["永夜残响"] = {
 		"wHeQingLi.jpg",
 		"yuanYiZheZhi.png"
 	],
-	"size": "11.92MB"
+	"size": "11.93MB"
 };
 
 extension["bigcowcow"] = {
@@ -584,7 +444,7 @@ extension["bigcowcow"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.17",
+	"version": "2.24",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -622,7 +482,7 @@ extension["电啸龙吟"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.12",
+	"version": "1.18",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -652,7 +512,7 @@ extension["轮回遗梦"] = {
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.7",
+	"version": "1.15",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -703,16 +563,16 @@ extension["轮回遗梦"] = {
 		"xieLing.png",
 		"xueJian.png"
 	],
-	"size": "34.39MB"
+	"size": "34.40MB"
 };
 
 extension["百年战争·序章"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/11",
 	"intro": "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.3-dev",
+	"version": "0.2.11-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -758,5 +618,5 @@ extension["百年战争·序章"] = {
 		"mark_bnzz_zhouFuZhiChui.png",
 		"package.js"
 	],
-	"size": "15.43MB"
+	"size": "15.44MB"
 };
