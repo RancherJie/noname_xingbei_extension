@@ -67,12 +67,12 @@ extension["无名杯UI优化包"] = {
 };
 
 extension["十周年语音包"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "十周年角色技能语音扩展。当前收录风之剑圣、狂战士、神箭手、封印师、暗杀者、圣女、守护天使、魔法少女、魔剑士、圣枪骑士、元素师、冒险家、瘟疫法师、仲裁者、神官、祈祷师、贤者、灵符师、格斗家、剑帝、灵魂术士、勇者、血之巫女、蝶舞者、女武神、魔弓、红莲骑士、英灵人形、魔枪、吟游诗人、苍炎魔女、精灵射手、血色剑灵、阴阳师、月之女神、兽灵武士、圣殿骑士、圣庭检察士、圣弓、原初之弓、星坠女巫、战斗法师、猎巫人、女仆长、矜贵之女、染污者、噬神者、结界师、红衣主教、铸律者、游击士、节日魔导、贪婪少女、见习制片、咒符师、怠惰少女与剑之子的全部技能语音。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "6.20",
+	"version": "6.21",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -96,12 +96,12 @@ extension["十周年语音包"] = {
 };
 
 extension["创世纪"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "添加角色贝亚娜斗神、百花缭乱、露米娅、希露菲、天启者、狱血魔神。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.19",
+	"version": "2.20",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -313,12 +313,12 @@ extension["十周年-噩梦人机"] = {
 };
 
 extension["宿命挽歌"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "添加角色赵灵儿、李逍遥、林月如、阿奴、拜月教主、鬼将军、蛇妖男、狐妖女及不可选的水魔兽、僵尸转化形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.43",
+	"version": "2.44",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -367,12 +367,12 @@ extension["宿命挽歌"] = {
 };
 
 extension["峡谷幻音"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "添加角色提莫、娑娜、亚托克斯、巴德。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.23",
+	"version": "1.24",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -404,12 +404,12 @@ extension["峡谷幻音"] = {
 };
 
 extension["永夜残响"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "添加角色五河琴里、夜刀神十香、四糸乃、时崎狂三、鸢一折纸；含隐藏反转形态。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.17",
+	"version": "2.18",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -439,12 +439,12 @@ extension["永夜残响"] = {
 };
 
 extension["bigcowcow"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "添加角色优菈、赫克托、史蒂夫、桐谷和人、一姬、萧炎。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.24",
+	"version": "2.25",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -477,12 +477,12 @@ extension["bigcowcow"] = {
 };
 
 extension["电啸龙吟"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "添加角色奶龙、电棍Otto、永雏塔菲。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.18",
+	"version": "1.19",
 	"files": [
 		"LICENSE",
 		"README.md",
@@ -507,12 +507,12 @@ extension["电啸龙吟"] = {
 
 
 extension["轮回遗梦"] = {
-	"date": "2026/11/10",
+	"date": "2026/11/12",
 	"intro": "仙剑奇侠传三主题角色包：景天、雪见、龙葵、邪剑仙。",
 	"author": "蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.15",
+	"version": "1.16",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
@@ -567,12 +567,12 @@ extension["轮回遗梦"] = {
 };
 
 extension["百年战争·序章"] = {
-	"date": "2026/11/11",
+	"date": "2026/11/12",
 	"intro": "百年战争系列开篇，以星界持续百年的战争为背景，收录15名原创角色，围绕五大阵营、星石资源与攻防协作展开战斗。",
 	"author": "北风/蒙牛",
 	"netdisk": "",
 	"forum": "",
-	"version": "0.2.11-dev",
+	"version": "0.2.12-dev",
 	"files": [
 		"README.md",
 		"audio-data/manifest.json",
