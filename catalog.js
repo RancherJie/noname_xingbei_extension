@@ -16,17 +16,20 @@ extension["织梦者"] = {
 };
 
 extension["无名杯UI优化包"] = {
-	"date": "2026/11/11",
-	"intro": "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志的美术语言。",
+	"date": "2026/11/14",
+	"intro": "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志；新增蓝紫星空风格。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.20",
+	"version": "2.21",
 	"files": [
 		"README.md",
 		"extension.css",
 		"extension.js",
+		"starry.css",
 		"image/baoShi_xianxia.png",
+		"image/baoShi_starry.png",
+		"image/background/xingbei_starry.jpg",
 		"image/card/anMie_xianxia.png",
 		"image/card/diLieZhan_xianxia.png",
 		"image/card/fengShenZhan_xianxia.png",
@@ -41,6 +44,7 @@ extension["无名杯UI优化包"] = {
 		"image/card/yiRen_xianxia.png",
 		"image/card/zhongDu_xianxia.png",
 		"image/cardback_xianxia.png",
+		"image/cardback_starry.png",
 		"image/huangDeng_xianxia.png",
 		"image/lanDeng_xianxia.png",
 		"image/mark/moDan_xianxia.png",
@@ -48,6 +52,7 @@ extension["无名杯UI优化包"] = {
 		"image/mark/xuRuo_xianxia.png",
 		"image/mark/zhongDu_xianxia.png",
 		"image/shuiJing_xianxia.png",
+		"image/shuiJing_starry.png",
 		"image/waterbear/frame_huan_v2.png",
 		"image/waterbear/frame_ji_v2.png",
 		"image/waterbear/frame_sheng_v2.png",
@@ -57,13 +62,16 @@ extension["无名杯UI优化包"] = {
 		"image/waterbear/parchment_tile.png",
 		"image/waterbear/table_wood.png",
 		"image/xingJi_xianxia.png",
+		"image/xingJi_outline_xianxia.png",
+		"image/treatment-star-square-active.svg",
+		"image/treatment-star-square-empty.svg",
 		"image/zhiLiaoCao_xianxia.png",
 		"image/zhiLiao_xianxia.png",
 		"info.json",
 		"package.js",
 		"waterbear.css"
 	],
-	"size": "25.90MB"
+	"size": "28.12MB"
 };
 
 extension["十周年语音包"] = {

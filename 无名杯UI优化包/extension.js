@@ -13,7 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.20";
+    var extensionVersion = "2.21";
     var observer = null;
     var decorateTimer = null;
     var cardDecorationFrame = null;
@@ -69,6 +69,10 @@
         baoShi: "baoShi_xianxia.png",
         shuiJing: "shuiJing_xianxia.png"
     };
+    var starryResourceMarkArtMap = {
+        baoShi: "baoShi_starry.png",
+        shuiJing: "shuiJing_starry.png"
+    };
     var lightMarkArtMap = {
         "image/card/zhiShiWu/hong.png": "huangDeng_xianxia.png",
         "image/card/zhiShiWu/lan.png": "lanDeng_xianxia.png"
@@ -77,6 +81,21 @@
     function configValue(key, fallback) {
         var name = "extension_" + extensionName + "_" + key;
         return lib.config[name] === undefined ? fallback : lib.config[name];
+    }
+
+    function configureDefaultStarryBackground() {
+        var marker = "extension_" + extensionName + "_starryBackgroundDefaultsV1";
+        if (currentTheme() !== "starry") return;
+        var backgroundPath = "ext:" + extensionName + "/image/background/xingbei_starry.jpg";
+        var currentBackground = lib.config.image_background;
+        if (currentBackground === "xingbei_starry" || (!lib.config[marker] && (!currentBackground || currentBackground === "default"))) {
+            game.saveConfig("image_background", backgroundPath);
+        }
+        if (!lib.config[marker]) {
+            game.saveConfig("image_background_blur", true);
+            game.saveConfig(marker, true);
+        }
+        if (lib.config.image_background === backgroundPath && ui.background && game.updateBackground) game.updateBackground();
     }
 
     var extensionIdentityAliases = {
@@ -231,11 +250,11 @@
     }
 
     function currentTheme() {
-        return configValue("uiTheme", "xianjian");
+        return configValue("uiTheme", "starry");
     }
 
     function isXianJianTheme() {
-        return currentTheme() === "xianjian";
+        return currentTheme() === "xianjian" || currentTheme() === "starry";
     }
 
     function isWaterbearTheme() {
@@ -280,10 +299,10 @@
             board.querySelectorAll("td:nth-child(2) > img").forEach(function (image) {
                 var source = image.getAttribute("src") || "";
                 if (source.indexOf("baoShi") !== -1) {
-                    var gemImage = imageRoot + "baoShi_xianxia.png";
+                    var gemImage = imageRoot + (currentTheme() === "starry" ? "baoShi_starry.png" : "baoShi_xianxia.png");
                     if (image.getAttribute("src") !== gemImage && image.src !== gemImage) image.src = gemImage;
                 } else if (source.indexOf("shuiJing") !== -1) {
-                    var crystalImage = imageRoot + "shuiJing_xianxia.png";
+                    var crystalImage = imageRoot + (currentTheme() === "starry" ? "shuiJing_starry.png" : "shuiJing_xianxia.png");
                     if (image.getAttribute("src") !== crystalImage && image.src !== crystalImage) image.src = crystalImage;
                 }
                 image.classList.add("wmb-starstone");
@@ -608,8 +627,9 @@
             if (!lib.skill[name]) return;
             lib.skill[name].markimage = "extension/" + extensionName + "/image/mark/" + markArtMap[name];
         });
-        Object.keys(resourceMarkArtMap).forEach(function (name) {
-            var image = "extension/" + extensionName + "/image/" + resourceMarkArtMap[name];
+        var activeResourceMarkArtMap = currentTheme() === "starry" ? starryResourceMarkArtMap : resourceMarkArtMap;
+        Object.keys(activeResourceMarkArtMap).forEach(function (name) {
+            var image = "extension/" + extensionName + "/image/" + activeResourceMarkArtMap[name];
             var expandedName = "_tiLian_" + name;
             if (lib.skill[expandedName]) lib.skill[expandedName].markimage = image;
             if (lib.skill._tiLian && lib.skill._tiLian.subSkill && lib.skill._tiLian.subSkill[name]) {
@@ -1330,22 +1350,26 @@
 
     function loadStyle() {
         if (!isCustomTheme()) return;
-        var styleTheme = isWaterbearTheme() ? "waterbear" : "extension";
         var currentStyles = document.querySelectorAll(
             "link[data-wmb-ui-style], link[href*='extension/" + extensionName + "/']"
         );
         for (var index = 0; index < currentStyles.length; index++) {
             currentStyles[index].remove();
         }
-        var styleUrl = lib.assetURL + "extension/" + extensionName + "/" +
-            styleTheme + ".css?v=" + encodeURIComponent(extensionVersion) +
-            "&t=" + Date.now();
-        var style = lib.init.css(styleUrl);
-        if (style) {
-            style.setAttribute("data-wmb-ui-style", "true");
-            style.setAttribute("data-wmb-ui-version", extensionVersion);
-            style.setAttribute("data-wmb-ui-theme", styleTheme);
-        }
+        var styleFiles = currentTheme() === "starry"
+            ? ["extension", "starry"]
+            : [isWaterbearTheme() ? "waterbear" : "extension"];
+        styleFiles.forEach(function (styleTheme) {
+            var styleUrl = lib.assetURL + "extension/" + extensionName + "/" +
+                styleTheme + ".css?v=" + encodeURIComponent(extensionVersion) +
+                "&t=" + Date.now();
+            var style = lib.init.css(styleUrl);
+            if (style) {
+                style.setAttribute("data-wmb-ui-style", "true");
+                style.setAttribute("data-wmb-ui-version", extensionVersion);
+                style.setAttribute("data-wmb-ui-theme", currentTheme());
+            }
+        });
     }
 
     return {
@@ -1356,6 +1380,7 @@
             migrateExtensionIdentityConfigs();
             installExtensionIdentityCompatibility();
             installExtensionListSortHook();
+            configureDefaultStarryBackground();
             loadStyle();
             applyCardDefinitions();
             installSkillFx();
@@ -1377,13 +1402,14 @@
         config: {
             uiTheme: {
                 name: "界面版本",
-                init: "xianjian",
+                init: "starry",
                 item: {
                     original: "原版",
-                    xianjian: "仙剑版（当前版本）",
+                    xianjian: "仙剑版",
+                    starry: "星空风",
                     waterbear: "水熊版"
                 },
-                intro: "切换后请重新启动游戏。原版不加载本扩展样式；仙剑版为水墨仙侠主题；水熊版为羊皮纸桌游主题。"
+                intro: "切换后请重新启动游戏。原版不加载本扩展样式；仙剑版为水墨仙侠主题；星空风为蓝紫色星空主题；水熊版为羊皮纸桌游主题。"
             },
             compactLayout: {
                 name: "紧凑角色与操作面板",
@@ -1415,10 +1441,10 @@
             }
         },
         help: {
-            "无名杯UI优化包": "独立优化无名杯对局界面。采用水墨青黛、旧宣纸、青玉、暗金铜饰与云气剑纹，覆盖战况面板、角色框、手牌、行动按钮、技能栏、选择弹窗与日志显示，不修改游戏规则或核心文件。"
+            "无名杯UI优化包": "独立优化无名杯对局界面。界面版本可选原版、仙剑版、蓝紫色星空风与水熊版，覆盖战况面板、角色框、手牌、行动按钮、技能栏、选择弹窗与日志显示，不修改游戏规则或核心文件。"
         },
         package: {
-            intro: "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志的美术语言。",
+            intro: "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志；界面版本新增蓝紫星空风。",
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
@@ -1428,6 +1454,9 @@
             character: [],
             card: ["image/mark/moDan_xianxia.png", "image/mark/shengDun_xianxia.png", "image/mark/xuRuo_xianxia.png", "image/mark/zhongDu_xianxia.png"],
             skill: []
+        },
+        background: {
+            ["ext:" + extensionName + "/image/background/xingbei_starry.jpg"]: "星空·蓝紫"
         }
     };
 });
