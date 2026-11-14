@@ -13,7 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.24";
+    var extensionVersion = "2.25";
     var observer = null;
     var decorateTimer = null;
     var cardDecorationFrame = null;
@@ -919,6 +919,7 @@
         if (!body) return false;
         if (!isCustomTheme()) return false;
         toggleClass(body, "wmb-ui-waterbear", isWaterbearTheme());
+        toggleClass(body, "wmb-ui-separate-energy-markers", !!lib.config.separateEnergyAndMarkers);
         toggleClass(body, "wmb-ui-no-motion", !configValue("motion", true));
         if (isWaterbearTheme()) {
             var devicePlatform = navigator.platform || "";

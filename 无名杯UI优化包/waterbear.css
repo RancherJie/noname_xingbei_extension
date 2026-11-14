@@ -233,6 +233,13 @@ body.wmb-ui-waterbear .player > .marks {
     overflow: visible !important;
 }
 
+body.wmb-ui-separate-energy-markers .player > .marks2 {
+    top: 5px !important;
+    right: 5px !important;
+    bottom: auto !important;
+    left: auto !important;
+}
+
 body.wmb-ui-waterbear .player > .marks > .mark,
 body.wmb-ui-waterbear .player > .marks > .card {
     position: relative !important;

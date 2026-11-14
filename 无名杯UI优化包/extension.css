@@ -1320,6 +1320,13 @@ body.wmb-ui-optimized .menubg.charactercard > .characterskill > .menubutton.acti
     text-shadow: 0 1px 3px rgba(5, 8, 28, 0.95) !important;
 }
 /* Character status: enlarged hand-limit slots on the lower frame, treatment stars directly above. */
+body.wmb-ui-separate-energy-markers .player > .marks2 {
+    top: 5px !important;
+    right: 5px !important;
+    bottom: auto !important;
+    left: auto !important;
+}
+
 body.wmb-ui-optimized .player > .count.wmb-card-slots {
     position: absolute !important;
     top: auto !important;

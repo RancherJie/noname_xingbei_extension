@@ -3,7 +3,7 @@ extension["无名杯UI优化包"] = {
     "author": "蒙牛 / Codex",
     "netdisk": "",
     "forum": "",
-    "version": "2.24",
+    "version": "2.25",
     "files": [
         "README.md",
         "audio/bgm/battle/CRASHER.mp3",
