@@ -13,7 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.23";
+    var extensionVersion = "2.24";
     var observer = null;
     var decorateTimer = null;
     var cardDecorationFrame = null;
@@ -104,7 +104,7 @@
         if (currentTheme() !== "starry") return;
         var backgroundPath = "ext:" + extensionName + "/image/background/xingbei_starry.jpg";
         var currentBackground = lib.config.image_background;
-        if (currentBackground === "xingbei_starry" || (!lib.config[marker] && (!currentBackground || currentBackground === "default"))) {
+        if (currentBackground === "xingbei_starry" || !currentBackground || currentBackground === "default") {
             game.saveConfig("image_background", backgroundPath);
         }
         if (!lib.config[marker]) {
@@ -1592,6 +1592,8 @@
             decorateArena();
         },
         content: function () {
+            // precontent 在游戏创建背景层前运行；此处再应用一次才能正确解析 ext: 图片路径。
+            configureDefaultStarryBackground();
             applyExtensionListSort();
             installExtensionListSortHook();
             installPlayerSlotIndicators();
