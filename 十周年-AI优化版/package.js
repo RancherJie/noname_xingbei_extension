@@ -3,7 +3,7 @@ extension["十周年-AI优化版"] = {
     "author": "蒙牛 / Codex",
     "netdisk": "",
     "forum": "",
-    "version": "1.12",
+    "version": "1.13",
     "files": [
         "README.md",
         "extension.js",
