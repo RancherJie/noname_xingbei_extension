@@ -13,7 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.21";
+    var extensionVersion = "2.22";
     var observer = null;
     var decorateTimer = null;
     var cardDecorationFrame = null;
@@ -96,6 +96,21 @@
             game.saveConfig(marker, true);
         }
         if (lib.config.image_background === backgroundPath && ui.background && game.updateBackground) game.updateBackground();
+    }
+
+    function migrateStarryThemeDefault() {
+        var marker = "extension_" + extensionName + "_starryThemeDefaultMigrationV1";
+        if (lib.config[marker]) return;
+        var key = "extension_" + extensionName + "_uiTheme";
+        if (lib.config[key] === "xianjian") {
+            game.saveConfig(key, "starry");
+            var background = lib.config.image_background;
+            if (!background || background === "default" || background === "xingbei_starry") {
+                game.saveConfig("image_background", "ext:" + extensionName + "/image/background/xingbei_starry.jpg");
+                game.saveConfig("image_background_blur", true);
+            }
+        }
+        game.saveConfig(marker, true);
     }
 
     var extensionIdentityAliases = {
@@ -247,6 +262,103 @@
         };
         createSortedExtensionMenu._wmbAutoSort = true;
         ui.create.extensionMenu = createSortedExtensionMenu;
+    }
+
+    function renderHandLimitSlots(player, countOverride, limitOverride) {
+        var node = player && player.node && player.node.count;
+        if (!node) return;
+        var count = typeof countOverride === "number" ? countOverride :
+            (typeof player.countCards === "function" ? player.countCards("h") : 0);
+        var limit = typeof limitOverride === "number" ? limitOverride :
+            (typeof player.getHandcardLimit === "function" ? player.getHandcardLimit() : 0);
+        if (limit === "∞") limit = Infinity;
+        if (!isFinite(count) || count < 0) count = 0;
+        count = Math.floor(count);
+        if (typeof limit !== "number" || isNaN(limit) || limit < 0) limit = 0;
+
+        var overflow = limit === Infinity ? 0 : Math.max(0, count - limit);
+        var gap = limit === Infinity ? Infinity : limit - count;
+        var state = gap === 2 ? "blue" : gap <= 1 ? "yellow" : "green";
+        var overflowSlots = Math.min(4, Math.ceil(overflow));
+        var capacity = limit === Infinity ? Math.min(12, count) : Math.ceil(limit);
+        var capacitySlots = Math.min(capacity, 12 - overflowSlots);
+        var fragment = document.createDocumentFragment();
+        node.classList.add("wmb-card-slots");
+        node.dataset.wmbHandState = state;
+        node.dataset.wmbOverflow = overflow > 0 ? "true" : "false";
+        node.setAttribute("aria-label", "手牌上限槽位");
+
+        for (var i = 0; i < capacitySlots; i++) {
+            var slot = document.createElement("span");
+            slot.className = "wmb-card-slot " + (i < count ? "is-filled" : "is-empty");
+            fragment.appendChild(slot);
+        }
+        for (var j = 0; j < overflowSlots; j++) {
+            var overflowSlot = document.createElement("span");
+            overflowSlot.className = "wmb-card-slot is-overflow";
+            fragment.appendChild(overflowSlot);
+        }
+        node.innerHTML = "";
+        node.appendChild(fragment);
+    }
+
+    function renderTreatmentSlots(player) {
+        var node = player && player.node && player.node.hp;
+        if (!node || typeof player.getZhiLiaoLimit !== "function") return;
+        var limit = player.getZhiLiaoLimit();
+        var amount = Math.max(0, Math.floor(Number(player.zhiLiao) || 0));
+        if (!isFinite(limit) || limit < 0) limit = amount;
+        var slots = Math.max(1, Math.min(12, Math.ceil(limit)));
+        var filled = Math.min(slots, amount);
+        var fragment = document.createDocumentFragment();
+
+        node.classList.add("wmb-treatment-slots");
+        node.classList.remove("text", "textstyle", "long");
+        node.dataset.wmbTreatmentState = filled > 0 ? "active" : "none";
+        node.setAttribute("aria-label", "治疗槽位");
+        for (var i = 0; i < slots; i++) {
+            var slot = document.createElement("span");
+            slot.className = "wmb-treatment-slot" + (i >= slots - filled ? " is-active" : " lost is-empty");
+            fragment.appendChild(slot);
+        }
+        node.innerHTML = "";
+        node.appendChild(fragment);
+    }
+
+    function renderPlayerSlotIndicators(player, count, limit) {
+        renderHandLimitSlots(player, count, limit);
+        renderTreatmentSlots(player);
+    }
+
+    function installPlayerSlotIndicators() {
+        if (currentTheme() !== "starry") return;
+        var proto = lib.element && lib.element.Player && lib.element.Player.prototype;
+        if (!proto || proto._wmbPlayerSlotIndicators) return;
+        var update = proto.$update;
+        if (typeof update === "function") {
+            proto.$update = function () {
+                var result = update.apply(this, arguments);
+                renderPlayerSlotIndicators(this);
+                return result;
+            };
+        }
+        var updateHandcardLimit = proto.$updateHandcardLimit;
+        if (typeof updateHandcardLimit === "function") {
+            proto.$updateHandcardLimit = function (limit, numh) {
+                var result = updateHandcardLimit.apply(this, arguments);
+                renderPlayerSlotIndicators(this, numh, limit);
+                return result;
+            };
+        }
+        proto._wmbPlayerSlotIndicators = true;
+    }
+
+    function refreshPlayerSlotIndicators() {
+        if (currentTheme() !== "starry") return;
+        var players = (game.players || []).concat(game.dead || []);
+        players.forEach(function (player) {
+            renderPlayerSlotIndicators(player);
+        });
     }
 
     function currentTheme() {
@@ -1380,8 +1492,10 @@
             migrateExtensionIdentityConfigs();
             installExtensionIdentityCompatibility();
             installExtensionListSortHook();
+            migrateStarryThemeDefault();
             configureDefaultStarryBackground();
             loadStyle();
+            installPlayerSlotIndicators();
             applyCardDefinitions();
             installSkillFx();
             installCombatLineHook();
@@ -1390,12 +1504,16 @@
             startDecoration();
         },
         arenaReady: function () {
+            installPlayerSlotIndicators();
+            refreshPlayerSlotIndicators();
             applyCardDefinitions();
             decorateArena();
         },
         content: function () {
             applyExtensionListSort();
             installExtensionListSortHook();
+            installPlayerSlotIndicators();
+            refreshPlayerSlotIndicators();
             applyCardDefinitions();
             if (document.body) decorateArena();
         },

@@ -1,9 +1,9 @@
 extension["无名杯UI优化包"] = {
-    "intro": "优化无名杯对局UI：重绘战况面板视觉，统一角色框、行动按钮、技能栏、卡牌、弹窗与日志；新增蓝紫星空风格。",
+    "intro": "优化无名杯对局UI：新增蓝紫星空风格、手牌上限槽位和治疗槽位显示。",
     "author": "蒙牛 / Codex",
     "netdisk": "",
     "forum": "",
-    "version": "2.21",
+    "version": "2.22",
     "files": [
         "README.md",
         "extension.css",
@@ -53,5 +53,5 @@ extension["无名杯UI优化包"] = {
         "package.js",
         "waterbear.css"
     ],
-    "size": "28.12MB"
+    "size": "28.13MB"
 };
