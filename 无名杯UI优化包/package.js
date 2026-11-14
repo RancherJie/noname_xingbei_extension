@@ -1,11 +1,19 @@
 extension["无名杯UI优化包"] = {
-    "intro": "优化无名杯对局UI：新增蓝紫星空风格、手牌上限槽位和治疗槽位显示。",
+    "intro": "优化无名杯对局UI：新增蓝紫星空风格、手牌上限槽位、治疗槽位与内置音乐。",
     "author": "蒙牛 / Codex",
     "netdisk": "",
     "forum": "",
-    "version": "2.22",
+    "version": "2.23",
     "files": [
         "README.md",
+        "audio/bgm/battle/CRASHER.mp3",
+        "audio/bgm/battle/fox2.mp3",
+        "audio/bgm/battle/fox3.mp3",
+        "audio/bgm/battle/liberation.mp3",
+        "audio/bgm/battle/sorrow-war.mp3",
+        "audio/bgm/battle/speed-world.mp3",
+        "audio/bgm/menu/cang1.mp3",
+        "audio/bgm/menu/fox1.mp3",
         "extension.css",
         "extension.js",
         "starry.css",
@@ -53,5 +61,5 @@ extension["无名杯UI优化包"] = {
         "package.js",
         "waterbear.css"
     ],
-    "size": "28.13MB"
+    "size": "48.81MB"
 };
