@@ -454,7 +454,7 @@
                         ],
                         [
                             "des:背负旧日宗室之名的浪花骑士，以冷峻剑舞追猎强敌。她借冰潮积蓄复仇意志，在攻防转换中引爆光降之剑。",
-                            "ext:bigcowcow/youLa.png",
+                            "ext:bigcowcow/youLa.webp",
                             "die:ext:bigcowcow/audio/die/youLa.mp3",
                         ],
                     ],
@@ -471,7 +471,7 @@
                         ],
                         [
                             "des:镇守帝国边境的回锋枪师，善于从敌我攻势中捕捉破绽。他以枪阵蓄势反制，越是承受压力，回击越发凌厉。",
-                            "ext:bigcowcow/huiFengQiangShi.png",
+                            "ext:bigcowcow/huiFengQiangShi.webp",
                         ],
                     ],
                     "shiDiFu": [
@@ -494,7 +494,7 @@
                         ],
                         [
                             "des:来自方块世界的冒险家，空手也能从战场采集一切资源。他挖掘素材、锻造装备并施加附魔，逐步打造属于自己的战斗体系。",
-                            "ext:bigcowcow/steve.png",
+                            "ext:bigcowcow/steve.webp",
                         ],
                     ],
                     "tongGuHeRen": [
@@ -511,7 +511,7 @@
                         ],
                         [
                             "des:独行于浮游城前线的黑衣剑士，以连续斩击突破极限。他积累连击切换二刀流，并以星爆气流斩终结漫长攻势。",
-                            "ext:bigcowcow/tongGuHeRen.png",
+                            "ext:bigcowcow/tongGuHeRen.webp",
                         ],
                     ],
                     "zhaoFuQueJi": [
@@ -531,7 +531,7 @@
                         ],
                         [
                             "des:把战局当作牌桌经营的招福雀姬，以公开宝牌引导牌势。她积攒喵运，在断幺九、立直与役满之间寻找一击翻盘的牌型。",
-                            "ext:bigcowcow/yiJi.png",
+                            "ext:bigcowcow/yiJi.webp",
                         ],
                     ],
                     "xiaoYan": [
@@ -556,7 +556,7 @@
                         ],
                         [
                             "des:执掌三种异火的炎帝，以斗气驾驭狂暴火力。他在逆境中蓄势，以暗劲延后爆发，再用天火三玄变与佛怒火莲焚尽强敌。",
-                            "ext:bigcowcow/xiaoYan.png",
+                            "ext:bigcowcow/xiaoYan.webp",
                         ],
                     ],
                 },
@@ -579,42 +579,42 @@
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
-                        "image": "ext:bigcowcow/mark_qingLianDiXinHuo.png",
+                        "image": "ext:bigcowcow/mark_qingLianDiXinHuo.webp",
                     },
                     "xiaoYanAnDanQingLianDiXinHuoKa": {
                         "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
-                        "image": "ext:bigcowcow/mark_anDanQingLianDiXinHuo.png",
+                        "image": "ext:bigcowcow/mark_anDanQingLianDiXinHuo.webp",
                     },
                     "xiaoYanYunLuoXinYanKa": {
                         "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
-                        "image": "ext:bigcowcow/mark_yunLuoXinYan.png",
+                        "image": "ext:bigcowcow/mark_yunLuoXinYan.webp",
                     },
                     "xiaoYanAnDanYunLuoXinYanKa": {
                         "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
-                        "image": "ext:bigcowcow/mark_anDanYunLuoXinYan.png",
+                        "image": "ext:bigcowcow/mark_anDanYunLuoXinYan.webp",
                     },
                     "xiaoYanGuLingLengHuoKa": {
                         "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
-                        "image": "ext:bigcowcow/mark_guLingLengHuo.png",
+                        "image": "ext:bigcowcow/mark_guLingLengHuo.webp",
                     },
                     "xiaoYanAnDanGuLingLengHuoKa": {
                         "hidden": true,
                         "type": "special",
                         "enable": false,
                         "fullskin": true,
-                        "image": "ext:bigcowcow/mark_anDanGuLingLengHuo.png",
+                        "image": "ext:bigcowcow/mark_anDanGuLingLengHuo.webp",
                     },
                 },
                 "translate": {
@@ -946,7 +946,7 @@
                             "max": 4,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/bigcowcow/mark_fuChou.png",
+                        "markimage": "extension/bigcowcow/mark_fuChou.webp",
                         "_priority": 0,
                     },
                     "jieShi": {
@@ -972,7 +972,7 @@
                         return player.storage.jieShiWeiMingZhong || 0;
                     },
                         },
-                        "markimage": "extension/bigcowcow/mark_jieShi.png",
+                        "markimage": "extension/bigcowcow/mark_jieShi.webp",
                         "onremove": function(player) {
                     delete player.storage.jieShiWeiMingZhong;
                 },
@@ -1227,7 +1227,7 @@
                             "max": 2,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/bigcowcow/mark_qiangShi.png",
+                        "markimage": "extension/bigcowcow/mark_qiangShi.webp",
                     },
                     "shengCunQiDian": {
                         "audio": "ext:bigcowcow/audio/skill/shiDiFu/shengCunQiDian.mp3",
@@ -2244,7 +2244,7 @@
                             "max": 3,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/bigcowcow/mark_lianJi.png",
+                        "markimage": "extension/bigcowcow/mark_lianJi.webp",
                     },
                     "baoPaiZhiShi": {
                         "trigger": {
@@ -2617,7 +2617,7 @@
                             "max": 5,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/bigcowcow/mark_miaoYun.png",
+                        "markimage": "extension/bigcowcow/mark_miaoYun.webp",
                     },
                     "yiJiBaoPai": {
                         "intro": {
@@ -4137,7 +4137,7 @@
                             "max": 6,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/bigcowcow/mark_douQi.png",
+                        "markimage": "extension/bigcowcow/mark_douQi.webp",
                     },
                     "xiaoYanYiHuoManager": {
                         "charlotte": true,
@@ -4551,7 +4551,7 @@
                             "content": "拥有者回合开始时，先移除【暗劲】，再由萧炎对其造成1点法术伤害③；若因此造成对方士气下降，萧炎自身能量区+1【水晶】。",
                             "max": 1,
                         },
-                        "markimage": "extension/bigcowcow/mark_anJin.png",
+                        "markimage": "extension/bigcowcow/mark_anJin.webp",
                         "onremove": function(player) {
                     delete player.storage.xiaoYanAnJinSource;
                     player.syncStorage('xiaoYanAnJinSource');
@@ -4571,7 +4571,7 @@
                         return lib.translate.qingLianDiXinHuo_info;
                     },
                         },
-                        "markimage": "extension/bigcowcow/mark_qingLianDiXinHuo.png",
+                        "markimage": "extension/bigcowcow/mark_qingLianDiXinHuo.webp",
                     },
                     "yunLuoXinYan": {
                         "charlotte": true,
@@ -4587,7 +4587,7 @@
                         return lib.translate.yunLuoXinYan_info;
                     },
                         },
-                        "markimage": "extension/bigcowcow/mark_yunLuoXinYan.png",
+                        "markimage": "extension/bigcowcow/mark_yunLuoXinYan.webp",
                     },
                     "guLingLengHuo": {
                         "charlotte": true,
@@ -4603,7 +4603,7 @@
                         return lib.translate.guLingLengHuo_info;
                     },
                         },
-                        "markimage": "extension/bigcowcow/mark_guLingLengHuo.png",
+                        "markimage": "extension/bigcowcow/mark_guLingLengHuo.webp",
                     },
                     "anDanQingLianDiXinHuo": {
                         "charlotte": true,
@@ -4618,7 +4618,7 @@
                         return lib.translate.anDanQingLianDiXinHuo_info;
                     },
                         },
-                        "markimage": "extension/bigcowcow/mark_anDanQingLianDiXinHuo.png",
+                        "markimage": "extension/bigcowcow/mark_anDanQingLianDiXinHuo.webp",
                     },
                     "anDanYunLuoXinYan": {
                         "charlotte": true,
@@ -4633,7 +4633,7 @@
                         return lib.translate.anDanYunLuoXinYan_info;
                     },
                         },
-                        "markimage": "extension/bigcowcow/mark_anDanYunLuoXinYan.png",
+                        "markimage": "extension/bigcowcow/mark_anDanYunLuoXinYan.webp",
                     },
                     "anDanGuLingLengHuo": {
                         "charlotte": true,
@@ -4648,7 +4648,7 @@
                         return lib.translate.anDanGuLingLengHuo_info;
                     },
                         },
-                        "markimage": "extension/bigcowcow/mark_anDanGuLingLengHuo.png",
+                        "markimage": "extension/bigcowcow/mark_anDanGuLingLengHuo.webp",
                     },
                     "diHuoFenShen": {
                         "trigger": {
@@ -5090,29 +5090,29 @@
         },
         "files": {
             "character": [
-                "youLa.png",
-                "huiFengQiangShi.png",
-                "steve.png",
-                "tongGuHeRen.png",
-                "yiJi.png",
-                "xiaoYan.png",
+                "youLa.webp",
+                "huiFengQiangShi.webp",
+                "steve.webp",
+                "tongGuHeRen.webp",
+                "yiJi.webp",
+                "xiaoYan.webp",
             ],
             "card": [
-                "mark_qingLianDiXinHuo.png",
-                "mark_yunLuoXinYan.png",
-                "mark_guLingLengHuo.png",
-                "mark_anDanQingLianDiXinHuo.png",
-                "mark_anDanYunLuoXinYan.png",
-                "mark_anDanGuLingLengHuo.png",
+                "mark_qingLianDiXinHuo.webp",
+                "mark_yunLuoXinYan.webp",
+                "mark_guLingLengHuo.webp",
+                "mark_anDanQingLianDiXinHuo.webp",
+                "mark_anDanYunLuoXinYan.webp",
+                "mark_anDanGuLingLengHuo.webp",
             ],
             "skill": [
-                "mark_fuChou.png",
-                "mark_qiangShi.png",
-                "mark_jieShi.png",
-                "mark_lianJi.png",
-                "mark_miaoYun.png",
-                "mark_douQi.png",
-                "mark_anJin.png",
+                "mark_fuChou.webp",
+                "mark_qiangShi.webp",
+                "mark_jieShi.webp",
+                "mark_lianJi.webp",
+                "mark_miaoYun.webp",
+                "mark_douQi.webp",
+                "mark_anJin.webp",
             ],
             "audio": [
                 "audio/skill/youLa/lengKuZhiXin.mp3",

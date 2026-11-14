@@ -17,7 +17,7 @@ body.wmb-ui-waterbear {
 body.wmb-ui-waterbear #arena {
     isolation: isolate;
     background-color: var(--wmb-wb-wood) !important;
-    background-image: url("image/waterbear/table_wood.png") !important;
+    background-image: url("image/waterbear/table_wood.webp") !important;
     background-repeat: repeat !important;
     background-position: center !important;
     background-size: 1024px 1024px !important;
@@ -33,7 +33,7 @@ body.wmb-ui-waterbear #arena::before {
     background-color: var(--wmb-wb-paper);
     background-image:
         linear-gradient(118deg, rgba(255, 229, 167, .12), transparent 34%, rgba(75, 38, 15, .1)),
-        url("image/waterbear/parchment_tile.png");
+        url("image/waterbear/parchment_tile.webp");
     background-repeat: repeat, repeat;
     background-position: center, center;
     background-size: auto, 512px 512px;
@@ -47,7 +47,7 @@ body.wmb-ui-waterbear #arena::after {
     z-index: 0;
     pointer-events: none;
     border: 112px solid transparent;
-    border-image-source: url("image/waterbear/parchment_border.png");
+    border-image-source: url("image/waterbear/parchment_border.webp");
     border-image-slice: 340;
     border-image-width: 112px;
     border-image-repeat: round;
@@ -204,11 +204,11 @@ body.wmb-ui-waterbear .player.wmb-wb-faction-yong { --wmb-faction-main:#a66a24; 
     filter: drop-shadow(3px 6px 5px rgba(18, 7, 3, .72));
 }
 
-.wmb-wb-faction-xue > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_xue_v2.png"); }
-.wmb-wb-faction-sheng > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_sheng_v2.png"); }
-.wmb-wb-faction-ji > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_ji_v2.png"); }
-.wmb-wb-faction-huan > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_huan_v2.png"); }
-.wmb-wb-faction-yong > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_yong_v2.png"); }
+.wmb-wb-faction-xue > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_xue_v2.webp"); }
+.wmb-wb-faction-sheng > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_sheng_v2.webp"); }
+.wmb-wb-faction-ji > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_ji_v2.webp"); }
+.wmb-wb-faction-huan > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_huan_v2.webp"); }
+.wmb-wb-faction-yong > .wmb-wb-frame-left { background-image:url("image/waterbear/frame_yong_v2.webp"); }
 .wmb-wb-faction-other > .wmb-wb-frame-left { display:none; }
 
 /* 名字保持原布局，仅确保显示在阵营边框上方。 */

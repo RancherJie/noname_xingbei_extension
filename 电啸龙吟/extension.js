@@ -945,7 +945,7 @@
                             "max": 3,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/电啸龙吟/mark_hongWen.png",
+                        "markimage": "extension/电啸龙吟/mark_hongWen.webp",
                     },
                     "fangGuan": {
                         "charlotte": true,
@@ -954,7 +954,7 @@
                             "content": "下个行动阶段内首次主动攻击只能指定电棍Otto；攻击行动结束后移除。行动阶段结束时仍存在，则电棍Otto对拥有者造成2点法术伤害。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_fangGuan.png",
+                        "markimage": "extension/电啸龙吟/mark_fangGuan.webp",
                         "mod": {
                             "playerEnabled": function(card, source, target) {
                         if(!source ||
@@ -1564,7 +1564,7 @@
                 },
                     },
                     "yongChuTaFeiShuTiao": {
-                        "markimage": "extension/电啸龙吟/mark_taFeiShuTiao.png",
+                        "markimage": "extension/电啸龙吟/mark_taFeiShuTiao.webp",
                         "intro": {
                             "name": "薯条",
                             "mark": function(dialog, storage, player) {
@@ -1664,7 +1664,7 @@
                             "max": 3,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/电啸龙吟/mark_taFeiLiuLiang.png",
+                        "markimage": "extension/电啸龙吟/mark_taFeiLiuLiang.webp",
                     },
                     "gongJiReBang": {
                         "charlotte": true,
@@ -1673,7 +1673,7 @@
                             "content": "当前【热榜】为【攻击行动】。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_gongJiReBang.png",
+                        "markimage": "extension/电啸龙吟/mark_gongJiReBang.webp",
                     },
                     "faShuReBang": {
                         "charlotte": true,
@@ -1682,7 +1682,7 @@
                             "content": "当前【热榜】为【法术行动】。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_faShuReBang.png",
+                        "markimage": "extension/电啸龙吟/mark_faShuReBang.webp",
                     },
                     "teShuReBang": {
                         "charlotte": true,
@@ -1691,7 +1691,7 @@
                             "content": "当前【热榜】为【特殊行动】。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_teShuReBang.png",
+                        "markimage": "extension/电啸龙吟/mark_teShuReBang.webp",
                     },
                 },
                 "translate": {
@@ -1753,13 +1753,13 @@
             ],
             "card": [],
             "skill": [
-                "mark_hongWen.png",
-                "mark_fangGuan.png",
-                "mark_taFeiLiuLiang.png",
-                "mark_taFeiShuTiao.png",
-                "mark_gongJiReBang.png",
-                "mark_faShuReBang.png",
-                "mark_teShuReBang.png",
+                "mark_hongWen.webp",
+                "mark_fangGuan.webp",
+                "mark_taFeiLiuLiang.webp",
+                "mark_taFeiShuTiao.webp",
+                "mark_gongJiReBang.webp",
+                "mark_faShuReBang.webp",
+                "mark_teShuReBang.webp",
             ],
             "audio": [
                 "audio/skill/dianGunOtto/baiYinWanQi.mp3",

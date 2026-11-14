@@ -61,37 +61,37 @@
     var viewportFrame = null;
     var viewportListening = false;
     var cardArtMap = {
-        anMie: "anMie_xianxia.png",
-        shuiLianZhan: "shuiLianZhan_xianxia.png",
-        huoYanZhan: "huoYanZhan_xianxia.png",
-        fengShenZhan: "fengShenZhan_xianxia.png",
-        leiGuangZhan: "leiGuangZhan_xianxia.png",
-        diLieZhan: "diLieZhan_xianxia.png",
-        shengGuang: "shengGuang_xianxia.png",
-        shengDun: "shengDun_xianxia.png",
-        xuRuo: "xuRuo_xianxia.png",
-        zhongDu: "zhongDu_xianxia.png",
-        moDan: "moDan_xianxia.png",
-        moRen: "moRen_xianxia.png",
-        yiRen: "yiRen_xianxia.png"
+        anMie: "anMie_xianxia.webp",
+        shuiLianZhan: "shuiLianZhan_xianxia.webp",
+        huoYanZhan: "huoYanZhan_xianxia.webp",
+        fengShenZhan: "fengShenZhan_xianxia.webp",
+        leiGuangZhan: "leiGuangZhan_xianxia.webp",
+        diLieZhan: "diLieZhan_xianxia.webp",
+        shengGuang: "shengGuang_xianxia.webp",
+        shengDun: "shengDun_xianxia.webp",
+        xuRuo: "xuRuo_xianxia.webp",
+        zhongDu: "zhongDu_xianxia.webp",
+        moDan: "moDan_xianxia.webp",
+        moRen: "moRen_xianxia.webp",
+        yiRen: "yiRen_xianxia.webp"
     };
     var markArtMap = {
-        _shengDun: "shengDun_xianxia.png",
-        _xuRuo: "xuRuo_xianxia.png",
-        _zhongDu: "zhongDu_xianxia.png",
-        _moDan: "moDan_xianxia.png"
+        _shengDun: "shengDun_xianxia.webp",
+        _xuRuo: "xuRuo_xianxia.webp",
+        _zhongDu: "zhongDu_xianxia.webp",
+        _moDan: "moDan_xianxia.webp"
     };
     var resourceMarkArtMap = {
-        baoShi: "baoShi_xianxia.png",
-        shuiJing: "shuiJing_xianxia.png"
+        baoShi: "baoShi_xianxia.webp",
+        shuiJing: "shuiJing_xianxia.webp"
     };
     var starryResourceMarkArtMap = {
-        baoShi: "baoShi_starry.png",
-        shuiJing: "shuiJing_starry.png"
+        baoShi: "baoShi_starry.webp",
+        shuiJing: "shuiJing_starry.webp"
     };
     var lightMarkArtMap = {
-        "image/card/zhiShiWu/hong.png": "huangDeng_xianxia.png",
-        "image/card/zhiShiWu/lan.png": "lanDeng_xianxia.png"
+        "image/card/zhiShiWu/hong.webp": "huangDeng_xianxia.webp",
+        "image/card/zhiShiWu/lan.webp": "lanDeng_xianxia.webp"
     };
 
     function configValue(key, fallback) {
@@ -427,10 +427,10 @@
             board.querySelectorAll("td:nth-child(2) > img").forEach(function (image) {
                 var source = image.getAttribute("src") || "";
                 if (source.indexOf("baoShi") !== -1) {
-                    var gemImage = imageRoot + (currentTheme() === "starry" ? "baoShi_starry.png" : "baoShi_xianxia.png");
+                    var gemImage = imageRoot + (currentTheme() === "starry" ? "baoShi_starry.webp" : "baoShi_xianxia.webp");
                     if (image.getAttribute("src") !== gemImage && image.src !== gemImage) image.src = gemImage;
                 } else if (source.indexOf("shuiJing") !== -1) {
-                    var crystalImage = imageRoot + (currentTheme() === "starry" ? "shuiJing_starry.png" : "shuiJing_xianxia.png");
+                    var crystalImage = imageRoot + (currentTheme() === "starry" ? "shuiJing_starry.webp" : "shuiJing_xianxia.webp");
                     if (image.getAttribute("src") !== crystalImage && image.src !== crystalImage) image.src = crystalImage;
                 }
                 image.classList.add("wmb-starstone");
@@ -805,8 +805,8 @@
             var skill = mark.name && lib.skill[mark.name];
             if (!skill || typeof skill.markimage != "string" ||
                 skill.markimage.indexOf("extension/" + extensionName + "/image/") !== 0) return;
-            if (skill.markimage.indexOf("huangDeng_xianxia.png") === -1 &&
-                skill.markimage.indexOf("lanDeng_xianxia.png") === -1) return;
+            if (skill.markimage.indexOf("huangDeng_xianxia.webp") === -1 &&
+                skill.markimage.indexOf("lanDeng_xianxia.webp") === -1) return;
             if (mark.dataset.wmbMarkImage === skill.markimage) return;
             if (mark.setBackgroundImage) {
                 mark.setBackgroundImage(skill.markimage);
@@ -1655,7 +1655,7 @@
         },
         files: {
             character: [],
-            card: ["image/mark/moDan_xianxia.png", "image/mark/shengDun_xianxia.png", "image/mark/xuRuo_xianxia.png", "image/mark/zhongDu_xianxia.png"],
+            card: ["image/mark/moDan_xianxia.webp", "image/mark/shengDun_xianxia.webp", "image/mark/xuRuo_xianxia.webp", "image/mark/zhongDu_xianxia.webp"],
             skill: []
         },
         background: {
