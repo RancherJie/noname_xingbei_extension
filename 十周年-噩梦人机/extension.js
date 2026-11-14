@@ -47,8 +47,8 @@
             var original = splash.handle;
             if(typeof original != 'function') return;
             splash.handle = function(mode) {
-                if(mode == 'boss') return 'extension/' + extensionFolder + '/image/splash/xieLing.png';
-                if(portraits[mode]) return 'extension/' + extensionFolder + '/image/character/chibi/default/' + portraits[mode] + '.png';
+                if(mode == 'boss') return 'extension/' + extensionFolder + '/image/splash/xieLing.webp';
+                if(portraits[mode]) return 'extension/' + extensionFolder + '/image/character/chibi/default/' + portraits[mode] + '.webp';
                 return original.apply(this, arguments);
             };
             splash._nightmarePortraits = true;
@@ -63,7 +63,7 @@
         "yuHunLiuJuHeShi", "lingHunLianJie", "lingHunZengFu", "xueZhiAiShang"
     ];
 
-    // 70名角色均提供默认版与噩梦版头像；键名同时作为图片文件名。
+    // 72名角色均提供默认版与噩梦版头像；键名同时作为图片文件名。
     var nightmareCharacterImageIds = [
         "fengZhiJianSheng", "kuangZhanShi", "shenJianShou", "fengYinShi", "anShaZhe",
         "shengNv", "tianShi", "moFaShaoNv", "moJianShi", "shengQiangQiShi", "yuanSuShi",
@@ -78,7 +78,7 @@
         "yiJiaoTu", "nong_baoShiShaoNv", "youJiShi", "jianZhiMoNv", "jieRiMoDao",
         "luoLiFanZhang", "tanLanShaoNv", "lingXiZhiChao", "jianXiZhiPian", "daoDanLuoLi",
         "yueTuanShouXi", "zhouFuShi", "sheng_zhongCaiZhe", "daiDuoShaoNv", "jiDuShaoNv",
-        "jianZhiZi", "moGongEX"
+        "jianZhiZi", "moGongEX", "daZuiSiJiao", "guShenJiSi"
     ];
     // 兼容角色包给角色ID增加前缀或使用别名的情况。角色职业名与上方图片ID一一对应，
     // 运行时优先按真实ID匹配，匹配不到时再用翻译名找到应使用的图片文件。
@@ -91,7 +91,8 @@
         "战斗法师", "猎巫人", "女仆长", "矜贵之女", "噬神者", "染污者", "结界师", "神秘学者",
         "红衣主教", "铸律者", "记录者", "传教士", "异教徒", "爆食少女", "游击士", "剑之魔女",
         "节日魔导", "萝莉番长", "贪婪少女", "灵熙之潮", "见习制片", "捣蛋萝莉", "乐团首席",
-        "咒符师", "圣仲裁者", "怠惰少女", "忌妒少女", "剑之子", "EX魔弓"
+        "咒符师", "圣仲裁者", "怠惰少女", "忌妒少女", "剑之子", "EX魔弓",
+        "大罪司教", "古神祭祀"
     ];
     var nightmareCharacterImageSet = Object.create(null);
     nightmareCharacterImageIds.forEach(function (id) { nightmareCharacterImageSet[id] = true; });
@@ -285,7 +286,11 @@
         nightmare_jianShengJiCheng: ["【剑圣继承】", "发动【风之剑】后，+1【水晶】。"],
         nightmare_shiYanBiDa: ["【誓言必达】", "由【剑残影】增加的【攻击行动】强制命中且伤害+1。"],
         nightmare_shenFengJiaoZhun: ["【神风校准】", "你的主动攻击均视为风系。"],
-        nightmare_wuShiYiDao: ["【午时已到】", "发动【狙击】后，所有对手将手牌补至上限。"]
+        nightmare_wuShiYiDao: ["【午时已到】", "发动【狙击】后，所有对手将手牌补至上限。"],
+        nightmare_qianChengHuiXiang: ["【虔诚回响】", "【神谕】结算后，你+2<span class='hong'>【虔诚】</span>。"],
+        nightmare_sheZuiEnDian: ["【赦罪恩典】", "【赦罪】结算后，你+1<span class='lan'>【水晶】</span>。"],
+        nightmare_mengZhaoHuiXiang: ["【梦兆回响】", "发动【扭曲链接】或【入梦】后，你+1<span class='lan'>【水晶】</span>。"],
+        nightmare_mengJingBiHu: ["【梦境庇护】", "【极乐梦境】在场时，你的手牌上限+2。"]
     });
 
     function publishNightmareDisplayMetadata() {
@@ -380,7 +385,7 @@
                 if (typeof tags[i] == "string" && tags[i].indexOf("ext:" + extensionFolder + "/image/character/") == 0) tags.splice(i, 1);
             }
             var folder = "chibi/default";
-            tags.unshift("ext:" + extensionFolder + "/image/character/" + folder + "/" + imageId + ".png");
+            tags.unshift("ext:" + extensionFolder + "/image/character/" + folder + "/" + imageId + ".webp");
         };
         // 角色包预载后、正式合并前只存在于 lib.imported.character；先改这份源数据，
         // 才能让后续生成的选将候选从一开始就使用当前客户端选择的头像。
@@ -429,7 +434,7 @@
             var folder = "chibi/default";
             node.setBackgroundImage(
                 "extension/" + extensionFolder + "/image/character/" +
-                folder + "/" + imageId + ".png"
+                folder + "/" + imageId + ".webp"
             );
         };
 
@@ -489,7 +494,7 @@
         var imageAlreadyApplied = slots.every(function (entry) {
             var node = player.node[entry[0]];
             if (!node) return false;
-            return String(node.style.backgroundImage || "").includes("/" + folder + "/" + entry[2] + ".png");
+            return String(node.style.backgroundImage || "").includes("/" + folder + "/" + entry[2] + ".webp");
         });
         if (player.storage && player.storage.xingBeiNightmareCharacterImage == signature && imageAlreadyApplied) return;
         if (!player.storage) player.storage = {};
@@ -502,7 +507,7 @@
                 var node = target.node[entry[0]];
                 if (!node) return;
                 if (typeof node.setBackgroundImage == "function") {
-                    node.setBackgroundImage("extension/" + name + "/image/character/" + folder + "/" + entry[2] + ".png");
+                    node.setBackgroundImage("extension/" + name + "/image/character/" + folder + "/" + entry[2] + ".webp");
                 }
             });
             if (target == game.me && ui.fakeme && target.node.avatar) {
@@ -9267,7 +9272,12 @@
             ["shenMiFuBi"],
             ["xinYueZhang", "prompt2", true],
             ["xinYueZhang", "content", true],
-            ["tianPing", "addPai", true]
+            ["tianPing", "addPai", true],
+            ["shenYu", "content", true],
+            ["sheZui", "content", true],
+            ["niuQuLianJie", "content", true],
+            ["ruMeng", "content", true],
+            ["guShenJieLv", "mod.maxHandcardFinal", true]
         ];
         var missingDependencies = secondBatchDependencies.filter(function (item) {
             return item[2] ? !hasSkillFunction(item[0], item[1]) : !hasSkillPath(item[0], item[1]);
@@ -10214,6 +10224,61 @@
         });
         register("moGongEX", ["nightmare_shenFengJiaoZhun", "nightmare_wuShiYiDao"]);
 
+        addSkill("nightmare_qianChengHuiXiang", { charlotte: true, popup: false });
+        addSkill("nightmare_sheZuiEnDian", { charlotte: true, popup: false });
+        addSkill("nightmare_mengZhaoHuiXiang", { charlotte: true, popup: false });
+        addSkill("nightmare_mengJingBiHu", { charlotte: true, popup: false });
+        register("daZuiSiJiao", ["nightmare_qianChengHuiXiang", "nightmare_sheZuiEnDian"]);
+        register("guShenJiSi", ["nightmare_mengZhaoHuiXiang", "nightmare_mengJingBiHu"]);
+
+        var shenYuSkill = lib.skill.shenYu;
+        if (shenYuSkill && markPatched(shenYuSkill, "nightmareDevotionEcho")) {
+            var originalShenYuContent = shenYuSkill.content;
+            shenYuSkill.content = async function (event, trigger, player) {
+                await originalShenYuContent.apply(this, arguments);
+                if (player.hasSkill("nightmare_qianChengHuiXiang")) {
+                    await player.addZhiShiWu("daZuiQianCheng", 2);
+                }
+            };
+        }
+        var sheZuiSkill = lib.skill.sheZui;
+        if (sheZuiSkill && markPatched(sheZuiSkill, "nightmareSheZuiGrace")) {
+            var originalSheZuiContent = sheZuiSkill.content;
+            sheZuiSkill.content = async function (event, trigger, player) {
+                await originalSheZuiContent.apply(this, arguments);
+                if (player.hasSkill("nightmare_sheZuiEnDian")) await player.addNengLiang("shuiJing", 1);
+            };
+        }
+        var niuQuLianJieSkill = lib.skill.niuQuLianJie;
+        if (niuQuLianJieSkill && markPatched(niuQuLianJieSkill, "nightmareDreamEcho")) {
+            var originalNiuQuLianJieContent = niuQuLianJieSkill.content;
+            niuQuLianJieSkill.content = async function (event, trigger, player) {
+                await originalNiuQuLianJieContent.apply(this, arguments);
+                if (player.hasSkill("nightmare_mengZhaoHuiXiang")) {
+                    await player.addNengLiang("shuiJing", 1);
+                }
+            };
+        }
+        var ruMengSkill = lib.skill.ruMeng;
+        if (ruMengSkill && markPatched(ruMengSkill, "nightmareDreamEcho")) {
+            var originalRuMengContent = ruMengSkill.content;
+            ruMengSkill.content = async function (event, trigger, player) {
+                await originalRuMengContent.apply(this, arguments);
+                if (player.hasSkill("nightmare_mengZhaoHuiXiang")) {
+                    await player.addNengLiang("shuiJing", 1);
+                }
+            };
+        }
+        var guShenJieLvSkill = lib.skill.guShenJieLv;
+        if (guShenJieLvSkill && guShenJieLvSkill.mod && markPatched(guShenJieLvSkill, "nightmareDreamHandLimit")) {
+            var originalGuShenHandLimit = guShenJieLvSkill.mod.maxHandcardFinal;
+            guShenJieLvSkill.mod.maxHandcardFinal = function (player, num) {
+                var result = originalGuShenHandLimit.apply(this, arguments);
+                if (player.hasSkill("nightmare_mengJingBiHu") && player.hasSkill("mengZhao_jiLeMengJing")) return result + 2;
+                return result;
+            };
+        }
+
         // 只有所有定义和原技能补丁都成功执行后才标记完成。
         // 这样即使角色包延迟加载，也可以在后续 phaseBefore/gameStart 再次尝试。
         lib._xingBeiNightmareSkillsSecondBatchDefined = true;
@@ -10264,7 +10329,7 @@
         boostSkill("jiRi_moBaoChongJie", "nightmare_shengDanJiaBan", 1.8, 1.5);
         boostSkill("wangNvJinKu", "nightmare_wangGuoYiChan", 1.8, 1.4);
 
-        // 第38—70名角色逐一绑定强化后的关联技能估值。纯强制强化没有独立发动按钮，
+        // 第38—72名角色逐一绑定强化后的关联技能估值。纯强制强化没有独立发动按钮，
         // 因此提高其资源来源、资源消耗或能够兑现强化收益的原技能优先级。
         var secondBatchPlans = [
             { character: "shengDianQiShi", nightmare: "nightmare_shenEnManYi", skills: ["shenWei", "shengYu", "shenLinShengQi", "shengYanQiYuan"], order: 0.7, result: 0.6 },
@@ -10299,7 +10364,9 @@
             { character: "daiDuoShaoNv", nightmare: "nightmare_rangBieRenGan", skills: ["rangWoTangPing", "xiangYongMoDan", "buXiangTiLian", "zaiShuiYiXia"], order: 0.9, result: 0.8 },
             { character: "jiDuShaoNv", nightmare: "nightmare_suanYiShangTou", skills: ["cuYiXiuXin", "xuRongZhangWo", "xiangSiBing", "jiDuZhuiFang"], order: 1.4, result: 1.2 },
             { character: "jianZhiZi", nightmare: "nightmare_shiYanBiDa", skills: ["fengZhiJian", "jianShouShiYan", "jianCanYing"], order: 1.7, result: 1.4 },
-            { character: "moGongEX", nightmare: "nightmare_wuShiYiDao", skills: ["shenFengShi", "jiFengZhuiShe", "gongShenHouBu", "juJi"], order: 1.8, result: 1.5 }
+            { character: "moGongEX", nightmare: "nightmare_wuShiYiDao", skills: ["shenFengShi", "jiFengZhuiShe", "gongShenHouBu", "juJi"], order: 1.8, result: 1.5 },
+            { character: "daZuiSiJiao", nightmare: "nightmare_qianChengHuiXiang", skills: ["xinYangZhiJia", "shuLingQuanBing"], order: 0.8, result: 0.7 },
+            { character: "guShenJiSi", nightmare: "nightmare_mengZhaoHuiXiang", skills: ["ruMeng"], order: 0.9, result: 0.8 }
         ];
         secondBatchPlans.forEach(function (plan) {
             plan.skills.forEach(function (skill) {
@@ -10914,7 +10981,7 @@
     function registerPveMode() {
         if (lib.mode && lib.mode.nightmarePve) return;
         game.addMode("nightmarePve", {
-            splash: "ext:十周年-噩梦人机/image/character/chibi/nightmare/yongZhe.png",
+            splash: "ext:十周年-噩梦人机/image/character/chibi/nightmare/yongZhe.webp",
             start: function () {
                 "step 0";
                 _status.mode = "coop";
@@ -11158,7 +11225,7 @@
 
     return {
         name: extensionName,
-        version: "1.12",
+        version: "1.15",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();

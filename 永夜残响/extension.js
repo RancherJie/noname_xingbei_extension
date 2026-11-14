@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 10 (verify old cache once, then reuse it). */
+/* Resource runtime v2, revision 11 (verify cached files exist before skipping restore). */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 10) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 11) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -204,7 +204,7 @@
         var key = 'noname-audio-pack-v2:' + meta.name;
         var previous;
         try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
-        var cacheRuntimeMatches = previous && previous.runtime === 10;
+        var cacheRuntimeMatches = previous && previous.runtime === 11;
         var assetHashes = Object.create(null);
         if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
         var assetPaths = new Set();
@@ -227,29 +227,11 @@
             manifest.files.every(function (entry) { return previous.files[entry.path] === entry.sha256; }) &&
             (manifest.assets || []).every(function (asset) { return previous.assets && previous.assets[asset.path] === asset.sha256; });
         if (cacheComplete) {
-            var resourcesPresent = true, resourceDirectories = new Set(), rootResources = [];
-            manifest.files.concat(manifest.assets || []).forEach(function (resource) {
-                var slash = resource.path.indexOf('/');
-                if (slash < 0) rootResources.push(resource.path);
-                else resourceDirectories.add(resource.path.slice(0, slash));
-            });
-            for (var resourceDirectory of resourceDirectories) {
-                try {
-                    if (await game.promises.checkDir(base + '/' + resourceDirectory) !== 1) {
-                        resourcesPresent = false;
-                        break;
-                    }
-                } catch (_) {
+            var resourcesPresent = true;
+            for (var resource of manifest.files.concat(manifest.assets || [])) {
+                if (!await cachedFileExists(game, base + '/' + resource.path)) {
                     resourcesPresent = false;
                     break;
-                }
-            }
-            if (resourcesPresent) {
-                for (var rootResource of rootResources) {
-                    if (!await cachedFileExists(game, base + '/' + rootResource)) {
-                        resourcesPresent = false;
-                        break;
-                    }
                 }
             }
             if (resourcesPresent) return false;
@@ -330,7 +312,7 @@
             }
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
-        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 10, files: hashes, assets: assetHashes }));
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 11, files: hashes, assets: assetHashes }));
         return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
@@ -367,7 +349,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 10, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 11, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
@@ -716,7 +698,7 @@
         },
         zheZhiGuangYu: {
             init:function(player) { oz.keepLightMark(player); },
-            markimage:'extension/永夜残响/mark_zheZhiGuangYu.png',
+            markimage:'extension/永夜残响/mark_zheZhiGuangYu.webp',
             intro:{name:'光羽',content:(storage,p)=>'光羽：'+oz.count(p,oz.light)+'；当前上限：'+oz.limit(p,oz.light),max:p=>oz.limit(p,oz.light)},
             trigger:{source:'gongJiMingZhong'}, forced:true,
             filter:(e,p)=>!!e && oz.count(p,oz.light)>0 && oz.players().some(t=>t!==p&&oz.room(t,oz.light)),
@@ -728,7 +710,7 @@
                 }
             },
         },
-        zheZhiHeiYu: {markimage:'extension/永夜残响/mark_zheZhiHeiYu.png',intro:{name:'黑羽',content:(storage,p)=>'黑羽：'+oz.count(p,oz.dark)+'；当前上限：'+oz.limit(p,oz.dark),max:p=>oz.limit(p,oz.dark)}},
+        zheZhiHeiYu: {markimage:'extension/永夜残响/mark_zheZhiHeiYu.webp',intro:{name:'黑羽',content:(storage,p)=>'黑羽：'+oz.count(p,oz.dark)+'；当前上限：'+oz.limit(p,oz.dark),max:p=>oz.limit(p,oz.dark)}},
         zheZhiLimitGuard: {
             trigger:{player:'changeZhiShiWuBefore'},forced:true,popup:false,firstDo:true,priority:100,
             filter:e=>!!e && e.num>0 && [oz.light,oz.dark].includes(e.zhiShiWu),
@@ -1109,8 +1091,8 @@
             "character": {
                 "connect": true,
                 "character": {
-                    "yuanYiZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiLingZhuang","zheZhiJueMieTianShi","zheZhiJueWang","zheZhiGuangJian","zheZhiTianYi","zheZhiRiLun","zheZhiPaoGuan","zheZhiGuangYu"],["des:驾驭绝灭天使的冷静术师，以光羽编织精密火力网。她不断分散与回收羽翼；当希望耗尽，绝望将令灵装彻底反转。","ext:永夜残响/yuanYiZheZhi.png"]],
-                    "fanZhuanZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiFanLingZhuang","zheZhiJuJue","zheZhiHeiYuShu","zheZhiJueMie","zheZhiYiShiHuiGui","zheZhiHeiYu"],["unseen","forbidai","des:绝望侵蚀后的鸢一折纸，以救世魔王散布象征拒绝的黑羽。她在伤害中转移灾厄，待黑羽耗尽便强制绝灭一切，唤回原本意识。","ext:永夜残响/fanZhuanZheZhi.png"]],
+                    "yuanYiZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiLingZhuang","zheZhiJueMieTianShi","zheZhiJueWang","zheZhiGuangJian","zheZhiTianYi","zheZhiRiLun","zheZhiPaoGuan","zheZhiGuangYu"],["des:驾驭绝灭天使的冷静术师，以光羽编织精密火力网。她不断分散与回收羽翼；当希望耗尽，绝望将令灵装彻底反转。","ext:永夜残响/yuanYiZheZhi.webp"]],
+                    "fanZhuanZheZhi": [null,"yongGroup",4,["zheZhiManager","zheZhiFanLingZhuang","zheZhiJuJue","zheZhiHeiYuShu","zheZhiJueMie","zheZhiYiShiHuiGui","zheZhiHeiYu"],["unseen","forbidai","des:绝望侵蚀后的鸢一折纸，以救世魔王散布象征拒绝的黑羽。她在伤害中转移灾厄，待黑羽耗尽便强制绝灭一切，唤回原本意识。","ext:永夜残响/fanZhuanZheZhi.webp"]],
                     "wuHeQinLi": [
                         null,
                         "huanGroup",
@@ -1165,7 +1147,7 @@
                         ],
                         [
                             "des:灵力彻底反转后的夜刀神十香，手中鏖杀公亦化为暴虐公。她以反转灵力换取毁灭性连击，在伤敌与自伤的边缘追击，直至意识回归。",
-                            "ext:永夜残响/fanZhuanShiXiang.png",
+                            "ext:永夜残响/fanZhuanShiXiang.webp",
                             "unseen",
                             "forbidai",
                         ],
@@ -1645,7 +1627,7 @@
                             "max": 4,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/永夜残响/mark_qinLiLingLi.png",
+                        "markimage": "extension/永夜残响/mark_qinLiLingLi.webp",
                     },
                     "shenWeiLingZhuangShiFan": {
                         "audio": "ext:永夜残响/audio/skill/yeDaoShenShiXiang/shenWeiLingZhuangShiFan.mp3",
@@ -2181,7 +2163,7 @@
                             "max": 5,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/永夜残响/mark_fanZhuanLingLi.png",
+                        "markimage": "extension/永夜残响/mark_fanZhuanLingLi.webp",
                     },
                     "fanLingZhuangShiFan": {
                         "group": [
@@ -2480,7 +2462,7 @@
                             "max": 5,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/永夜残响/mark_shiXiangLingLi.png",
+                        "markimage": "extension/永夜残响/mark_shiXiangLingLi.webp",
                     },
                     "shenWeiLingZhuangSiFan": {
                         "audio": false,
@@ -2817,7 +2799,7 @@
                             "max": 5,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/永夜残响/mark_siMiNaiBingJing.png",
+                        "markimage": "extension/永夜残响/mark_siMiNaiBingJing.webp",
                     },
                     "siMiNaiDongJie": {
                         "charlotte": true,
@@ -2826,7 +2808,7 @@
                             "content": "mark",
                             "max": 1,
                         },
-                        "markimage": "extension/永夜残响/mark_siMiNaiDongJie.png",
+                        "markimage": "extension/永夜残响/mark_siMiNaiDongJie.webp",
                         "global": [
                             "siMiNaiDongJie_gongJiOrFaShu",
                             "siMiNaiDongJie_gongJi",
@@ -3248,7 +3230,7 @@
                             "content": "mark",
                             "max": 5,
                         },
-                        "markimage": "extension/永夜残响/mark_shiCha.png",
+                        "markimage": "extension/永夜残响/mark_shiCha.webp",
                         "global": "shiCha_huiHe",
                         "subSkill": {
                             "huiHe": {
@@ -3282,7 +3264,7 @@
                             "content": "拥有者回合结束时，移除【时间静止】并+1【时差】；若增加后【时差】未达到上限，本次不结算【时差】。",
                             "max": 1,
                         },
-                        "markimage": "extension/永夜残响/mark_shiJianJingZhi.png",
+                        "markimage": "extension/永夜残响/mark_shiJianJingZhi.webp",
                         "global": "shiJianJingZhi_huiHe",
                         "subSkill": {
                             "huiHe": {
@@ -3839,29 +3821,29 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "2.17",
+            "version": "2.18",
         },
         "files": {
             "character": [
                 "wHeQingLi.jpg",
-                "yuanYiZheZhi.png",
-                "fanZhuanZheZhi.png",
+                "yuanYiZheZhi.webp",
+                "fanZhuanZheZhi.webp",
                 "shiXiang.jpg",
-                "fanZhuanShiXiang.png",
+                "fanZhuanShiXiang.webp",
                 "siMiNai.jpg",
                 "shiQiKuangSan.jpg",
             ],
             "card": [],
             "skill": [
-                "mark_qinLiLingLi.png",
-                "mark_zheZhiGuangYu.png",
-                "mark_zheZhiHeiYu.png",
-                "mark_shiXiangLingLi.png",
-                "mark_fanZhuanLingLi.png",
-                "mark_siMiNaiBingJing.png",
-                "mark_siMiNaiDongJie.png",
-                "mark_shiCha.png",
-                "mark_shiJianJingZhi.png",
+                "mark_qinLiLingLi.webp",
+                "mark_zheZhiGuangYu.webp",
+                "mark_zheZhiHeiYu.webp",
+                "mark_shiXiangLingLi.webp",
+                "mark_fanZhuanLingLi.webp",
+                "mark_siMiNaiBingJing.webp",
+                "mark_siMiNaiDongJie.webp",
+                "mark_shiCha.webp",
+                "mark_shiJianJingZhi.webp",
             ],
             "audio": [
                 "audio/skill/siMiNai/shenWeiLingZhuangSiFan.mp3",

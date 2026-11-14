@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 10 (verify old cache once, then reuse it). */
+/* Resource runtime v2, revision 11 (verify cached files exist before skipping restore). */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 10) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 11) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -204,7 +204,7 @@
         var key = 'noname-audio-pack-v2:' + meta.name;
         var previous;
         try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
-        var cacheRuntimeMatches = previous && previous.runtime === 10;
+        var cacheRuntimeMatches = previous && previous.runtime === 11;
         var assetHashes = Object.create(null);
         if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
         var assetPaths = new Set();
@@ -227,29 +227,11 @@
             manifest.files.every(function (entry) { return previous.files[entry.path] === entry.sha256; }) &&
             (manifest.assets || []).every(function (asset) { return previous.assets && previous.assets[asset.path] === asset.sha256; });
         if (cacheComplete) {
-            var resourcesPresent = true, resourceDirectories = new Set(), rootResources = [];
-            manifest.files.concat(manifest.assets || []).forEach(function (resource) {
-                var slash = resource.path.indexOf('/');
-                if (slash < 0) rootResources.push(resource.path);
-                else resourceDirectories.add(resource.path.slice(0, slash));
-            });
-            for (var resourceDirectory of resourceDirectories) {
-                try {
-                    if (await game.promises.checkDir(base + '/' + resourceDirectory) !== 1) {
-                        resourcesPresent = false;
-                        break;
-                    }
-                } catch (_) {
+            var resourcesPresent = true;
+            for (var resource of manifest.files.concat(manifest.assets || [])) {
+                if (!await cachedFileExists(game, base + '/' + resource.path)) {
                     resourcesPresent = false;
                     break;
-                }
-            }
-            if (resourcesPresent) {
-                for (var rootResource of rootResources) {
-                    if (!await cachedFileExists(game, base + '/' + rootResource)) {
-                        resourcesPresent = false;
-                        break;
-                    }
                 }
             }
             if (resourcesPresent) return false;
@@ -330,7 +312,7 @@
             }
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
-        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 10, files: hashes, assets: assetHashes }));
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 11, files: hashes, assets: assetHashes }));
         return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
@@ -367,7 +349,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 10, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 11, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
@@ -687,11 +669,11 @@
         },
         muLing: {
             intro: {name: '木灵', content: 'mark', max: 3},
-            markimage: 'extension/峡谷幻音/mark_baDeMuLing.png', onremove: 'storage',
+            markimage: 'extension/峡谷幻音/mark_baDeMuLing.webp', onremove: 'storage',
         },
-        youShenShengTanInfo: {markimage: 'extension/峡谷幻音/mark_baDeYouShenShengTan.png'},
-        shenQiLvChengInfo: {markimage: 'extension/峡谷幻音/mark_baDeShenQiLvCheng.png'},
-        baDeNingZhiInfo: {markimage: 'extension/峡谷幻音/mark_baDeNingZhi.png'},
+        youShenShengTanInfo: {markimage: 'extension/峡谷幻音/mark_baDeYouShenShengTan.webp'},
+        shenQiLvChengInfo: {markimage: 'extension/峡谷幻音/mark_baDeShenQiLvCheng.webp'},
+        baDeNingZhiInfo: {markimage: 'extension/峡谷幻音/mark_baDeNingZhi.webp'},
         lvZheDeZhaoHuan: {
             audio: 'ext:峡谷幻音/audio/skill/baDe/lvZheDeZhaoHuan.mp3',
             trigger: {global: 'gameStart', player: 'faShuEnd'}, forced: true,
@@ -872,7 +854,7 @@
             ai: {baoShi: true, order: 4.5, result: {target: (player, target) => target.side === player.side ? 0.5 : -1}},
         },
         baDeNingZhi: {
-            charlotte: true, mark: true, markimage: 'extension/峡谷幻音/mark_baDeNingZhi.png', marktext: '滞',
+            charlotte: true, mark: true, markimage: 'extension/峡谷幻音/mark_baDeNingZhi.webp', marktext: '滞',
             intro: {content: '受到的伤害恒为0；行动阶段只能执行特殊行动，否则跳过。巴德回合开始时移除。'},
             onremove: function(player) { delete player.storage.baDeNingZhiOwners; },
             mod: {cardEnabled: function(card, player) {
@@ -1220,7 +1202,7 @@
                     "suoNaYingYongYuYin": {
                         "charlotte": true,
                         "mark": true,
-                        "markimage": "extension/峡谷幻音/mark_suoNaYingYongYuYin.png",
+                        "markimage": "extension/峡谷幻音/mark_suoNaYingYongYuYin.webp",
                         "marktext": "勇",
                         "intro": { "content": "攻击命中时，本次攻击伤害额外+1，随后移除。" },
                         "trigger": { "source": "gongJiMingZhong" },
@@ -1233,7 +1215,7 @@
                     "suoNaJianYiYuYin": {
                         "charlotte": true,
                         "mark": true,
-                        "markimage": "extension/峡谷幻音/mark_suoNaJianYiYuYin.png",
+                        "markimage": "extension/峡谷幻音/mark_suoNaJianYiYuYin.webp",
                         "marktext": "毅",
                         "intro": { "content": "承受伤害时，该伤害-1，随后移除。" },
                         "trigger": { "player": "chengShouShangHaiBefore" },
@@ -1249,7 +1231,7 @@
                     "suoNaXunJieYuYin": {
                         "charlotte": true,
                         "mark": true,
-                        "markimage": "extension/峡谷幻音/mark_suoNaXunJieYuYin.png",
+                        "markimage": "extension/峡谷幻音/mark_suoNaXunJieYuYin.webp",
                         "marktext": "迅",
                         "intro": { "content": "执行【特殊行动】后，弃置1张牌，随后移除。" },
                         "trigger": { "player": "teShuEnd" },
@@ -1275,7 +1257,7 @@
                     "suoNaHeXian": {
                         "charlotte": true,
                         "intro": { "content": "当前有#点【和弦】。", "max": 3 },
-                        "markimage": "extension/峡谷幻音/mark_suoNaHeXian.png",
+                        "markimage": "extension/峡谷幻音/mark_suoNaHeXian.webp",
                     },
                     "kuangWuZhongLeZhang": {
                         "audio": "ext:峡谷幻音/audio/skill/suoNa/kuangWuZhongYueZhang.mp3",
@@ -1784,7 +1766,7 @@
                             '个【蘑菇】；打出或展示同系牌时触发。';
                     },
                         },
-                        "markimage": "extension/峡谷幻音/mark_tiMoZhongMoGuKa.png",
+                        "markimage": "extension/峡谷幻音/mark_tiMoZhongMoGuKa.webp",
                         "getMatchingCards": function(event, player) {
                     if(!event) return [];
                     var xiBies = [];
@@ -2325,7 +2307,7 @@
                             "max": 3,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/峡谷幻音/mark_xueRen.png",
+                        "markimage": "extension/峡谷幻音/mark_xueRen.webp",
                     },
                     "xueJi": {
                         "intro": {
@@ -2334,7 +2316,7 @@
                             "max": 2,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/峡谷幻音/mark_xueJi.png",
+                        "markimage": "extension/峡谷幻音/mark_xueJi.webp",
                     },
                     "tiMoYinXing": {
                         "mark": true,
@@ -2491,7 +2473,7 @@
                             "content": "应战攻击伤害-1；拥有者回合结束时移除。",
                             "max": 1,
                         },
-                        "markimage": "extension/峡谷幻音/mark_eHuoShuLianKa.png",
+                        "markimage": "extension/峡谷幻音/mark_eHuoShuLianKa.webp",
                         "group": [
                             "eHuoShuLianKa_yingZhan",
                             "eHuoShuLianKa_qingChu",
@@ -2665,7 +2647,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.23",
+            "version": "1.24",
         },
         "files": {
             "character": [
@@ -2676,18 +2658,18 @@
             ],
             "card": [],
             "skill": [
-                "mark_baDeMuLing.png",
-                "mark_baDeYouShenShengTan.png",
-                "mark_baDeShenQiLvCheng.png",
-                "mark_baDeNingZhi.png",
-                "mark_tiMoZhongMoGuKa.png",
-                "mark_suoNaHeXian.png",
-                "mark_suoNaYingYongYuYin.png",
-                "mark_suoNaJianYiYuYin.png",
-                "mark_suoNaXunJieYuYin.png",
-                "mark_xueRen.png",
-                "mark_xueJi.png",
-                "mark_eHuoShuLianKa.png",
+                "mark_baDeMuLing.webp",
+                "mark_baDeYouShenShengTan.webp",
+                "mark_baDeShenQiLvCheng.webp",
+                "mark_baDeNingZhi.webp",
+                "mark_tiMoZhongMoGuKa.webp",
+                "mark_suoNaHeXian.webp",
+                "mark_suoNaYingYongYuYin.webp",
+                "mark_suoNaJianYiYuYin.webp",
+                "mark_suoNaXunJieYuYin.webp",
+                "mark_xueRen.webp",
+                "mark_xueJi.webp",
+                "mark_eHuoShuLianKa.webp",
             ],
             "audio": [
                 "audio/skill/baDe/lvZheDeZhaoHuan.mp3",
