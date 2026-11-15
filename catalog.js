@@ -16,12 +16,12 @@ extension["织梦者"] = {
 };
 
 extension["无名杯UI优化包"] = {
-	"date": "2026/11/14",
+	"date": "2026/11/15",
 	"intro": "优化无名杯对局UI：新增蓝紫星空风格、手牌上限槽位、治疗槽位与内置音乐。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "2.25",
+	"version": "2.26",
 	"files": [
 		"README.md",
 		"audio/bgm/battle/CRASHER.mp3",
