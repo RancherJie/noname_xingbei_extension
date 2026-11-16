@@ -1,9 +1,9 @@
 extension["无名杯UI优化包"] = {
-    "intro": "优化无名杯对局UI：新增蓝紫星空风格、手牌上限槽位、治疗槽位与内置音乐。",
+    "intro": "优化无名杯对局UI：新增明亮Q版主菜单配图，沿用默认角色原型；提供蓝紫星空风格、手牌上限槽位、治疗槽位与内置音乐。",
     "author": "蒙牛 / Codex",
     "netdisk": "",
     "forum": "",
-    "version": "2.26",
+    "version": "2.27",
     "files": [
         "README.md",
         "audio/bgm/battle/CRASHER.mp3",
@@ -20,6 +20,13 @@ extension["无名杯UI优化包"] = {
         "image/baoShi_xianxia.webp",
         "image/baoShi_starry.webp",
         "image/background/xingbei_starry.jpg",
+        "image/splash_xingbei.webp",
+        "image/splash_boss.webp",
+        "image/splash_connect.webp",
+        "image/splash_offline.webp",
+        "image/splash_gallery.webp",
+        "image/splash_leaderboard.webp",
+        "image/splash_tutorial.webp",
         "image/card/anMie_xianxia.webp",
         "image/card/diLieZhan_xianxia.webp",
         "image/card/fengShenZhan_xianxia.webp",
@@ -61,5 +68,5 @@ extension["无名杯UI优化包"] = {
         "package.js",
         "waterbear.css"
     ],
-    "size": "25.31MB"
+    "size": "26.85MB"
 };

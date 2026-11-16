@@ -13,7 +13,7 @@
     "use strict";
 
     var extensionName = "无名杯UI优化包";
-    var extensionVersion = "2.25";
+    var extensionVersion = "2.27";
     var observer = null;
     var decorateTimer = null;
     var cardDecorationFrame = null;
