@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 10 (verify old cache once, then reuse it). */
+/* Resource runtime v2, revision 11 (verify cached files exist before skipping restore). */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 10) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 11) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -204,7 +204,7 @@
         var key = 'noname-audio-pack-v2:' + meta.name;
         var previous;
         try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
-        var cacheRuntimeMatches = previous && previous.runtime === 10;
+        var cacheRuntimeMatches = previous && previous.runtime === 11;
         var assetHashes = Object.create(null);
         if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
         var assetPaths = new Set();
@@ -227,29 +227,11 @@
             manifest.files.every(function (entry) { return previous.files[entry.path] === entry.sha256; }) &&
             (manifest.assets || []).every(function (asset) { return previous.assets && previous.assets[asset.path] === asset.sha256; });
         if (cacheComplete) {
-            var resourcesPresent = true, resourceDirectories = new Set(), rootResources = [];
-            manifest.files.concat(manifest.assets || []).forEach(function (resource) {
-                var slash = resource.path.indexOf('/');
-                if (slash < 0) rootResources.push(resource.path);
-                else resourceDirectories.add(resource.path.slice(0, slash));
-            });
-            for (var resourceDirectory of resourceDirectories) {
-                try {
-                    if (await game.promises.checkDir(base + '/' + resourceDirectory) !== 1) {
-                        resourcesPresent = false;
-                        break;
-                    }
-                } catch (_) {
+            var resourcesPresent = true;
+            for (var resource of manifest.files.concat(manifest.assets || [])) {
+                if (!await cachedFileExists(game, base + '/' + resource.path)) {
                     resourcesPresent = false;
                     break;
-                }
-            }
-            if (resourcesPresent) {
-                for (var rootResource of rootResources) {
-                    if (!await cachedFileExists(game, base + '/' + rootResource)) {
-                        resourcesPresent = false;
-                        break;
-                    }
                 }
             }
             if (resourcesPresent) return false;
@@ -330,7 +312,7 @@
             }
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
-        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 10, files: hashes, assets: assetHashes }));
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 11, files: hashes, assets: assetHashes }));
         return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
@@ -367,7 +349,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 10, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 11, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
@@ -1094,8 +1076,8 @@
             "character": {
                 "connect": true,
                 "character": {
-                    "sheYaoNan": [null, "jiGroup", 3, ["yinLongCangZhen", "kuangSheLianZhan", "suMingXianYueZhan", "yinLongXiangYi"], ["des:盘踞隐龙窟的蛇妖洞主，粗豪凶悍，却把珍宝与娘子看得比性命更重。他藏珍蓄势、连续挥刀，并与狐妖女相依换位追杀来敌。", "ext:宿命挽歌/sheYaoNan.png"]],
-                    "huYaoNv": [null, "yongGroup", 3, ["yinLongCangZhen", "meiYingLianXi", "suMingHuiMeng", "suMingLeiZhou", "suMingWuLeiZhou", "yinLongXiangYi"], ["des:镇守隐龙窟的狐妖女，柔媚言笑之下藏着雷咒与杀机。她以魅影、梦境和五雷扰乱敌阵，并与蛇妖男相依换位守护洞府。", "ext:宿命挽歌/huYaoNv.png"]],
+                    "sheYaoNan": [null, "jiGroup", 3, ["yinLongCangZhen", "kuangSheLianZhan", "suMingXianYueZhan", "yinLongXiangYi"], ["des:盘踞隐龙窟的蛇妖洞主，粗豪凶悍，却把珍宝与娘子看得比性命更重。他藏珍蓄势、连续挥刀，并与狐妖女相依换位追杀来敌。", "ext:宿命挽歌/sheYaoNan.webp"]],
+                    "huYaoNv": [null, "yongGroup", 3, ["yinLongCangZhen", "meiYingLianXi", "suMingHuiMeng", "suMingLeiZhou", "suMingWuLeiZhou", "yinLongXiangYi"], ["des:镇守隐龙窟的狐妖女，柔媚言笑之下藏着雷咒与杀机。她以魅影、梦境和五雷扰乱敌阵，并与蛇妖男相依换位守护洞府。", "ext:宿命挽歌/huYaoNv.webp"]],
                     "zhaoLingEr": [
                         null,
                         "shengGroup",
@@ -1217,7 +1199,7 @@
                         ],
                         [
                             "des:以理性否定人心的拜月教主，冷静地把众生视作验证真理的祭品。他操纵咒术与洪水侵蚀战场，并与水魔兽合体迈向灭世结论。",
-                            "ext:宿命挽歌/baiYueJiaoZhu.png",
+                            "ext:宿命挽歌/baiYueJiaoZhu.webp",
                         ],
                     ],
                     "shuiMoShouBaiYueJiaoZhu": [
@@ -1240,7 +1222,7 @@
                         ],
                         [
                             "des:拜月教主与水魔兽融为一体的灭世形态，以无尽洪水吞没反抗者。他积累水患、压迫全场，在伤害与士气崩塌中维持永生。",
-                            "ext:宿命挽歌/shuiMoShouBaiYueJiaoZhu.png",
+                            "ext:宿命挽歌/shuiMoShouBaiYueJiaoZhu.webp",
                             "unseen",
                             "forbidai",
                         ],
@@ -1261,7 +1243,7 @@
                         ],
                         [
                             "des:镇守将军冢的尸骸鬼将，以阴气统御不肯安息的亡军。他播撒尸毒、转移创伤，并让倒下的生者化作继续征战的僵尸。",
-                            "ext:宿命挽歌/guiJiangJun.png",
+                            "ext:宿命挽歌/guiJiangJun.webp",
                         ],
                     ],
                     "suMingJiangShi": [
@@ -1277,7 +1259,7 @@
                         ],
                         [
                             "des:被尸毒夺去神智的临时僵尸，只能由鬼将军的【尸化】产生。它以腐朽躯体承受伤害，在有限行动中传播尸毒与死亡。",
-                            "ext:宿命挽歌/suMingJiangShi.png",
+                            "ext:宿命挽歌/suMingJiangShi.webp",
                             "unseen",
                             "forbidai",
                         ],
@@ -1622,7 +1604,7 @@
                     },
                     "shiDu": {
                         "charlotte": true,
-                        "markimage": "extension/宿命挽歌/mark_shiDu.png",
+                        "markimage": "extension/宿命挽歌/mark_shiDu.webp",
                         "group": ["shiDuRuTi", "shiHua"],
                         "intro": {
                             "name": "专属【尸毒】",
@@ -1781,7 +1763,7 @@
                     },
                     "yinQi": {
                         "charlotte": true,
-                        "markimage": "extension/宿命挽歌/mark_yinQi.png",
+                        "markimage": "extension/宿命挽歌/mark_yinQi.webp",
                         "intro": {
                             "name": "阴气",
                             "content": "mark",
@@ -2949,7 +2931,7 @@
                                     if(dream) {
                                         node.setBackgroundImage(
                                             'extension/宿命挽歌/' +
-                                            'zhaoLingEr_mengShe.png'
+                                            'zhaoLingEr_mengShe.webp'
                                         );
                                     }
                                     else {
@@ -3277,7 +3259,7 @@
                             "max": 6,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/宿命挽歌/mark_lingLi.png",
+                        "markimage": "extension/宿命挽歌/mark_lingLi.webp",
                         "_priority": 0,
                     },
                     "jueXingDu": {
@@ -3289,7 +3271,7 @@
                         "mark": true,
                         "marktext": "醒",
                         "onremove": "storage",
-                        "markimage": "extension/宿命挽歌/mark_jueXingDu.png",
+                        "markimage": "extension/宿命挽歌/mark_jueXingDu.webp",
                     },
                     "yuJianShu": {
                         "trigger": {
@@ -3832,7 +3814,7 @@
                             "max": 5,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/宿命挽歌/mark_jianY.png",
+                        "markimage": "extension/宿命挽歌/mark_jianY.webp",
                         "_priority": 0,
                     },
                     "linJiaQianJin": {
@@ -4378,7 +4360,7 @@
                             "max": 7,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/宿命挽歌/mark_qiJing.png",
+                        "markimage": "extension/宿命挽歌/mark_qiJing.webp",
                     },
                     "miaoJiangShengNv": {
                         "audio": "ext:宿命挽歌/audio/skill/miaoJiangShengNv.mp3",
@@ -5027,7 +5009,7 @@
                 },
                     },
                     "gu": {
-                        "markimage": "extension/宿命挽歌/mark_gu.png",
+                        "markimage": "extension/宿命挽歌/mark_gu.webp",
                         "intro": {
                             "name": "蛊",
                             "content": "gaiPai",
@@ -5070,7 +5052,7 @@
                             "content": "免疫来自中毒的伤害<br>（回合结束时）从以下两项选择一个发动：<br>①将五毒珠传递给左手边的玩家<br>②（移除战绩区1星石）将五毒珠传给目标玩家",
                             "nocount": true,
                         },
-                        "markimage": "extension/宿命挽歌/mark_wuDuZhu.png",
+                        "markimage": "extension/宿命挽歌/mark_wuDuZhu.webp",
                         "global": [
                             "wuDuZhu_mianYi",
                             "wuDuZhu_chuanDi",
@@ -6034,7 +6016,7 @@
                         "audio": "ext:宿命挽歌/audio/skill/hongShui.mp3",
                         "charlotte": true,
                         "mark": true,
-                        "markimage": "extension/宿命挽歌/mark_hongShui.png",
+                        "markimage": "extension/宿命挽歌/mark_hongShui.webp",
                         "marktext": "水",
                         "init": function(player) {
                             if(typeof player.storage.hongShuiLimit != 'number') {
@@ -6061,7 +6043,7 @@
                     "fengMo": {
                         "audio": "ext:宿命挽歌/audio/skill/fengMo.mp3",
                         "charlotte": true,
-                        "markimage": "extension/宿命挽歌/mark_fengMo.png",
+                        "markimage": "extension/宿命挽歌/mark_fengMo.webp",
                         "tag": {"jiChuXiaoGuo": true},
                         "trigger": {"player": "phaseEnd"},
                         "forced": true,
@@ -6307,34 +6289,34 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-			"version": "2.43",
+			"version": "2.44",
         },
         "files": {
             "character": [
                 "zhaoLingEr.jpg",
-                "zhaoLingEr_mengShe.png",
+                "zhaoLingEr_mengShe.webp",
                 "liXiaoYao.jpg",
                 "linYueRu.jpg",
                 "aNu.jpg",
-                "baiYueJiaoZhu.png",
-                "shuiMoShouBaiYueJiaoZhu.png",
-                "guiJiangJun.png",
-                "suMingJiangShi.png",
-                "sheYaoNan.png",
-                "huYaoNv.png",
+                "baiYueJiaoZhu.webp",
+                "shuiMoShouBaiYueJiaoZhu.webp",
+                "guiJiangJun.webp",
+                "suMingJiangShi.webp",
+                "sheYaoNan.webp",
+                "huYaoNv.webp",
             ],
             "card": [],
             "skill": [
-                "mark_lingLi.png",
-                "mark_jianY.png",
-                "mark_qiJing.png",
-                "mark_gu.png",
-                "mark_wuDuZhu.png",
-                "mark_fengMo.png",
-                "mark_hongShui.png",
-                "mark_jueXingDu.png",
-                "mark_yinQi.png",
-                "mark_shiDu.png",
+                "mark_lingLi.webp",
+                "mark_jianY.webp",
+                "mark_qiJing.webp",
+                "mark_gu.webp",
+                "mark_wuDuZhu.webp",
+                "mark_fengMo.webp",
+                "mark_hongShui.webp",
+                "mark_jueXingDu.webp",
+                "mark_yinQi.webp",
+                "mark_shiDu.webp",
             ],
             "audio": [
                 "audio/action/zhaoLingEr/gouMai.mp3",

@@ -11,17 +11,17 @@ extension["电啸龙吟"] = {
         "audio-data/pack-fe851f1e37c3475e02771544b880096fe46bcdbf9a8a08e777a6fe8fccb6762b.json",
         "extension.js",
         "info.json",
-        "mark_faShuReBang.png",
-        "mark_fangGuan.png",
-        "mark_gongJiReBang.png",
-        "mark_hongWen.png",
-        "mark_taFeiLiuLiang.png",
-        "mark_taFeiShuTiao.png",
-        "mark_teShuReBang.png",
+        "mark_faShuReBang.webp",
+        "mark_fangGuan.webp",
+        "mark_gongJiReBang.webp",
+        "mark_hongWen.webp",
+        "mark_taFeiLiuLiang.webp",
+        "mark_taFeiShuTiao.webp",
+        "mark_teShuReBang.webp",
         "naiLong.jpg",
         "otto.jpg",
         "package.js",
         "yongChuTaFei.jpg"
     ],
-    "size": "3.06MB"
+    "size": "2.65MB"
 };

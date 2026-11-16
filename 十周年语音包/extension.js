@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 10 (verify old cache once, then reuse it). */
+/* Resource runtime v2, revision 11 (verify cached files exist before skipping restore). */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 10) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 11) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -204,7 +204,7 @@
         var key = 'noname-audio-pack-v2:' + meta.name;
         var previous;
         try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
-        var cacheRuntimeMatches = previous && previous.runtime === 10;
+        var cacheRuntimeMatches = previous && previous.runtime === 11;
         var assetHashes = Object.create(null);
         if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
         var assetPaths = new Set();
@@ -227,29 +227,11 @@
             manifest.files.every(function (entry) { return previous.files[entry.path] === entry.sha256; }) &&
             (manifest.assets || []).every(function (asset) { return previous.assets && previous.assets[asset.path] === asset.sha256; });
         if (cacheComplete) {
-            var resourcesPresent = true, resourceDirectories = new Set(), rootResources = [];
-            manifest.files.concat(manifest.assets || []).forEach(function (resource) {
-                var slash = resource.path.indexOf('/');
-                if (slash < 0) rootResources.push(resource.path);
-                else resourceDirectories.add(resource.path.slice(0, slash));
-            });
-            for (var resourceDirectory of resourceDirectories) {
-                try {
-                    if (await game.promises.checkDir(base + '/' + resourceDirectory) !== 1) {
-                        resourcesPresent = false;
-                        break;
-                    }
-                } catch (_) {
+            var resourcesPresent = true;
+            for (var resource of manifest.files.concat(manifest.assets || [])) {
+                if (!await cachedFileExists(game, base + '/' + resource.path)) {
                     resourcesPresent = false;
                     break;
-                }
-            }
-            if (resourcesPresent) {
-                for (var rootResource of rootResources) {
-                    if (!await cachedFileExists(game, base + '/' + rootResource)) {
-                        resourcesPresent = false;
-                        break;
-                    }
                 }
             }
             if (resourcesPresent) return false;
@@ -330,7 +312,7 @@
             }
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
-        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 10, files: hashes, assets: assetHashes }));
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 11, files: hashes, assets: assetHashes }));
         return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
@@ -367,7 +349,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 10, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 11, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
@@ -396,7 +378,7 @@
         });
     }
 })(function (game) {
-    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语音包","sha256":"b057884d5d24046ea781c4fab4d53c4365084006eafcd7f19a820c939aa349d3"}, function (lib, game, ui, get, ai, _status) {
+    game.import("extension", globalThis.NonameAudioPacks.wrap({"name":"十周年语音包","sha256":"4a206961a45991df820699a840cc4eb065e25c826242cc5ec91db3a45a216fc2"}, function (lib, game, ui, get, ai, _status) {
     "use strict";
 
     var extensionName = "十周年语音包";
@@ -829,7 +811,26 @@
         xiangSiBing: "jiDuShaoNv/xiangSiBing.mp3",
         jiDuZhuiFang: "jiDuShaoNv/jiDuZhuiFang.mp3",
         shenFengShi: "moGongEX/shenFengShi.mp3",
-        jiFengZhuiShe: "moGongEX/jiFengZhuiShe.mp3"
+        jiFengZhuiShe: "moGongEX/jiFengZhuiShe.mp3",
+        shenDeDaiXing: "daZuiSiJiao/shenDeDaiXing.mp3",
+        shenYiZhiYin: "daZuiSiJiao/shenYiZhiYin.mp3",
+        xinYangZhiJia: "daZuiSiJiao/xinYangZhiJia.mp3",
+        sheZui: "daZuiSiJiao/sheZui.mp3",
+        shenYu: "daZuiSiJiao/shenYu.mp3",
+        fuYin: "daZuiSiJiao/fuYin.mp3",
+        daZuiLuBiaoX: "daZuiSiJiao/daZuiLuBiaoX.mp3",
+        shuLingQuanBing: "daZuiSiJiao/shuLingQuanBing.mp3",
+        shengCanLi: "daZuiSiJiao/shengCanLi.mp3",
+        guShenJieLv: "guShenJiSi/guShenJieLv.mp3",
+        niuQuLianJie: "guShenJiSi/niuQuLianJie.mp3",
+        tianQi: "guShenJiSi/tianQi.mp3",
+        moRiMengZhao: "guShenJiSi/moRiMengZhao.mp3",
+        mengZhao_jiLeMengJing: "guShenJiSi/jiLeMengJing.mp3",
+        mengZhao_hongLieLieHuo: "guShenJiSi/hongLieLieHuo.mp3",
+        mengZhao_diDongNuTao: "guShenJiSi/diDongNuTao.mp3",
+        mengZhao_mengJingPoSui: "guShenJiSi/mengJingPoSui.mp3",
+        ruMeng: "guShenJiSi/ruMeng.mp3",
+        zhiPei: "guShenJiSi/zhiPei.mp3",
     };
 
     var characterSkillAudio = {
@@ -1376,7 +1377,7 @@
 
     return {
         name: extensionName,
-        version: "6.20",
+        version: "6.22",
         connect: true,
         editable: false,
         config: {
@@ -1390,14 +1391,14 @@
         content: installSkillAudio,
         arenaReady: installSkillAudio,
         help: {
-            "十周年语音包": "为十周年角色补充技能语音。当前已实装风之剑圣、狂战士、神箭手、封印师、暗杀者、圣女、守护天使、魔法少女、魔剑士、圣枪骑士、元素师、冒险家、瘟疫法师、仲裁者、神官、祈祷师、贤者、灵符师、格斗家、剑帝、灵魂术士、勇者、血之巫女、蝶舞者、女武神、魔弓、红莲骑士、英灵人形、魔枪、吟游诗人、苍炎魔女、精灵射手、血色剑灵、阴阳师、月之女神、兽灵武士、圣殿骑士、圣庭检察士、圣弓、原初之弓、星坠女巫、战斗法师、猎巫人、女仆长、矜贵之女、染污者、噬神者与结界师的全部技能语音。"
+            "十周年语音包": "为十周年角色补充技能语音。当前已实装风之剑圣、狂战士、神箭手、封印师、暗杀者、圣女、守护天使、魔法少女、魔剑士、圣枪骑士、元素师、冒险家、瘟疫法师、仲裁者、神官、祈祷师、贤者、灵符师、格斗家、剑帝、灵魂术士、勇者、血之巫女、蝶舞者、女武神、魔弓、红莲骑士、英灵人形、魔枪、吟游诗人、苍炎魔女、精灵射手、血色剑灵、阴阳师、月之女神、兽灵武士、圣殿骑士、圣庭检察士、圣弓、原初之弓、星坠女巫、战斗法师、猎巫人、女仆长、矜贵之女、染污者、噬神者、结界师、大罪司教与古神祭祀的全部技能语音。"
         },
         package: {
-            intro: "十周年角色技能语音扩展。当前收录风之剑圣、狂战士、神箭手、封印师、暗杀者、圣女、守护天使、魔法少女、魔剑士、圣枪骑士、元素师、冒险家、瘟疫法师、仲裁者、神官、祈祷师、贤者、灵符师、格斗家、剑帝、灵魂术士、勇者、血之巫女、蝶舞者、女武神、魔弓、红莲骑士、英灵人形、魔枪、吟游诗人、苍炎魔女、精灵射手、血色剑灵、阴阳师、月之女神、兽灵武士、圣殿骑士、圣庭检察士、圣弓、原初之弓、星坠女巫、战斗法师、猎巫人、女仆长、矜贵之女、染污者、噬神者与结界师的全部技能语音。",
+            intro: "十周年角色技能语音扩展。当前收录风之剑圣、狂战士、神箭手、封印师、暗杀者、圣女、守护天使、魔法少女、魔剑士、圣枪骑士、元素师、冒险家、瘟疫法师、仲裁者、神官、祈祷师、贤者、灵符师、格斗家、剑帝、灵魂术士、勇者、血之巫女、蝶舞者、女武神、魔弓、红莲骑士、英灵人形、魔枪、吟游诗人、苍炎魔女、精灵射手、血色剑灵、阴阳师、月之女神、兽灵武士、圣殿骑士、圣庭检察士、圣弓、原初之弓、星坠女巫、战斗法师、猎巫人、女仆长、矜贵之女、染污者、噬神者、结界师、大罪司教与古神祭祀的全部技能语音。",
             author: "蒙牛 / Codex",
             diskURL: "",
             forumURL: "",
-            version: "6.20"
+            version: "6.21"
         },
         files: {
             character: [],
@@ -2018,7 +2019,32 @@
                 "audio/action/zhouFuShi/tiLian.mp3",
                 "audio/action/zhuLvZhe/gouMai.mp3",
                 "audio/action/zhuLvZhe/heCheng.mp3",
-                "audio/action/zhuLvZhe/tiLian.mp3"
+                "audio/action/zhuLvZhe/tiLian.mp3",
+                "audio/skill/daZuiSiJiao/shenYiZhiYin.mp3",
+                "audio/skill/daZuiSiJiao/daZuiLuBiaoX.mp3",
+                "audio/skill/daZuiSiJiao/sheZui.mp3",
+                "audio/skill/daZuiSiJiao/xinYangZhiJia.mp3",
+                "audio/skill/daZuiSiJiao/fuYin.mp3",
+                "audio/skill/daZuiSiJiao/shenYu.mp3",
+                "audio/skill/daZuiSiJiao/shuLingQuanBing.mp3",
+                "audio/skill/daZuiSiJiao/shenDeDaiXing.mp3",
+                "audio/skill/daZuiSiJiao/shengCanLi.mp3",
+                "audio/action/daZuiSiJiao/heCheng.mp3",
+                "audio/action/daZuiSiJiao/gouMai.mp3",
+                "audio/action/daZuiSiJiao/tiLian.mp3",
+                "audio/skill/guShenJiSi/guShenJieLv.mp3",
+                "audio/skill/guShenJiSi/niuQuLianJie.mp3",
+                "audio/skill/guShenJiSi/tianQi.mp3",
+                "audio/skill/guShenJiSi/moRiMengZhao.mp3",
+                "audio/skill/guShenJiSi/jiLeMengJing.mp3",
+                "audio/skill/guShenJiSi/hongLieLieHuo.mp3",
+                "audio/skill/guShenJiSi/diDongNuTao.mp3",
+                "audio/skill/guShenJiSi/mengJingPoSui.mp3",
+                "audio/skill/guShenJiSi/ruMeng.mp3",
+                "audio/skill/guShenJiSi/zhiPei.mp3",
+                "audio/action/guShenJiSi/heCheng.mp3",
+                "audio/action/guShenJiSi/tiLian.mp3",
+                "audio/action/guShenJiSi/gouMai.mp3",
             ]
         }
     };

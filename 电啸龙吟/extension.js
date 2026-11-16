@@ -1,8 +1,8 @@
 /* AUDIO_PACK_RUNTIME_BEGIN */
-/* Resource runtime v2, revision 10 (verify old cache once, then reuse it). */
+/* Resource runtime v2, revision 11 (verify cached files exist before skipping restore). */
 (function (root) {
     'use strict';
-    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 10) return;
+    if (root.NonameAudioPacks && root.NonameAudioPacks.revision >= 11) return;
     function sha256(bytes) {
         var k = [], h = [], n = 2;
         while (k.length < 64) {
@@ -204,7 +204,7 @@
         var key = 'noname-audio-pack-v2:' + meta.name;
         var previous;
         try { previous = JSON.parse(storage.getItem(key) || 'null'); } catch (_) {}
-        var cacheRuntimeMatches = previous && previous.runtime === 10;
+        var cacheRuntimeMatches = previous && previous.runtime === 11;
         var assetHashes = Object.create(null);
         if (manifest.assets !== undefined && !Array.isArray(manifest.assets)) throw new Error('无效静态资源清单');
         var assetPaths = new Set();
@@ -227,29 +227,11 @@
             manifest.files.every(function (entry) { return previous.files[entry.path] === entry.sha256; }) &&
             (manifest.assets || []).every(function (asset) { return previous.assets && previous.assets[asset.path] === asset.sha256; });
         if (cacheComplete) {
-            var resourcesPresent = true, resourceDirectories = new Set(), rootResources = [];
-            manifest.files.concat(manifest.assets || []).forEach(function (resource) {
-                var slash = resource.path.indexOf('/');
-                if (slash < 0) rootResources.push(resource.path);
-                else resourceDirectories.add(resource.path.slice(0, slash));
-            });
-            for (var resourceDirectory of resourceDirectories) {
-                try {
-                    if (await game.promises.checkDir(base + '/' + resourceDirectory) !== 1) {
-                        resourcesPresent = false;
-                        break;
-                    }
-                } catch (_) {
+            var resourcesPresent = true;
+            for (var resource of manifest.files.concat(manifest.assets || [])) {
+                if (!await cachedFileExists(game, base + '/' + resource.path)) {
                     resourcesPresent = false;
                     break;
-                }
-            }
-            if (resourcesPresent) {
-                for (var rootResource of rootResources) {
-                    if (!await cachedFileExists(game, base + '/' + rootResource)) {
-                        resourcesPresent = false;
-                        break;
-                    }
                 }
             }
             if (resourcesPresent) return false;
@@ -330,7 +312,7 @@
             }
         }
         if (needed.size || bytes) throw new Error('音频数据包不完整');
-        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 10, files: hashes, assets: assetHashes }));
+        storage.setItem(key, JSON.stringify({ version: manifest.version, manifest: meta.sha256, runtime: 11, files: hashes, assets: assetHashes }));
         return index > 0 || assetsChanged;
     }
     function prepare(meta, lib, game) {
@@ -367,7 +349,7 @@
         return task;
     }
     root.NonameAudioPacks = {
-        format: 2, revision: 10, sha256: sha256, install: install, prepare: prepare,
+        format: 2, revision: 11, sha256: sha256, install: install, prepare: prepare,
         isPreparing: function () { return preparing > 0 && Date.now() - lastActivity < 30000; },
         wrap: function (meta, factory) {
             return function (lib, game, ui, get, ai, _status) {
@@ -963,7 +945,7 @@
                             "max": 3,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/电啸龙吟/mark_hongWen.png",
+                        "markimage": "extension/电啸龙吟/mark_hongWen.webp",
                     },
                     "fangGuan": {
                         "charlotte": true,
@@ -972,7 +954,7 @@
                             "content": "下个行动阶段内首次主动攻击只能指定电棍Otto；攻击行动结束后移除。行动阶段结束时仍存在，则电棍Otto对拥有者造成2点法术伤害。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_fangGuan.png",
+                        "markimage": "extension/电啸龙吟/mark_fangGuan.webp",
                         "mod": {
                             "playerEnabled": function(card, source, target) {
                         if(!source ||
@@ -1582,7 +1564,7 @@
                 },
                     },
                     "yongChuTaFeiShuTiao": {
-                        "markimage": "extension/电啸龙吟/mark_taFeiShuTiao.png",
+                        "markimage": "extension/电啸龙吟/mark_taFeiShuTiao.webp",
                         "intro": {
                             "name": "薯条",
                             "mark": function(dialog, storage, player) {
@@ -1682,7 +1664,7 @@
                             "max": 3,
                         },
                         "onremove": "storage",
-                        "markimage": "extension/电啸龙吟/mark_taFeiLiuLiang.png",
+                        "markimage": "extension/电啸龙吟/mark_taFeiLiuLiang.webp",
                     },
                     "gongJiReBang": {
                         "charlotte": true,
@@ -1691,7 +1673,7 @@
                             "content": "当前【热榜】为【攻击行动】。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_gongJiReBang.png",
+                        "markimage": "extension/电啸龙吟/mark_gongJiReBang.webp",
                     },
                     "faShuReBang": {
                         "charlotte": true,
@@ -1700,7 +1682,7 @@
                             "content": "当前【热榜】为【法术行动】。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_faShuReBang.png",
+                        "markimage": "extension/电啸龙吟/mark_faShuReBang.webp",
                     },
                     "teShuReBang": {
                         "charlotte": true,
@@ -1709,7 +1691,7 @@
                             "content": "当前【热榜】为【特殊行动】。",
                             "max": 1,
                         },
-                        "markimage": "extension/电啸龙吟/mark_teShuReBang.png",
+                        "markimage": "extension/电啸龙吟/mark_teShuReBang.webp",
                     },
                 },
                 "translate": {
@@ -1761,7 +1743,7 @@
             "author": "蒙牛",
             "diskURL": "",
             "forumURL": "",
-            "version": "1.18",
+            "version": "1.19",
         },
         "files": {
             "character": [
@@ -1771,13 +1753,13 @@
             ],
             "card": [],
             "skill": [
-                "mark_hongWen.png",
-                "mark_fangGuan.png",
-                "mark_taFeiLiuLiang.png",
-                "mark_taFeiShuTiao.png",
-                "mark_gongJiReBang.png",
-                "mark_faShuReBang.png",
-                "mark_teShuReBang.png",
+                "mark_hongWen.webp",
+                "mark_fangGuan.webp",
+                "mark_taFeiLiuLiang.webp",
+                "mark_taFeiShuTiao.webp",
+                "mark_gongJiReBang.webp",
+                "mark_faShuReBang.webp",
+                "mark_teShuReBang.webp",
             ],
             "audio": [
                 "audio/skill/dianGunOtto/baiYinWanQi.mp3",
