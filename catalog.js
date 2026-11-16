@@ -164,12 +164,12 @@ extension["创世纪"] = {
 };
 
 extension["十周年-AI优化版"] = {
-	"date": "2026/11/14",
+	"date": "2026/11/16",
 	"intro": "在不修改原版十周年角色技能与数值的前提下，优化购买、合成、技能发动、目标选择和资源保留等AI决策。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.13",
+	"version": "1.14",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -180,12 +180,12 @@ extension["十周年-AI优化版"] = {
 };
 
 extension["十周年-噩梦人机"] = {
-	"date": "2026/11/14",
+	"date": "2026/11/16",
 	"intro": "内置十周年-AI优化版，为72名电脑角色提供144项噩梦强化技能；新增最多三名玩家的联机合作 PvE 模式。真人操控角色保持原版技能。",
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.15",
+	"version": "1.16",
 	"files": [
 		"README.md",
 		"extension.js",
