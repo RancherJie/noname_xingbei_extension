@@ -3,7 +3,7 @@ extension["十周年-噩梦人机"] = {
     "author": "蒙牛 / Codex",
     "netdisk": "",
     "forum": "",
-    "version": "1.16",
+    "version": "1.17",
     "files": [
         "README.md",
         "extension.js",

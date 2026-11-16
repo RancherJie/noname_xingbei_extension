@@ -169,7 +169,7 @@ extension["十周年-AI优化版"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.14",
+	"version": "1.15",
 	"files": [
 		"README.md",
 		"extension.js",
@@ -185,7 +185,7 @@ extension["十周年-噩梦人机"] = {
 	"author": "蒙牛 / Codex",
 	"netdisk": "",
 	"forum": "",
-	"version": "1.16",
+	"version": "1.17",
 	"files": [
 		"README.md",
 		"extension.js",

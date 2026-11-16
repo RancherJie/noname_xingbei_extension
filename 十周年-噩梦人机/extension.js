@@ -3715,20 +3715,19 @@
         var medusa = lib.skill && lib.skill.meiDuShaZhiYan;
         if (medusa && markPatched(medusa, "fullActionChain")) {
             medusa.cost = async function (event, trigger, player) {
+                var medusaCardScore = lib["十周年-噩梦人机_callbacks"]["online_medusaCardScore_186150"];
                 var result = await player.chooseCardButton(darkMoons(player), "是否发动【美杜莎之眼】<br>" + lib.translate.meiDuShaZhiYan_info)
                     .set("filterButton", function (button) {
                         return get.xiBie(button.link) == _status.event.xiBie;
                     })
                     .set("xiBie", get.xiBie(trigger.card))
                     .set("ai", function (button) {
-                        var medusaCardScore = lib["十周年-噩梦人机_callbacks"]["online_medusaCardScore_186150"];
-
                         var player = _status.event.player;
                         var score = medusaCardScore(player, button.link);
                         return score >= 0.25 ? 10 + score : -20;
                     }).forResult();
                 event.result = {
-                    bool: !!(result.bool && result.links && result.links.length && medusaCardScore(player, result.links[0]) >= 0.25),
+                    bool: !!(result.bool && result.links && result.links.length),
                     cost_data: result.links || []
                 };
             };
@@ -11259,7 +11258,7 @@
 
     return {
         name: extensionName,
-        version: "1.16",
+        version: "1.17",
         editable: false,
         arenaReady: function () {
             applyShiZhouNianAiPatch();
